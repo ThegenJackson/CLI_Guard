@@ -54,7 +54,7 @@ def edit_pw():
     replace_pw = str(input("New Password: "))
     replace_encoded_pw = fernet.encrypt(replace_pw.encode())
     list_pw[index].remove(list_pw[index][-1])
-    list_pw[index].append(replace_encoded_pw)
+    list_pw[index].append(replace_encoded_pw.decode())
 
     again = str(input("Edit another password?\nType Y for Yes or N for No\n(y/n)\n"))
     if again == "Y" or again == "y":
