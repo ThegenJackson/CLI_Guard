@@ -62,8 +62,7 @@ def edit_pw():
         print(place, i[0])
         place += 1
 
-    index = int(input("#######################################\nSelect a password to edit by typing the index of the account:"))
-    indexed = index - 1
+    index = int(input("#######################################\nSelect a password to edit by typing the index of the account:") - 1)
 
     replace_pw = str(input("New Password: "))
     # User input value for replace_pw is encoded then saved to a new variable
@@ -72,8 +71,8 @@ def edit_pw():
     # To avoid this we first remove the last value in the relevant sub-list
     # Then append the decoded variable to the relevant sub-list
     # Remember the value needs to be decoded before adding to the encrypted passwords list
-    list_pw[indexed].remove(list_pw[indexed][-1])
-    list_pw[indexed].append(replace_encoded_pw.decode())
+    list_pw[index].remove(list_pw[index][-1])
+    list_pw[index].append(replace_encoded_pw.decode())
 
     again = str(input("#######################################\nEdit another password?\nType Y for Yes or N for No\n(y/n)\n"))
     if again.lower() == "y":
@@ -90,12 +89,11 @@ def del_pw():
         print(place, i[0])
         place += 1
 
-    index = int(input("#######################################\nSelect a password to delete by typing the index of the account: "))
-    indexed = index - 1
+    index = int(input("#######################################\nSelect a password to delete by typing the index of the account: ") - 1)
 
     sure = str(input(f"#######################################\nAre you sure you want to delete the password for {list_pw[indexed][0]} ?\nType Y for Yes or N for No\n(y/n)\n"))
     if sure.lower() == "y":
-        list_pw.remove(list_pw[indexed])
+        list_pw.remove(list_pw[index])
     elif sure.lower() == "n":
         del_pw()
 
@@ -114,11 +112,10 @@ def show_pw():
         print(place, i[0])
         place += 1
 
-    index = int(input("#######################################\nSelect a password to decrypt by typing the index of the account: "))
-    indexed = index - 1
+    index = int(input("#######################################\nSelect a password to decrypt by typing the index of the account: ") - 1)
 
     # Similar to encrypting, the decrypted password needs to be stored in a new variable
-    decoded_pw = fernet.decrypt(list_pw[indexed][-1])
+    decoded_pw = fernet.decrypt(list_pw[index][-1])
     # Remember to decode the new variable to remove the leading b value
     # This changes b'variable' to 'variable'
     print(decoded_pw.decode())
