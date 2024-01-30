@@ -18,7 +18,7 @@ list_pw = []
 # Program Start - User chooses function
 def start():
     print("Simple Password Manager\nSelect an option:")
-    print("1. Create new password\n2. Edit a password\n3. Delete a password\n4. Display a password\n5. Exit\n")
+    print("1. Create new password\n2. Edit a password\n3. Delete a password\n4. Display a password\n5. Exit\n#######################################\n")
     choice = input()
     if choice == '1':
         add_pw()
@@ -31,7 +31,7 @@ def start():
     elif choice == '5':
         exit()
     else:
-        print("Choose by typing a number between 1 and 4")
+        print("#######################################\nChoose by typing a number between 1 and 4")
         start()
 
 
@@ -47,7 +47,7 @@ def add_pw():
     # Decode is different to Decrypt, remember to read the docs more
     list_pw.append([new_acct, new_username, encoded_pw.decode()])
 
-    again = str(input("Add another password?\nType Y for Yes or N for No\n(y/n)\n"))
+    again = str(input("#######################################\nAdd another password?\nType Y for Yes or N for No\n(y/n)\n"))
     if again.lower() == "y":
         add_pw()
     elif again.lower() == "n":
@@ -56,9 +56,15 @@ def add_pw():
 
 # Edit a password from the encrypted passwords list based on it's index
 def edit_pw():
-    sorted_list = sorted(list_pw)
-    print(sorted_list)
-    index = int(input("Select a password to edit by typing the index: "))
+    print("#######################################")
+    place = 1
+    for i in list_pw:
+        print(place, i[0])
+        place += 1
+
+    index = int(input("#######################################\nSelect a password to edit by typing the index of the account:"))
+    indexed = index - 1
+
     replace_pw = str(input("New Password: "))
     # User input value for replace_pw is encoded then saved to a new variable
     replace_encoded_pw = fernet.encrypt(replace_pw.encode())
@@ -66,10 +72,10 @@ def edit_pw():
     # To avoid this we first remove the last value in the relevant sub-list
     # Then append the decoded variable to the relevant sub-list
     # Remember the value needs to be decoded before adding to the encrypted passwords list
-    list_pw[index].remove(list_pw[index][-1])
-    list_pw[index].append(replace_encoded_pw.decode())
+    list_pw[indexed].remove(list_pw[indexed][-1])
+    list_pw[indexed].append(replace_encoded_pw.decode())
 
-    again = str(input("Edit another password?\nType Y for Yes or N for No\n(y/n)\n"))
+    again = str(input("#######################################\nEdit another password?\nType Y for Yes or N for No\n(y/n)\n"))
     if again.lower() == "y":
         edit_pw()
     elif again.lower() == "n":
@@ -78,12 +84,22 @@ def edit_pw():
 
 # Remove a password from the encrypted passwords list based on it's index
 def del_pw():
-    sorted_list = sorted(list_pw)
-    print(sorted_list)
-    index = int(input("Select a password to delete by typing the index: "))
-    list_pw.remove(list_pw[index])
+    print("#######################################")
+    place = 1
+    for i in list_pw:
+        print(place, i[0])
+        place += 1
 
-    again = str(input("Remove another password?\nType Y for Yes or N for No\n(y/n)\n"))
+    index = int(input("#######################################\nSelect a password to delete by typing the index of the account: "))
+    indexed = index - 1
+
+    sure = str(input(f"#######################################\nAre you sure you want to delete the password for {list_pw[indexed][0]} ?\nType Y for Yes or N for No\n(y/n)\n"))
+    if sure.lower() == "y":
+        list_pw.remove(list_pw[indexed])
+    elif sure.lower() == "n":
+        del_pw()
+
+    again = str(input("#######################################\nRemove another password?\nType Y for Yes or N for No\n(y/n)\n"))
     if again.lower() == "y":
         del_pw()
     elif again.lower() == "n":
@@ -92,16 +108,22 @@ def del_pw():
 
 # Choose a password to display based on it's index in the encrypted passwords list
 def show_pw():
-    sorted_list = sorted(list_pw)
-    print(sorted_list)
-    index = int(input("Select a password to decrypt by typing the index: "))
+    print("#######################################")
+    place = 1
+    for i in list_pw:
+        print(place, i[0])
+        place += 1
+
+    index = int(input("#######################################\nSelect a password to decrypt by typing the index of the account: "))
+    indexed = index - 1
+
     # Similar to encrypting, the decrypted password needs to be stored in a new variable
-    decoded_pw = fernet.decrypt(list_pw[index][-1])
+    decoded_pw = fernet.decrypt(list_pw[indexed][-1])
     # Remember to decode the new variable to remove the leading b value
     # This changes b'variable' to 'variable'
     print(decoded_pw.decode())
 
-    again = str(input("Decrypt another password?\nType Y for Yes or N for No\n(y/n)\n"))
+    again = str(input("#######################################\nDecrypt another password?\nType Y for Yes or N for No\n(y/n)\n"))
     if again.lower() == "y":
         show_pw()
     elif again.lower() == "n":
