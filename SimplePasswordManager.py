@@ -18,7 +18,7 @@ list_pw = []
 line = "#######################################\n"
 mode = ""
 yes_no = " Type Y for Yes or N for No\n(y/n)\n"
-another = f" another password?\n{yes_no}\n"
+another = f" another password?\n{yes_no}"
 select = "Select a password to "
 typing = " by typing the index of the account: "
 
@@ -52,14 +52,17 @@ def add_pw():
     # User input value for new_pw is encoded then saved to a new variable
     encoded_pw = fernet.encrypt(new_pw.encode())
     # The variable needs var.decode() when adding to the encrypted passwords list
+    # This converts the values datatype from BITS to STRING
     # Otherwise it saves to the list as b'var' instead of 'var'
     # Decode is different to Decrypt, remember to read the docs more
+    # The encoded pw is BITS datatype once encrypted and needs it's own variable
     list_pw.append([new_acct, new_username, encoded_pw.decode()])
 
+    # Return to home or repeat
     again = str(input(line + mode + another))
     if again.lower() == "y":
         add_pw()
-    elif again.lower() == "n":
+    else:
         start()
 
 
@@ -72,7 +75,7 @@ def edit_pw():
         print(place, i[0])
         place += 1
 
-    index = int(int(input(line + select + mode + typing)) - 1)
+    index = int(int(input(line + select + mode.lower() + typing)) - 1)
 
     replace_pw = str(input("New Password: "))
     # User input value for replace_pw is encoded then saved to a new variable
@@ -81,13 +84,15 @@ def edit_pw():
     # To avoid this we first remove the last value in the relevant sub-list
     # Then append the decoded variable to the relevant sub-list
     # Remember the value needs to be decoded before adding to the encrypted passwords list
+    # This converts the values datatype from BITS to STRING
     list_pw[index].remove(list_pw[index][-1])
     list_pw[index].append(replace_encoded_pw.decode())
 
+    # Return to home or repeat
     again = str(input(line + mode + another))
     if again.lower() == "y":
         edit_pw()
-    elif again.lower() == "n":
+    else:
         start()
 
 
@@ -100,18 +105,20 @@ def del_pw():
         print(place, i[0])
         place += 1
 
-    index = int(int(input(line + select + mode + typing)) - 1)
+    index = int(int(input(line + select + mode.lower() + typing)) - 1)
 
+    # Check if the user wants to delete the chosen pw
     sure = str(input(f"{line}Are you sure you want to delete the password for {list_pw[index][0]} ?{yes_no}"))
     if sure.lower() == "y":
         list_pw.remove(list_pw[index])
     elif sure.lower() == "n":
         start()
 
+    # Return to home or repeat
     again = str(input(line + mode + another))
     if again.lower() == "y":
         del_pw()
-    elif again.lower() == "n":
+    else:
         start()
 
 
@@ -124,7 +131,7 @@ def show_pw():
         print(place, i[0])
         place += 1
 
-    index = int(int(input(line + select + mode + typing)) - 1)
+    index = int(int(input(line + select + mode.lower() + typing)) - 1)
 
     # Similar to encrypting, the decrypted password needs to be stored in a new variable
     decoded_pw = fernet.decrypt(list_pw[index][-1])
@@ -132,14 +139,17 @@ def show_pw():
     # This changes b'variable' to 'variable'
     print(decoded_pw.decode())
 
+    # Return to home or repeat
     again = str(input(line + mode + another))
     if again.lower() == "y":
         show_pw()
-    elif again.lower() == "n":
+    else:
         start()
 
-
+# Temp run app in terminal while figuring out basic tkinter
+# Possiblly make a cli version of app and gui? Give the user the option ?
 start()
+
 # # Create the root frame window thing with tkinter and initialize the app - read more docs
 # root = tk.Tk()
 # root.title("Simple Password Manager")
