@@ -1,3 +1,18 @@
+# ###########################################################################
+#                          Author: Thegen Jackson
+# ###########################################################################
+#   Document design decisions on relevant Confluence page
+#   - Update Confluence to link to all relevant Docs needed
+#   - Decided to use Agile development framework prioritizing function first,
+#      documentation to follow
+#   - Decided to use SQLite over MySQL due to SQLite being more lightweight
+#      and restricted to only 1 user
+#   - Decided to split the app into CLI app as well as GUI app
+#   - Terminal app to be saved as SPM.py execute at CLI with "python SPM.py"
+#   - GUI app to use Tkinter and to be packed into .exe
+#   - Both CLI and GUI apps to access same DB
+# ###########################################################################
+
 # Import tkinter - read more docs
 import tkinter as tk
 
@@ -15,18 +30,37 @@ fernet = Fernet(key)
 list_pw = []
 
 # Formatting terminal output
-line = "#######################################\n"
-mode = ""
+splash = """                                           
+   SSSSSSSSSSSSSSS      PPPPPPPPPPPPPPPPP       MMMMMMMM               MMMMMMMM
+ SS:::::::::::::::S     P::::::::::::::::P      M:::::::M             M:::::::M
+S:::::SSSSSS::::::S     P::::::PPPPPP:::::P     M::::::::M           M::::::::M
+S:::::S     SSSSSSS     PP:::::P     P:::::P    M:::::::::M         M:::::::::M
+S:::::S                   P::::P     P:::::P    M::::::::::M       M::::::::::M
+S:::::S                   P::::P     P:::::P    M:::::::::::M     M:::::::::::M
+ S::::SSSS                P::::PPPPPP:::::P     M:::::::M::::M   M::::M:::::::M
+  SS::::::SSSSS           P:::::::::::::PP      M::::::M M::::M M::::M M::::::M
+    SSS::::::::SS         P::::PPPPPPPPP        M::::::M  M::::M::::M  M::::::M
+       SSSSSS::::S        P::::P                M::::::M   M:::::::M   M::::::M
+            S:::::S       P::::P                M::::::M    M:::::M    M::::::M
+            S:::::S       P::::P                M::::::M     MMMMM     M::::::M
+SSSSSSS     S:::::S     PP::::::PP              M::::::M               M::::::M
+S::::::SSSSSS:::::S     P::::::::P              M::::::M               M::::::M
+S:::::::::::::::SS      P::::::::P              M::::::M               M::::::M
+ SSSSSSSSSSSSSSS        PPPPPPPPPP              MMMMMMMM               MMMMMMMM
+
+                            Simple Password Manager                                                                 
+"""
+line = "##################################################################################\n"
 yes_no = " Type Y for Yes or N for No\n(y/n)\n"
 another = f" another password?\n{yes_no}"
 select = "Select a password to "
 typing = " by typing the index of the account: "
-
+mode = ""
 
 
 # Program Start - User chooses function
 def start():
-    print(f"Simple Password Manager\nSelect an option:\n1. Create new password\n2. Edit a password\n3. Delete a password\n4. Display a password\n5. Exit\n{line}")
+    print(f"{line + splash + line}Select an option:\n1. Create new password\n2. Edit a password\n3. Delete a password\n4. Display a password\n5. Exit\n{line}")
     choice = input()
     if choice == '1':
         add_pw()
@@ -39,7 +73,7 @@ def start():
     elif choice == '5':
         exit()
     else:
-        print(f"{line}Choose by typing a number between 1 and 4")
+        print(f"{line}Choose by typing a number between 1 and 5")
         start()
 
 
@@ -58,7 +92,7 @@ def add_pw():
     # The encoded pw is BITS datatype once encrypted and needs it's own variable
     list_pw.append([new_acct, new_username, encoded_pw.decode()])
 
-    # Return to home or repeat
+    # Return to Start Menu or repeat
     again = str(input(line + mode + another))
     if again.lower() == "y":
         add_pw()
@@ -88,7 +122,7 @@ def edit_pw():
     list_pw[index].remove(list_pw[index][-1])
     list_pw[index].append(replace_encoded_pw.decode())
 
-    # Return to home or repeat
+    # Return to Start Menu or repeat
     again = str(input(line + mode + another))
     if again.lower() == "y":
         edit_pw()
@@ -114,7 +148,7 @@ def del_pw():
     elif sure.lower() == "n":
         start()
 
-    # Return to home or repeat
+    # Return to Start Menu or repeat
     again = str(input(line + mode + another))
     if again.lower() == "y":
         del_pw()
@@ -135,11 +169,11 @@ def show_pw():
 
     # Similar to encrypting, the decrypted password needs to be stored in a new variable
     decoded_pw = fernet.decrypt(list_pw[index][-1])
-    # Remember to decode the new variable to remove the leading b value
-    # This changes b'variable' to 'variable'
+    # Remember to decode the new variable to convert from BITS datatype to STRING
+    # This removes the leading b value changing b'variable' to 'variable'
     print(decoded_pw.decode())
 
-    # Return to home or repeat
+    # Return to Start Menu or repeat
     again = str(input(line + mode + another))
     if again.lower() == "y":
         show_pw()
