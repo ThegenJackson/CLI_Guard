@@ -18,6 +18,11 @@
 import cryptography
 from cryptography.fernet import Fernet
 
+# DateTime used when editing passwords or adding new passwords
+from datetime import date
+
+
+today = date.today()
 
 #Generate the Fernet encryption key
 # Required for encryption and decryption with Fernet as per documentation
@@ -28,7 +33,9 @@ fernet = Fernet(key)
 list_pw = []
 
 # Formatting terminal output
-splash = """                                           
+# Not all message-pieces should be kept in a list
+# Overuse of lists for message-pieces makes creating messages confusing
+splash = f"""                                           
    SSSSSSSSSSSSSSS      PPPPPPPPPPPPPPPPP       MMMMMMMM               MMMMMMMM
  SS:::::::::::::::S     P::::::::::::::::P      M:::::::M             M:::::::M
 S:::::SSSSSS::::::S     P::::::PPPPPP:::::P     M::::::::M           M::::::::M
@@ -46,13 +53,12 @@ S::::::SSSSSS:::::S     P::::::::P              M::::::M               M::::::M
 S:::::::::::::::SS      P::::::::P              M::::::M               M::::::M
  SSSSSSSSSSSSSSS        PPPPPPPPPP              MMMMMMMM               MMMMMMMM
 
-                            Simple Password Manager                                                                 
+                            Simple Password Manager                                                              
 """
 line = "##################################################################################\n"
 yes_no = "Type Y for Yes or N for No\n(y/n)\n"
 another = f" another password?\n{yes_no}"
-select = "Select a password to "
-typing = " by typing the index of the account: "
+select = ["Select a password to ", " by typing the index of the account: "]
 done = ["ed password for ", "...\n"]
 mode = ""
 
@@ -90,7 +96,7 @@ def add_pw():
     # Otherwise it saves to the list as b'var' instead of 'var'
     # Decode is different to Decrypt, remember to read the docs more
     # The encoded pw is BITS datatype once encrypted and needs it's own variable
-    list_pw.append([new_acct, new_username, encoded_pw.decode()])
+    list_pw.append([new_acct, new_username, encoded_pw.decode(), today])
 
     # Return to Start Menu or repeat
     again = str(input( line + mode + done[0] + new_acct + done[1] + mode + another ))
@@ -107,10 +113,10 @@ def edit_pw():
     # List contents of encrypted passwords list in human-readable format
     place = 1
     for i in list_pw:
-        print(place, i[0], i[-1])
+        print(place, " | ", i[0], " | ", i[-2], " | ", i[-1])
         place += 1
 
-    index = int(int(input(line + select + mode.lower() + typing)) - 1)
+    index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
 
     replace_pw = str(input("New Password: "))
     # User input value for replace_pw is encoded then saved to a new variable
@@ -120,8 +126,8 @@ def edit_pw():
     # Then append the decoded variable to the relevant sub-list
     # Remember the value needs to be decoded before adding to the encrypted passwords list
     # This converts the values datatype from BITS to STRING
-    list_pw[index].remove(list_pw[index][-1])
-    list_pw[index].append(replace_encoded_pw.decode())
+    list_pw[index].remove(list_pw[index][-2:])
+    list_pw[index].append([replace_encoded_pw.decode(), today])
 
     # Return to Start Menu or repeat
     again = str(input( line + mode + done[0] + list_pw[index][0] + done[1] + mode + another ))
@@ -138,10 +144,10 @@ def del_pw():
     # List contents of encrypted passwords list in human-readable format
     place = 1
     for i in list_pw:
-        print(place, i[0], i[-1])
+        print(place, " | ", i[0], " | ", i[-2], " | ", i[-1])
         place += 1
 
-    index = int(int(input(line + select + mode.lower() + typing)) - 1)
+    index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
 
     # Check if the user wants to delete the chosen pw
     sure = str(input(f"{line}Are you sure you want to delete the password for {list_pw[index][0]} ?\n{yes_no}"))
@@ -151,7 +157,9 @@ def del_pw():
         start()
 
     # Return to Start Menu or repeat
-    again = str(input( line + mode + done[0] + list_pw[index][0] + done[1] + mode + another ))
+    # Success statement needs to slice first letter off from done[0]
+    # Other funcs incl edit, add, drecypted so deleteed is wrong
+    again = str(input( line + mode + (done[0])[1:] + list_pw[index][0] + done[1] + mode + another ))
     if again.lower() == "y":
         del_pw()
     else:
@@ -165,16 +173,16 @@ def show_pw():
     # List contents of encrypted passwords list in human-readable format
     place = 1
     for i in list_pw:
-        print(place, i[0], i[-1])
+        print(place, " | ", i[0], " | ", i[-2], " | ", i[-1])
         place += 1
 
-    index = int(int(input(line + select + mode.lower() + typing)) - 1)
+    index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
 
     # Similar to encrypting, the decrypted password needs to be stored in a new variable
-    decoded_pw = fernet.decrypt(list_pw[index][-1])
+    decoded_pw = fernet.decrypt(list_pw[index][-2])
     # Remember to decode the new variable to convert from BITS datatype to STRING
     # This removes the leading b value changing b'variable' to 'variable'
-    print(decoded_pw.decode())
+    print(f"\n{decoded_pw.decode()}\n")
 
     # Return to Start Menu or repeat
     again = str(input( line + mode + done[0] + list_pw[index][0] + done[1] + mode + another ))
