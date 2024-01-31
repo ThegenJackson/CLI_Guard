@@ -1,3 +1,6 @@
+# Import SQLite library
+import sqlite3
+
 # Import Python Cryptography library and Fernet module according to documentation
 import cryptography
 from cryptography.fernet import Fernet
@@ -10,8 +13,20 @@ today = date.today()
 
 #Generate the Fernet encryption key
 # Required for encryption and decryption with Fernet as per documentation
+# Since the Encryption Key is generated upon each session,
+# The session's key is converted into a STRING from BITS
+# Then the string is encrypted and written to the SQLite database
+# For each password created or added
+# We can then decrypt the Encryption key saved with that record to 
+# Decrypt and decode the password
 key = Fernet.generate_key()
 fernet = Fernet(key)
+session_pw_key = fernet.encrypt((key.decode()).encode())
+
+# Connet to database file included in Simple Program Manager
+sql_connection = sqlite3.connect('SPMdb.db')
+# Create a cursor - read more docs on this
+sql_cursor = sql_connection.cursor()
 
 # Create empty list of encrypted passwords
 list_pw = []
@@ -37,12 +52,13 @@ S::::::SSSSSS:::::S     P::::::::P              M::::::M               M::::::M
 S:::::::::::::::SS      P::::::::P              M::::::M               M::::::M
  SSSSSSSSSSSSSSS        PPPPPPPPPP              MMMMMMMM               MMMMMMMM
 
-                            Simple Password Manager                                                              
+                            Simple Password Manager                                                           
 """
 line = "##################################################################################\n"
 yes_no = "Type Y for Yes or N for No\n(y/n)\n"
 another = f" another password?\n{yes_no}"
 select = ["Select a password to ", " by typing the index of the account: "]
+doing = "ing password..."
 done = ["ed password for ", "...\n"]
 mode = ""
 
@@ -67,20 +83,26 @@ def start():
 
 
 # User inputs account, username and password
-# Password is encrypted then added to the encrypted passwords list
+# Password is encrypted then added to the encrypted passwords table
 def add_pw():
     mode = "Add"   
     new_acct = str(input("Account: "))
     new_username = str(input("Username: "))
     new_pw = str(input("Password: "))
+    
+    print(mode + doing)
     # User inputted value for new_pw is encoded then saved to a new variable per documentation
     encoded_pw = fernet.encrypt(new_pw.encode())
-    # The variable needs var.decode() when adding to the encrypted passwords list
+    # The variable needs var.decode() when adding to the encrypted passwords table
     # This converts the values datatype from BITS to STRING
     # Otherwise it saves to the list as b'var' instead of 'var'
     # Decode is different to Decrypt, remember to read the docs more
     # The encoded pw is BITS datatype once encrypted and needs it's own variable
-    list_pw.append([new_acct, new_username, encoded_pw.decode(), today])
+    sql_cursor.execute(f"""
+                       INSERT INTO passwords 
+                       VALUES('{new_acct}','{new_username}','{encoded_pw.decode()}','{session_pw_key.decode()}','{today}');
+                       """)
+    sql_connection.commit()
 
     # Return to Start Menu or repeat
     again = str(input( line + mode + done[0] + new_acct + done[1] + mode + another ))
@@ -90,28 +112,47 @@ def add_pw():
         start()
 
 
-# Edit a password from the encrypted passwords list based on it's index
+# Edit a password from the encrypted passwords table based on it's index
 def edit_pw():
     mode = "Edit"
     print(line)
-    # List contents of encrypted passwords list in human-readable format
+
+    # Query the passwords table and insert all into list_pw ordered by account name
+    sql_cursor.execute("""
+                       SELECT * 
+                       FROM passwords 
+                       ORDER BY account ASC;
+                       """)
+    list_pw = sql_cursor.fetchall()
+
+    # Loop through the contents of list_pw in human-readable format
     place = 1
     for i in list_pw:
-        print(place, " | ", i[0], " | ", i[-2], " | ", i[-1])
+        print(place, " | ", i[0], " | ", i[-3], " | ", i[-1])
         place += 1
 
+    # User chooses a record that corresponds with record row when ORDER BY account ASC
     index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
 
+    # Before updating the password we need to save the returned account and username for the update statement
+    # Ran into errors when using list_pw[index][1 or 0] directly in the SQLite update statement
+    acct = str(list_pw[index][0])
+    usr = str(list_pw[index][1])
+    
     replace_pw = str(input("New Password: "))
+    print(mode + doing)
     # User input value for replace_pw is encoded then saved to a new variable
     replace_encoded_pw = fernet.encrypt(replace_pw.encode())
-    # Issues arise when assigning the value directly to the sub-list index
-    # To avoid this we first remove the last value in the relevant sub-list
-    # Then append the decoded variable to the relevant sub-list
-    # Remember the value needs to be decoded before adding to the encrypted passwords list
+    # Remember the new variable needs to be DECODED before adding to the encrypted passwords table
     # This converts the values datatype from BITS to STRING
-    list_pw[index].remove(list_pw[index][-2:])
-    list_pw[index].append([replace_encoded_pw.decode(), today])
+    sql_cursor.execute(f"""
+                       UPDATE passwords 
+                       SET password = '{replace_encoded_pw.decode()}', 
+                       last_modified = '{today}' 
+                       WHERE account = '{acct}' 
+                       AND username = '{usr}';
+                       """)
+    sql_connection.commit()
 
     # Return to Start Menu or repeat
     again = str(input( line + mode + done[0] + list_pw[index][0] + done[1] + mode + another ))
@@ -121,49 +162,79 @@ def edit_pw():
         start()
 
 
-# Remove a password from the encrypted passwords list based on it's index
+# Remove a password from the encrypted passwords table based on it's index
 def del_pw():
     mode = "Delete"
     print(line)
-    # List contents of encrypted passwords list in human-readable format
+
+    # Query the passwords table and insert all into list_pw ordered by account name
+    sql_cursor.execute("""
+                       SELECT * 
+                       FROM passwords 
+                       ORDER BY account ASC;
+                       """)
+    list_pw = sql_cursor.fetchall()
+
+    # Loop through the contents of list_pw in human-readable format
     place = 1
     for i in list_pw:
-        print(place, " | ", i[0], " | ", i[-2], " | ", i[-1])
+        print(place, " | ", i[0], " | ", i[-3], " | ", i[-1])
         place += 1
 
     index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
 
+    # Before deleting the password we need to save the returned account and username for the delete statement
+    acct = str(list_pw[index][0])
+    usr = str(list_pw[index][1])
+
     # Check if the user wants to delete the chosen pw
     sure = str(input(f"{line}Are you sure you want to delete the password for {list_pw[index][0]} ?\n{yes_no}"))
     if sure.lower() == "y":
-        list_pw.remove(list_pw[index])
+        # Success statement needs to slice first letter off mode
+        print(mode[:-1] + doing)
+        sql_cursor.execute(f"""
+                           DELETE FROM passwords 
+                           WHERE account = '{acct}' 
+                           AND username = '{usr}';
+                           """)
+        sql_connection.commit()
     elif sure.lower() == "n":
         start()
 
     # Return to Start Menu or repeat
-    # Success statement needs to slice first letter off from done[0]
+    # Success statement needs to slice first letter off mode
     # Other funcs incl edit, add, drecypted so deleteed is wrong
-    again = str(input( line + mode + (done[0])[1:] + list_pw[index][0] + done[1] + mode + another ))
+    again = str(input( line + mode[:-1] + done[0] + list_pw[index][0] + done[1] + mode + another ))
     if again.lower() == "y":
         del_pw()
     else:
         start()
 
 
-# Choose a password to display based on it's index in the encrypted passwords list
+# Choose a password to display based on it's index in the encrypted passwords table
 def show_pw():
     mode = "Decrypt"
     print(line)
-    # List contents of encrypted passwords list in human-readable format
+
+    # Query the passwords table and insert all into list_pw ordered by account name
+    sql_cursor.execute("""
+                       SELECT * 
+                       FROM passwords 
+                       ORDER BY account ASC;
+                       """)
+    list_pw = sql_cursor.fetchall()
+
+    # Loop through the contents of list_pw in human-readable format
     place = 1
     for i in list_pw:
-        print(place, " | ", i[0], " | ", i[-2], " | ", i[-1])
+        print(place, " | ", i[0], " | ", i[-3], " | ", i[-1])
         place += 1
 
     index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
 
-    # Similar to encrypting, the decrypted password needs to be stored in a new variable
-    decoded_pw = fernet.decrypt(list_pw[index][-2])
+    print(mode + doing)
+    # Decrypted password needs to be saved to its own variable
+    decoded_pw = fernet.decrypt(list_pw[index][-3])
     # Remember to decode the new variable to convert from BITS datatype to STRING
     # This removes the leading b value changing b'variable' to 'variable'
     print(f"\n{decoded_pw.decode()}\n")
@@ -174,6 +245,7 @@ def show_pw():
         show_pw()
     else:
         start()
+
 
 # Start the CLI app
 start()
