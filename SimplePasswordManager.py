@@ -1,19 +1,3 @@
-# ###########################################################################
-#                          Author: Thegen Jackson
-# ###########################################################################
-#   Document design decisions on relevant Confluence page
-#   - Update Confluence to link to all relevant Docs needed
-#   - Decided to use Agile development framework prioritizing function first,
-#      documentation to follow
-#   - Decided to use SQLite over MySQL due to SQLite being more lightweight
-#      and restricted to only 1 user
-#   - Decided to split the app into CLI app as well as GUI app
-#   - Terminal app to be saved as SPM.py, execute at CLI with "python SPM.py"
-#   - GUI app to use Tkinter and to be packed into .exe
-#   - GUI to be saved as SimplePasswordManager.exe
-#   - Both CLI and GUI apps to access same DB
-# ###########################################################################
-
 # Import Python Cryptography library and Fernet module according to documentation
 import cryptography
 from cryptography.fernet import Fernet
