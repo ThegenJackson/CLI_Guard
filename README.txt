@@ -20,3 +20,6 @@ Libraries and Packages used:
 	https://www.sqlite.org/docs.html
 	https://docs.python.org/3/library/sqlite3.html
 	https://sqlitestudio.pl/
+-	PyInstaller
+	https://pyinstaller.org/en/stable/
+	### python -m PyInstaller <path\script.py>
