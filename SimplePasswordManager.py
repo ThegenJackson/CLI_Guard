@@ -8,13 +8,11 @@
 #   - Decided to use SQLite over MySQL due to SQLite being more lightweight
 #      and restricted to only 1 user
 #   - Decided to split the app into CLI app as well as GUI app
-#   - Terminal app to be saved as SPM.py execute at CLI with "python SPM.py"
+#   - Terminal app to be saved as SPM.py, execute at CLI with "python SPM.py"
 #   - GUI app to use Tkinter and to be packed into .exe
+#   - GUI to be saved as SimplePasswordManager.exe
 #   - Both CLI and GUI apps to access same DB
 # ###########################################################################
-
-# Import tkinter - read more docs
-import tkinter as tk
 
 # Import Python Cryptography library and Fernet module according to documentation
 import cryptography
@@ -51,14 +49,15 @@ S:::::::::::::::SS      P::::::::P              M::::::M               M::::::M
                             Simple Password Manager                                                                 
 """
 line = "##################################################################################\n"
-yes_no = " Type Y for Yes or N for No\n(y/n)\n"
+yes_no = "Type Y for Yes or N for No\n(y/n)\n"
 another = f" another password?\n{yes_no}"
 select = "Select a password to "
 typing = " by typing the index of the account: "
+done = ["ed password for ", "...\n"]
 mode = ""
 
 
-# Program Start - User chooses function
+# Display Splash and Start Menu to CLI - User chooses function
 def start():
     print(f"{line + splash + line}Select an option:\n1. Create new password\n2. Edit a password\n3. Delete a password\n4. Display a password\n5. Exit\n{line}")
     choice = input()
@@ -77,13 +76,14 @@ def start():
         start()
 
 
-# User inputs a password which is encrypted then added to the encrypted passwords list
+# User inputs account, username and password
+# Password is encrypted then added to the encrypted passwords list
 def add_pw():
-    mode = "Add"    
+    mode = "Add"   
     new_acct = str(input("Account: "))
     new_username = str(input("Username: "))
     new_pw = str(input("Password: "))
-    # User input value for new_pw is encoded then saved to a new variable
+    # User inputted value for new_pw is encoded then saved to a new variable per documentation
     encoded_pw = fernet.encrypt(new_pw.encode())
     # The variable needs var.decode() when adding to the encrypted passwords list
     # This converts the values datatype from BITS to STRING
@@ -93,7 +93,7 @@ def add_pw():
     list_pw.append([new_acct, new_username, encoded_pw.decode()])
 
     # Return to Start Menu or repeat
-    again = str(input(line + mode + another))
+    again = str(input( line + mode + done[0] + new_acct + done[1] + mode + another ))
     if again.lower() == "y":
         add_pw()
     else:
@@ -104,9 +104,10 @@ def add_pw():
 def edit_pw():
     mode = "Edit"
     print(line)
+    # List contents of encrypted passwords list in human-readable format
     place = 1
     for i in list_pw:
-        print(place, i[0])
+        print(place, i[0], i[-1])
         place += 1
 
     index = int(int(input(line + select + mode.lower() + typing)) - 1)
@@ -123,7 +124,7 @@ def edit_pw():
     list_pw[index].append(replace_encoded_pw.decode())
 
     # Return to Start Menu or repeat
-    again = str(input(line + mode + another))
+    again = str(input( line + mode + done[0] + list_pw[index][0] + done[1] + mode + another ))
     if again.lower() == "y":
         edit_pw()
     else:
@@ -134,22 +135,23 @@ def edit_pw():
 def del_pw():
     mode = "Delete"
     print(line)
+    # List contents of encrypted passwords list in human-readable format
     place = 1
     for i in list_pw:
-        print(place, i[0])
+        print(place, i[0], i[-1])
         place += 1
 
     index = int(int(input(line + select + mode.lower() + typing)) - 1)
 
     # Check if the user wants to delete the chosen pw
-    sure = str(input(f"{line}Are you sure you want to delete the password for {list_pw[index][0]} ?{yes_no}"))
+    sure = str(input(f"{line}Are you sure you want to delete the password for {list_pw[index][0]} ?\n{yes_no}"))
     if sure.lower() == "y":
         list_pw.remove(list_pw[index])
     elif sure.lower() == "n":
         start()
 
     # Return to Start Menu or repeat
-    again = str(input(line + mode + another))
+    again = str(input( line + mode + done[0] + list_pw[index][0] + done[1] + mode + another ))
     if again.lower() == "y":
         del_pw()
     else:
@@ -160,9 +162,10 @@ def del_pw():
 def show_pw():
     mode = "Decrypt"
     print(line)
+    # List contents of encrypted passwords list in human-readable format
     place = 1
     for i in list_pw:
-        print(place, i[0])
+        print(place, i[0], i[-1])
         place += 1
 
     index = int(int(input(line + select + mode.lower() + typing)) - 1)
@@ -174,19 +177,11 @@ def show_pw():
     print(decoded_pw.decode())
 
     # Return to Start Menu or repeat
-    again = str(input(line + mode + another))
+    again = str(input( line + mode + done[0] + list_pw[index][0] + done[1] + mode + another ))
     if again.lower() == "y":
         show_pw()
     else:
         start()
 
-# Temp run app in terminal while figuring out basic tkinter
-# Possiblly make a cli version of app and gui? Give the user the option ?
+# Start the CLI app
 start()
-
-# # Create the root frame window thing with tkinter and initialize the app - read more docs
-# root = tk.Tk()
-# root.title("Simple Password Manager")
-
-# # Run the app
-# root.mainloop()
