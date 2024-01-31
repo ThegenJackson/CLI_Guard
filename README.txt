@@ -23,3 +23,5 @@ Libraries and Packages used:
 -	PyInstaller
 	https://pyinstaller.org/en/stable/
 	### python -m PyInstaller <path\script.py>
+-	Tabulate
+	https://pypi.org/project/tabulate/

@@ -5,6 +5,9 @@ import sqlite3
 import cryptography
 from cryptography.fernet import Fernet
 
+# Tabulate is used to output list_pw data to terminal in grid format
+from tabulate import tabulate
+
 # DateTime used when editing passwords or adding new passwords
 from datetime import date
 
@@ -136,11 +139,21 @@ def edit_pw():
 
     # Check if list_pw is empty to avoid app crash when input expects user to give index of record that exists
     if list_pw != []:
-        # Loop through the contents of list_pw in human-readable format
+        # Create intermediary lists to display data to terminal with Tabulate
+        list_table = []
+        list_indexed = []
         place = 1
+        # Loop through the contents of list_pw to place in list_table since Tabulate won't allow to
+        # Omit certain fields, this allows us to use the returned data as vairables without displaying in output
         for i in list_pw:
-            print(place, " | ", i[0], " | ", i[-3], " | ", i[-1])
+            list_table.append([i[0], i[-3], i[-1]])
+            list_indexed.append(place)
             place += 1
+        print(tabulate(list_table, headers=["Account", "Password", "Last Modified"], showindex=list_indexed))
+
+        # Dump intermediary lists after use
+        list_table = []
+        list_indexed = []
 
         # User chooses a record that corresponds with record row when ORDER BY account ASC
         index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
@@ -195,11 +208,21 @@ def del_pw():
 
     # Check if list_pw is empty to avoid app crash when input expects user to give index of record that exists
     if list_pw != []:
-        # Loop through the contents of list_pw in human-readable format
+        # Create intermediary lists to display data to terminal with Tabulate
+        list_table = []
+        list_indexed = []
         place = 1
+        # Loop through the contents of list_pw to place in list_table since Tabulate won't allow to
+        # Omit certain fields, this allows us to use the returned data as vairables without displaying in output
         for i in list_pw:
-            print(place, " | ", i[0], " | ", i[-3], " | ", i[-1])
+            list_table.append([i[0], i[-3], i[-1]])
+            list_indexed.append(place)
             place += 1
+        print(tabulate(list_table, headers=["Account", "Password", "Last Modified"], showindex=list_indexed))
+
+        # Dump intermediary lists after use
+        list_table = []
+        list_indexed = []
 
         index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
 
@@ -252,11 +275,21 @@ def show_pw():
 
     # Check if list_pw is empty to avoid app crash when input expects user to give index of record that exists
     if list_pw != []:
-        # Loop through the contents of list_pw in human-readable format
+        # Create intermediary lists to display data to terminal with Tabulate
+        list_table = []
+        list_indexed = []
         place = 1
+        # Loop through the contents of list_pw to place in list_table since Tabulate won't allow to
+        # Omit certain fields, this allows us to use the returned data as vairables without displaying in output
         for i in list_pw:
-            print(place, " | ", i[0], " | ", i[-3], " | ", i[-1])
+            list_table.append([i[0], i[-3], i[-1]])
+            list_indexed.append(place)
             place += 1
+        print(tabulate(list_table, headers=["Account", "Password", "Last Modified"], showindex=list_indexed))
+
+        # Dump intermediary lists after use
+        list_table = []
+        list_indexed = []
 
         index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
 
