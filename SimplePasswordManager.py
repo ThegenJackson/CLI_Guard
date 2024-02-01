@@ -5,6 +5,9 @@ import sqlite3
 import cryptography
 from cryptography.fernet import Fernet
 
+# Tabulate is used to output list_pw data to terminal in grid format
+from tabulate import tabulate
+
 # DateTime used when editing passwords or adding new passwords
 from datetime import date
 
@@ -63,23 +66,38 @@ empty_list = ["There are no passwords to ", "...\nReturn to Start Menu?\n"]
 mode = ""
 
 
+
 # Display Splash and Start Menu to CLI - User chooses function
 def start():
-    print(f"{line + splash + line}Select an option:\n1. Create new password\n2. Edit a password\n3. Delete a password\n4. Display a password\n5. Exit\n{line}")
-    choice = input()
-    if choice == '1':
-        add_pw()
-    elif choice == '2':
-        edit_pw()
-    elif choice == '3':
-        del_pw()
-    elif choice == '4':
-        show_pw()
-    elif choice == '5':
-        exit()
-    else:
-        print(f"{line}Choose by typing a number between 1 and 5")
-        start()
+    # Define function index, human-readable text, function name
+    funcs = [
+        (1, "Create new password", add_pw),
+        (2, "Edit a password", edit_pw),
+        (3, "Delete a password", del_pw),
+        (4, "Display a password", show_pw),
+        (5, "Exit", exit)
+    ]
+
+    # Print CLI Splash for program Start
+    print( line + splash + line )
+    # List available functions by human-readable index
+    for i in funcs:
+        print(i[0], i[1])
+
+    try:
+        # User chooses function, later converted to INT for comparison
+        # Choice variable is not set as INT initially to avoid TRY/EXCEPT issues encounted
+        choice = input(f"Select an option by typing {funcs[0][0]}-{funcs[-1][0]}:\n")
+        # Loop through funcs list, skipping where function != chosen
+        for i in funcs:
+            if i[0] != int(choice):
+                continue
+            else:
+                # Execute chosen function
+                i[-1]()
+    # Try/Except handles ValueError raised when user inputs anything other than an INT
+    except:
+        print(f'You entered {choice}, which is not a valid selection.')
 
 
 # User inputs account, username and password
@@ -93,7 +111,7 @@ def add_pw():
     if new_acct != "" and new_username != "" and new_pw != "":
         print(mode + doing)
         # User inputted value for new_pw is encoded then saved to a new variable per documentation
-        encoded_pw = fernet.encrypt(new_pw.encode())
+        encrypted_pw = fernet.encrypt(new_pw.encode())
         # The variable needs var.decode() when adding to the encrypted passwords table
         # This converts the values datatype from BITS to STRING
         # Otherwise it saves to the list as b'var' instead of 'var'
@@ -104,7 +122,7 @@ def add_pw():
                         VALUES(
                            '{new_acct}',
                            '{new_username}',
-                           '{encoded_pw.decode()}',
+                           '{encrypted_pw.decode()}',
                            '{session_pw_key.decode()}',
                            '{today}');
                         """)
@@ -136,11 +154,18 @@ def edit_pw():
 
     # Check if list_pw is empty to avoid app crash when input expects user to give index of record that exists
     if list_pw != []:
-        # Loop through the contents of list_pw in human-readable format
+        # Create intermediary list to display data to terminal with Tabulate
+        list_table = []
         place = 1
+        # Loop through the contents of list_pw to place in list_table since Tabulate won't allow to
+        # Omit certain fields, this allows us to use the returned data as vairables without displaying in output
         for i in list_pw:
-            print(place, " | ", i[0], " | ", i[-3], " | ", i[-1])
+            list_table.append([place, i[0], i[-3], i[-1]])
             place += 1
+        print(tabulate(list_table, headers=["Index", "Account", "Password", "Last Modified"], numalign="center"))
+
+        # Dump intermediary list after use
+        list_table = []
 
         # User chooses a record that corresponds with record row when ORDER BY account ASC
         index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
@@ -149,20 +174,22 @@ def edit_pw():
         # Ran into errors when using list_pw[index][1 or 0] directly in the SQLite update statement
         acct = str(list_pw[index][0])
         usr = str(list_pw[index][1])
+        old_pw = str(list_pw[index][-3])
         
         replace_pw = str(input("New Password: "))
         print(mode + doing)
         # User input value for replace_pw is encoded then saved to a new variable
-        replace_encoded_pw = fernet.encrypt(replace_pw.encode())
+        replace_encrypted_pw = fernet.encrypt(replace_pw.encode())
         # Remember the new variable needs to be DECODED before adding to the encrypted passwords table
         # This converts the values datatype from BITS to STRING
         sql_cursor.execute(f"""
                         UPDATE passwords 
-                        SET password = '{replace_encoded_pw.decode()}', 
+                        SET password = '{replace_encrypted_pw.decode()}', 
                         pw_key = '{session_pw_key.decode()}',
                         last_modified = '{today}' 
                         WHERE account = '{acct}' 
-                        AND username = '{usr}';
+                        AND username = '{usr}'
+                        AND password = '{old_pw}';
                         """)
         sql_connection.commit()
 
@@ -195,17 +222,25 @@ def del_pw():
 
     # Check if list_pw is empty to avoid app crash when input expects user to give index of record that exists
     if list_pw != []:
-        # Loop through the contents of list_pw in human-readable format
+        # Create intermediary list to display data to terminal with Tabulate
+        list_table = []
         place = 1
+        # Loop through the contents of list_pw to place in list_table since Tabulate won't allow to
+        # Omit certain fields, this allows us to use the returned data as vairables without displaying in output
         for i in list_pw:
-            print(place, " | ", i[0], " | ", i[-3], " | ", i[-1])
+            list_table.append([place, i[0], i[-3], i[-1]])
             place += 1
+        print(tabulate(list_table, headers=["Index", "Account", "Password", "Last Modified"], numalign="center"))
+
+        # Dump intermediary list after use
+        list_table = []
 
         index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
 
         # Before deleting the password we need to save the returned account and username for the delete statement
         acct = str(list_pw[index][0])
         usr = str(list_pw[index][1])
+        old_pw = str(list_pw[index][-3])
 
         # Check if the user wants to delete the chosen pw
         sure = str(input(f"{line}Are you sure you want to delete the password for {list_pw[index][0]} ?\n{yes_no}"))
@@ -215,7 +250,8 @@ def del_pw():
             sql_cursor.execute(f"""
                             DELETE FROM passwords 
                             WHERE account = '{acct}' 
-                            AND username = '{usr}';
+                            AND username = '{usr}'
+                            AND password = '{old_pw}';
                             """)
             sql_connection.commit()
         elif sure.lower() == "n":
@@ -252,11 +288,18 @@ def show_pw():
 
     # Check if list_pw is empty to avoid app crash when input expects user to give index of record that exists
     if list_pw != []:
-        # Loop through the contents of list_pw in human-readable format
+        # Create intermediary list to display data to terminal with Tabulate
+        list_table = []
         place = 1
+        # Loop through the contents of list_pw to place in list_table since Tabulate won't allow to
+        # Omit certain fields, this allows us to use the returned data as vairables without displaying in output
         for i in list_pw:
-            print(place, " | ", i[0], " | ", i[-3], " | ", i[-1])
+            list_table.append([place, i[0], i[-3], i[-1]])
             place += 1
+        print(tabulate(list_table, headers=["Index", "Account", "Password", "Last Modified"], numalign="center"))
+
+        # Dump intermediary list after use
+        list_table = []
 
         index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
 
