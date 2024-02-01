@@ -30,9 +30,8 @@ sql_connection = sqlite3.connect('SPMdb.db')
 # Create a cursor - read more docs on this
 sql_cursor = sql_connection.cursor()
 
-# Create empty list of encrypted passwords and persistent key
+# Create empty list of encrypted passwords
 list_pw = []
-list_keys = []
 
 # Formatting terminal output
 # Not all message-pieces should be kept in a list
@@ -64,7 +63,6 @@ select = ["Select a password to ", " by typing the index of the account: "]
 doing = "ing password..."
 done = ["ed password for ", "...\n"]
 empty_list = ["There are no passwords to ", "...\nReturn to Start Menu?\n"]
-create_key = "                         Create a new Persistent Key:\n"
 mode = ""
 
 
@@ -86,66 +84,20 @@ def start():
     for i in funcs:
         print(i[0], i[1])
 
-    # User chooses function converted to INT for comparison
-    choice = int(input("Select an option:\n"))
-
-    # Loop through funcs list, skipping where function != chosen
-    for i in funcs:
-        if i[0] != choice:
-            continue
-        else:
-            # Execute chosen function
-            i[-1]()
-
-
-# Check if persistent_key exists - needed to decrypt session_pw_key in later sessions
-# The persistent_key is used to decrypt encrypted Fernet Keys in later sessions
-# The persistent_key is constant to allow easy decryption of the Fernet Keys generated in each new session
-def checks():
-    # Query the keys table and return the persistent key
-    # Save query results in empty list_keys
-    sql_cursor.execute("""
-                       SELECT * 
-                       FROM keys;
-                       """)
-    list_keys = sql_cursor.fetchone()
-    # Check a real value is returned
-    if list_keys is None:
-        add_key()
-    else:
-        start()
-
-
-# Add persistent_key to database
-def add_key():
-    # Double check the SQL query returns a None type before
-    # Executing INSERT statement as only 1 persistent_key should exist
-    # If statement reversed from checks() function as triple-check measure
-    # Query the keys table and return the persistent key
-    sql_cursor.execute("""
-                       SELECT * 
-                       FROM keys;
-                       """)
-    list_keys = sql_cursor.fetchone()
-    # Check a real value is returned
-    # If statement reversed from checks() function as triple-check measure
-    if list_keys is not None:
-        start()
-    else:
-        # User inputs persistent_key STRING value
-        persistent_key = str(input( splash + create_key ))
-        # Insert persistent_key value into keys table
-        sql_cursor.execute(f"""
-                        INSERT INTO keys 
-                        VALUES('{persistent_key}');
-                        """)
-        sql_connection.commit()
-        # Perform required checks before program Start
-        checks()
-
-
-def edit_key():
-    print("more dev work needed")
+    try:
+        # User chooses function, later converted to INT for comparison
+        # Choice variable is not set as INT initially to avoid TRY/EXCEPT issues encounted
+        choice = input(f"Select an option by typing {funcs[0][0]}-{funcs[-1][0]}:\n")
+        # Loop through funcs list, skipping where function != chosen
+        for i in funcs:
+            if i[0] != int(choice):
+                continue
+            else:
+                # Execute chosen function
+                i[-1]()
+    # Try/Except handles ValueError raised when user inputs anything other than an INT
+    except:
+        print(f'You entered {choice}, which is not a valid selection.')
 
 
 # User inputs account, username and password
@@ -159,7 +111,7 @@ def add_pw():
     if new_acct != "" and new_username != "" and new_pw != "":
         print(mode + doing)
         # User inputted value for new_pw is encoded then saved to a new variable per documentation
-        encoded_pw = fernet.encrypt(new_pw.encode())
+        encrypted_pw = fernet.encrypt(new_pw.encode())
         # The variable needs var.decode() when adding to the encrypted passwords table
         # This converts the values datatype from BITS to STRING
         # Otherwise it saves to the list as b'var' instead of 'var'
@@ -170,7 +122,7 @@ def add_pw():
                         VALUES(
                            '{new_acct}',
                            '{new_username}',
-                           '{encoded_pw.decode()}',
+                           '{encrypted_pw.decode()}',
                            '{session_pw_key.decode()}',
                            '{today}');
                         """)
@@ -222,20 +174,22 @@ def edit_pw():
         # Ran into errors when using list_pw[index][1 or 0] directly in the SQLite update statement
         acct = str(list_pw[index][0])
         usr = str(list_pw[index][1])
+        old_pw = str(list_pw[index][-3])
         
         replace_pw = str(input("New Password: "))
         print(mode + doing)
         # User input value for replace_pw is encoded then saved to a new variable
-        replace_encoded_pw = fernet.encrypt(replace_pw.encode())
+        replace_encrypted_pw = fernet.encrypt(replace_pw.encode())
         # Remember the new variable needs to be DECODED before adding to the encrypted passwords table
         # This converts the values datatype from BITS to STRING
         sql_cursor.execute(f"""
                         UPDATE passwords 
-                        SET password = '{replace_encoded_pw.decode()}', 
+                        SET password = '{replace_encrypted_pw.decode()}', 
                         pw_key = '{session_pw_key.decode()}',
                         last_modified = '{today}' 
                         WHERE account = '{acct}' 
-                        AND username = '{usr}';
+                        AND username = '{usr}'
+                        AND password = '{old_pw}';
                         """)
         sql_connection.commit()
 
@@ -286,6 +240,7 @@ def del_pw():
         # Before deleting the password we need to save the returned account and username for the delete statement
         acct = str(list_pw[index][0])
         usr = str(list_pw[index][1])
+        old_pw = str(list_pw[index][-3])
 
         # Check if the user wants to delete the chosen pw
         sure = str(input(f"{line}Are you sure you want to delete the password for {list_pw[index][0]} ?\n{yes_no}"))
@@ -295,7 +250,8 @@ def del_pw():
             sql_cursor.execute(f"""
                             DELETE FROM passwords 
                             WHERE account = '{acct}' 
-                            AND username = '{usr}';
+                            AND username = '{usr}'
+                            AND password = '{old_pw}';
                             """)
             sql_connection.commit()
         elif sure.lower() == "n":
@@ -374,4 +330,4 @@ def show_pw():
 
 
 # Start the CLI app
-checks()
+start()
