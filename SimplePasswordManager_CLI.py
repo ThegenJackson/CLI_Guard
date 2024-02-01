@@ -30,8 +30,9 @@ sql_connection = sqlite3.connect('SPMdb.db')
 # Create a cursor - read more docs on this
 sql_cursor = sql_connection.cursor()
 
-# Create empty list of encrypted passwords
+# Create empty list of encrypted passwords and persistent key
 list_pw = []
+list_keys = []
 
 # Formatting terminal output
 # Not all message-pieces should be kept in a list
@@ -63,26 +64,88 @@ select = ["Select a password to ", " by typing the index of the account: "]
 doing = "ing password..."
 done = ["ed password for ", "...\n"]
 empty_list = ["There are no passwords to ", "...\nReturn to Start Menu?\n"]
+create_key = "                         Create a new Persistent Key:\n"
 mode = ""
+
 
 
 # Display Splash and Start Menu to CLI - User chooses function
 def start():
-    print(f"{line + splash + line}Select an option:\n1. Create new password\n2. Edit a password\n3. Delete a password\n4. Display a password\n5. Exit\n{line}")
-    choice = input()
-    if choice == '1':
-        add_pw()
-    elif choice == '2':
-        edit_pw()
-    elif choice == '3':
-        del_pw()
-    elif choice == '4':
-        show_pw()
-    elif choice == '5':
-        exit()
+    # Define function index, human-readable text, function name
+    funcs = [
+        (1, "Create new password", add_pw),
+        (2, "Edit a password", edit_pw),
+        (3, "Delete a password", del_pw),
+        (4, "Display a password", show_pw),
+        (5, "Exit", exit)
+    ]
+
+    # Print CLI Splash for program Start
+    print( line + splash + line )
+    # List available functions by human-readable index
+    for i in funcs:
+        print(i[0], i[1])
+
+    # User chooses function converted to INT for comparison
+    choice = int(input("Select an option:\n"))
+
+    # Loop through funcs list, skipping where function != chosen
+    for i in funcs:
+        if i[0] != choice:
+            continue
+        else:
+            # Execute chosen function
+            i[-1]()
+
+
+# Check if persistent_key exists - needed to decrypt session_pw_key in later sessions
+# The persistent_key is used to decrypt encrypted Fernet Keys in later sessions
+# The persistent_key is constant to allow easy decryption of the Fernet Keys generated in each new session
+def checks():
+    # Query the keys table and return the persistent key
+    # Save query results in empty list_keys
+    sql_cursor.execute("""
+                       SELECT * 
+                       FROM keys;
+                       """)
+    list_keys = sql_cursor.fetchone()
+    # Check a real value is returned
+    if list_keys is None:
+        add_key()
     else:
-        print(f"{line}Choose by typing a number between 1 and 5")
         start()
+
+
+# Add persistent_key to database
+def add_key():
+    # Double check the SQL query returns a None type before
+    # Executing INSERT statement as only 1 persistent_key should exist
+    # If statement reversed from checks() function as triple-check measure
+    # Query the keys table and return the persistent key
+    sql_cursor.execute("""
+                       SELECT * 
+                       FROM keys;
+                       """)
+    list_keys = sql_cursor.fetchone()
+    # Check a real value is returned
+    # If statement reversed from checks() function as triple-check measure
+    if list_keys is not None:
+        start()
+    else:
+        # User inputs persistent_key STRING value
+        persistent_key = str(input( splash + create_key ))
+        # Insert persistent_key value into keys table
+        sql_cursor.execute(f"""
+                        INSERT INTO keys 
+                        VALUES('{persistent_key}');
+                        """)
+        sql_connection.commit()
+        # Perform required checks before program Start
+        checks()
+
+
+def edit_key():
+    print("more dev work needed")
 
 
 # User inputs account, username and password
@@ -311,4 +374,4 @@ def show_pw():
 
 
 # Start the CLI app
-start()
+checks()
