@@ -62,7 +62,8 @@ another = f" another password?\n{yes_no}"
 select = ["Select a password to ", " by typing the index of the account: "]
 doing = "ing password..."
 done = ["ed password for ", "...\n"]
-empty_list = ["There are no passwords to ", "...\nReturn to Start Menu?\n"]
+empty_list = ["There are no passwords to ", "...\n"]
+go_back = "Return to Start Menu?\n"
 mode = ""
 
 
@@ -84,20 +85,34 @@ def start():
     for i in funcs:
         print(i[0], i[1])
 
+    # TRY/EXCEPT handles if input is not INT
     try:
         # User chooses function, later converted to INT for comparison
         # Choice variable is not set as INT initially to avoid TRY/EXCEPT issues encounted
         choice = input(f"Select an option by typing {funcs[0][0]}-{funcs[-1][0]}:\n")
-        # Loop through funcs list, skipping where function != chosen
+        # Loop through funcs list then execute function where choice = function index in list
         for i in funcs:
             if i[0] != int(choice):
                 continue
             else:
                 # Execute chosen function
                 i[-1]()
+        # If this code block runs then the above IF statement didn't work so
+        # This handles when input is outside of list range
+        print( line + f'You entered {choice}, which is not a valid selection.')
+        home = str(input( go_back + yes_no ))
+        if home.lower() == "y":
+            start()
+        else:
+            exit()       
     # Try/Except handles ValueError raised when user inputs anything other than an INT
-    except:
+    except ValueError:
         print(f'You entered {choice}, which is not a valid selection.')
+        home = str(input( go_back + yes_no ))
+        if home.lower() == "y":
+            start()
+        else:
+            exit() 
 
 
 # User inputs account, username and password
@@ -200,7 +215,7 @@ def edit_pw():
         else:
             start()
     else:
-        home = str(input( empty_list[0] + mode.lower() + empty_list[1] + yes_no ))
+        home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + yes_no ))
         if home.lower() == "y":
             start()
         else:
@@ -266,7 +281,7 @@ def del_pw():
         else:
             start()
     else:
-        home = str(input( empty_list[0] + mode.lower() + empty_list[1] + yes_no ))
+        home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + yes_no ))
         if home.lower() == "y":
             start()
         else:
@@ -322,7 +337,7 @@ def show_pw():
         else:
             start()
     else:
-        home = str(input( empty_list[0] + mode.lower() + empty_list[1] + yes_no ))
+        home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + yes_no ))
         if home.lower() == "y":
             start()
         else:
