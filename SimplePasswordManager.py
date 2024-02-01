@@ -101,20 +101,10 @@ def start():
                     i[-1]()
         # This handles when input is outside of list range
         else:
-            print( line + f'You entered {choice}, which is not a valid selection.')
-            home = str(input( go_back + yes_no ))
-            if home.lower() == "y":
-                start()
-            else:
-                exit()       
+            home(choice)
     # Try/Except handles ValueError raised when user inputs anything other than an INT
     except ValueError:
-        print(f'You entered {choice}, which is not a valid selection.')
-        home = str(input( go_back + yes_no ))
-        if home.lower() == "y":
-            start()
-        else:
-            exit() 
+        home(choice)
 
 
 # User inputs account, username and password
@@ -222,27 +212,13 @@ def edit_pw():
                     start()
             # This handles when the index variable is outside of the range of list_pw
             else:
-                print( line + f'You entered {index + 1}, which is not a valid selection.')
-                home = str(input( go_back + yes_no ))
-                if home.lower() == "y":
-                    start()
-                else:
-                    exit()
+                home((int(index) + 1))
         # Try/Except handles ValueError raised when user inputs anything other than an INT
         # Reference index variable instead of (index + 1) since this handles when index is STRING
         except ValueError:
-            print(f'You entered {index}, which is not a valid selection.')
-            home = str(input( go_back + yes_no ))
-            if home.lower() == "y":
-                start()
-            else:
-                exit() 
+            home(index)
     else:
-        home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + yes_no ))
-        if home.lower() == "y":
-            start()
-        else:
-            exit()
+        empty(mode)
 
 
 # Remove a password from the encrypted passwords table based on it's index
@@ -308,27 +284,13 @@ def del_pw():
                     start()
             # This handles when the index variable is outside of the range of list_pw
             else:
-                print( line + f'You entered {index + 1}, which is not a valid selection.')
-                home = str(input( go_back + yes_no ))
-                if home.lower() == "y":
-                    start()
-                else:
-                    exit()
+                home((int(index) + 1))
         # Try/Except handles ValueError raised when user inputs anything other than an INT
         # Reference index variable instead of (index + 1) since this handles when index is STRING
         except ValueError:
-            print(f'You entered {index}, which is not a valid selection.')
-            home = str(input( go_back + yes_no ))
-            if home.lower() == "y":
-                start()
-            else:
-                exit() 
+            home(index)
     else:
-        home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + yes_no ))
-        if home.lower() == "y":
-            start()
-        else:
-            exit()
+        empty(mode)
 
 
 # Choose a password to display based on it's index in the encrypted passwords table
@@ -384,27 +346,33 @@ def show_pw():
                     start()
             # This handles when the index variable is outside of the range of list_pw
             else:
-                print( line + f'You entered {index + 1}, which is not a valid selection.')
-                home = str(input( go_back + yes_no ))
-                if home.lower() == "y":
-                    start()
-                else:
-                    exit()  
+                home((int(index) + 1))
         # Try/Except handles ValueError raised when user inputs anything other than an INT
         # Reference index variable instead of (index + 1) since this handles when index is STRING
         except ValueError:
-            print(f'You entered {index}, which is not a valid selection.')
-            home = str(input( go_back + yes_no ))
-            if home.lower() == "y":
-                start()
-            else:
-                exit() 
+            home(index)
     else:
-        home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + yes_no ))
-        if home.lower() == "y":
-            start()
-        else:
-            exit()
+        empty(mode)
+
+
+# Handles user inputted values raising ValueErrors or out of range of list
+def home(wrong):
+    print( line + f'You entered {wrong}, which is not a valid selection.')
+    go_home = str(input( go_back + yes_no ))
+    if go_home.lower() == "y":
+        start()
+    else:
+        exit() 
+
+
+# The list_pw list is empty - user chooses to return to Start or Exit
+def empty(mode):
+    go_home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + yes_no ))
+    if go_home.lower() == "y":
+        start()
+    else:
+        exit()
+
 
 
 # Start the CLI app
