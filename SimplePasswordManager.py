@@ -90,21 +90,23 @@ def start():
         # User chooses function, later converted to INT for comparison
         # Choice variable is not set as INT initially to avoid TRY/EXCEPT issues encounted
         choice = input(f"Select an option by typing {funcs[0][0]}-{funcs[-1][0]}:\n")
-        # Loop through funcs list then execute function where choice = function index in list
-        for i in funcs:
-            if i[0] != int(choice):
-                continue
-            else:
-                # Execute chosen function
-                i[-1]()
-        # If this code block runs then the above IF statement didn't work so
+        # Check choice is within range of funcs list or else raise error
+        if int(choice) <= len(funcs):
+            # Loop through funcs list then execute function where choice = function index in list
+            for i in funcs:
+                if i[0] != int(choice):
+                    continue
+                else:
+                    # Execute chosen function
+                    i[-1]()
         # This handles when input is outside of list range
-        print( line + f'You entered {choice}, which is not a valid selection.')
-        home = str(input( go_back + yes_no ))
-        if home.lower() == "y":
-            start()
         else:
-            exit()       
+            print( line + f'You entered {choice}, which is not a valid selection.')
+            home = str(input( go_back + yes_no ))
+            if home.lower() == "y":
+                start()
+            else:
+                exit()       
     # Try/Except handles ValueError raised when user inputs anything other than an INT
     except ValueError:
         print(f'You entered {choice}, which is not a valid selection.')
@@ -180,40 +182,49 @@ def edit_pw():
         print(tabulate(list_table, headers=["Index", "Account", "Password", "Last Modified"], numalign="center"))
 
         # Dump intermediary list after use
-        list_table = []
+        #list_table = []
 
         # User chooses a record that corresponds with record row when ORDER BY account ASC
         index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
+        # Check if user input for index veriable is within the range of list_pw
+        if int(index) <= len(list_pw):
+            # Before updating the password we need to save the returned account and username for the update statement
+            # Ran into errors when using list_pw[index][1 or 0] directly in the SQLite update statement
+            acct = str(list_pw[index][0])
+            usr = str(list_pw[index][1])
+            old_pw = str(list_pw[index][-3])
+            
+            replace_pw = str(input("New Password: "))
+            print(mode + doing)
+            # User input value for replace_pw is encoded then saved to a new variable
+            replace_encrypted_pw = fernet.encrypt(replace_pw.encode())
+            # Remember the new variable needs to be DECODED before adding to the encrypted passwords table
+            # This converts the values datatype from BITS to STRING
+            sql_cursor.execute(f"""
+                            UPDATE passwords 
+                            SET password = '{replace_encrypted_pw.decode()}', 
+                            pw_key = '{session_pw_key.decode()}',
+                            last_modified = '{today}' 
+                            WHERE account = '{acct}' 
+                            AND username = '{usr}'
+                            AND password = '{old_pw}';
+                            """)
+            sql_connection.commit()
 
-        # Before updating the password we need to save the returned account and username for the update statement
-        # Ran into errors when using list_pw[index][1 or 0] directly in the SQLite update statement
-        acct = str(list_pw[index][0])
-        usr = str(list_pw[index][1])
-        old_pw = str(list_pw[index][-3])
-        
-        replace_pw = str(input("New Password: "))
-        print(mode + doing)
-        # User input value for replace_pw is encoded then saved to a new variable
-        replace_encrypted_pw = fernet.encrypt(replace_pw.encode())
-        # Remember the new variable needs to be DECODED before adding to the encrypted passwords table
-        # This converts the values datatype from BITS to STRING
-        sql_cursor.execute(f"""
-                        UPDATE passwords 
-                        SET password = '{replace_encrypted_pw.decode()}', 
-                        pw_key = '{session_pw_key.decode()}',
-                        last_modified = '{today}' 
-                        WHERE account = '{acct}' 
-                        AND username = '{usr}'
-                        AND password = '{old_pw}';
-                        """)
-        sql_connection.commit()
-
-        # Return to Start Menu or repeat
-        again = str(input( line + mode + done[0] + list_pw[index][0] + done[1] + mode + another ))
-        if again.lower() == "y":
-            edit_pw()
+            # Return to Start Menu or repeat
+            again = str(input( line + mode + done[0] + list_pw[index][0] + done[1] + mode + another ))
+            if again.lower() == "y":
+                edit_pw()
+            else:
+                start()
+        # This handles when the index variable is outside of the range of list_pw
         else:
-            start()
+            print( line + f'You entered {index + 1}, which is not a valid selection.')
+            home = str(input( go_back + yes_no ))
+            if home.lower() == "y":
+                start()
+            else:
+                exit()  
     else:
         home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + yes_no ))
         if home.lower() == "y":
@@ -251,35 +262,44 @@ def del_pw():
         list_table = []
 
         index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
+        # Check if user input for index veriable is within the range of list_pw
+        if int(index) <= len(list_pw):
+            # Before deleting the password we need to save the returned account and username for the delete statement
+            acct = str(list_pw[index][0])
+            usr = str(list_pw[index][1])
+            old_pw = str(list_pw[index][-3])
 
-        # Before deleting the password we need to save the returned account and username for the delete statement
-        acct = str(list_pw[index][0])
-        usr = str(list_pw[index][1])
-        old_pw = str(list_pw[index][-3])
+            # Check if the user wants to delete the chosen pw
+            sure = str(input(f"{line}Are you sure you want to delete the password for {list_pw[index][0]} ?\n{yes_no}"))
+            if sure.lower() == "y":
+                # Success statement needs to slice first letter off mode
+                print(mode[:-1] + doing)
+                sql_cursor.execute(f"""
+                                DELETE FROM passwords 
+                                WHERE account = '{acct}' 
+                                AND username = '{usr}'
+                                AND password = '{old_pw}';
+                                """)
+                sql_connection.commit()
+            elif sure.lower() == "n":
+                start()
 
-        # Check if the user wants to delete the chosen pw
-        sure = str(input(f"{line}Are you sure you want to delete the password for {list_pw[index][0]} ?\n{yes_no}"))
-        if sure.lower() == "y":
+            # Return to Start Menu or repeat
             # Success statement needs to slice first letter off mode
-            print(mode[:-1] + doing)
-            sql_cursor.execute(f"""
-                            DELETE FROM passwords 
-                            WHERE account = '{acct}' 
-                            AND username = '{usr}'
-                            AND password = '{old_pw}';
-                            """)
-            sql_connection.commit()
-        elif sure.lower() == "n":
-            start()
-
-        # Return to Start Menu or repeat
-        # Success statement needs to slice first letter off mode
-        # Other funcs incl edit, add, drecypted so deleteed is wrong
-        again = str(input( line + mode[:-1] + done[0] + list_pw[index][0] + done[1] + mode + another ))
-        if again.lower() == "y":
-            del_pw()
+            # Other funcs incl edit, add, drecypted so deleteed is wrong
+            again = str(input( line + mode[:-1] + done[0] + list_pw[index][0] + done[1] + mode + another ))
+            if again.lower() == "y":
+                del_pw()
+            else:
+                start()
+        # This handles when the index variable is outside of the range of list_pw
         else:
-            start()
+            print( line + f'You entered {index + 1}, which is not a valid selection.')
+            home = str(input( go_back + yes_no ))
+            if home.lower() == "y":
+                start()
+            else:
+                exit()  
     else:
         home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + yes_no ))
         if home.lower() == "y":
@@ -317,25 +337,34 @@ def show_pw():
         list_table = []
 
         index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
+        # Check if user input for index veriable is within the range of list_pw
+        if int(index) <= len(list_pw):
+            # Before decrypting the password we need to save the returned Encryption Key for that record
+            pw_key = list_pw[index][-2]
 
-        # Before decrypting the password we need to save the returned Encryption Key for that record
-        pw_key = list_pw[index][-2]
+            print(mode + doing)
+            # Decrypted password needs to be saved to its own variable
+            # We use Fernet(pw_key) here instead of fernet variable to
+            # Decrypt with the relevant records Encryption Key
+            decoded_pw = Fernet(pw_key).decrypt(list_pw[index][-3])
+            # Remember to decode the new variable to convert from BITS datatype to STRING
+            # This removes the leading b value changing b'variable' to 'variable'
+            print(f"\n{decoded_pw.decode()}\n")
 
-        print(mode + doing)
-        # Decrypted password needs to be saved to its own variable
-        # We use Fernet(pw_key) here instead of fernet variable to
-        # Decrypt with the relevant records Encryption Key
-        decoded_pw = Fernet(pw_key).decrypt(list_pw[index][-3])
-        # Remember to decode the new variable to convert from BITS datatype to STRING
-        # This removes the leading b value changing b'variable' to 'variable'
-        print(f"\n{decoded_pw.decode()}\n")
-
-        # Return to Start Menu or repeat
-        again = str(input( line + mode + done[0] + list_pw[index][0] + done[1] + mode + another ))
-        if again.lower() == "y":
-            show_pw()
+            # Return to Start Menu or repeat
+            again = str(input( line + mode + done[0] + list_pw[index][0] + done[1] + mode + another ))
+            if again.lower() == "y":
+                show_pw()
+            else:
+                start()
+        # This handles when the index variable is outside of the range of list_pw
         else:
-            start()
+            print( line + f'You entered {index + 1}, which is not a valid selection.')
+            home = str(input( go_back + yes_no ))
+            if home.lower() == "y":
+                start()
+            else:
+                exit()  
     else:
         home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + yes_no ))
         if home.lower() == "y":
