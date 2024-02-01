@@ -92,13 +92,15 @@ def start():
         choice = input(f"Select an option by typing {funcs[0][0]}-{funcs[-1][0]}:\n")
         # Check choice is within range of funcs list or else raise error
         if int(choice) <= len(funcs):
-            # Loop through funcs list then execute function where choice = function index in list
-            for i in funcs:
-                if i[0] != int(choice):
+            # Loop through funcs list skipping where func != choice
+            for func in funcs:
+                if func[0] != int(choice):
                     continue
+               # Execute chosen function
                 else:
-                    # Execute chosen function
-                    i[-1](i[-1])
+                    # We need to pass func variable as an argument when calling func variable
+                    # Because each function expects a func argument so it can call try_again() if needed
+                    func[-1](func[-1])
         # This handles when input is outside of list range
         else:
             go_home(choice)
@@ -108,7 +110,7 @@ def start():
 
 
 # User inputs account, username and password
-# Password is encrypted then added to the encrypted passwords table
+# Password is encrypted then added to the encrypted passwords SQLite table
 def add_pw(func):
     mode = "Add"   
     new_acct = str(input("Account: "))
@@ -149,27 +151,13 @@ def edit_pw(func):
     print(line)
 
     # Query the passwords table and insert all into list_pw ordered by account name
-    sql_cursor.execute("""
-                       SELECT * 
-                       FROM passwords 
-                       ORDER BY account ASC;
-                       """)
-    list_pw = sql_cursor.fetchall()
+    list_pw = get_list_pw()
 
-    # Check if list_pw is empty to avoid app crash when input expects user to give index of record that exists
+    # Check if list_pw is empty
     if list_pw != []:
-        # Create intermediary list to display data to terminal with Tabulate
-        list_table = []
-        place = 1
-        # Loop through the contents of list_pw to place in list_table since Tabulate won't allow to
-        # Omit certain fields, this allows us to use the returned data as vairables without displaying in output
-        for i in list_pw:
-            list_table.append([place, i[0], i[-3], i[-1]])
-            place += 1
-        print(tabulate(list_table, headers=["Index", "Account", "Password", "Last Modified"], numalign="center"))
-
-        # Dump intermediary list after use
-        list_table = []
+        # Use Tabulate to print selected columns to ternimal
+        display_data = display(list_pw)
+        print(display_data)
 
         # TRY/EXCEPT handles if input is not INT
         try:
@@ -219,27 +207,13 @@ def del_pw(func):
     print(line)
 
     # Query the passwords table and insert all into list_pw ordered by account name
-    sql_cursor.execute("""
-                       SELECT * 
-                       FROM passwords 
-                       ORDER BY account ASC;
-                       """)
-    list_pw = sql_cursor.fetchall()
+    list_pw = get_list_pw()
 
-    # Check if list_pw is empty to avoid app crash when input expects user to give index of record that exists
+    # Check if list_pw is empty
     if list_pw != []:
-        # Create intermediary list to display data to terminal with Tabulate
-        list_table = []
-        place = 1
-        # Loop through the contents of list_pw to place in list_table since Tabulate won't allow to
-        # Omit certain fields, this allows us to use the returned data as vairables without displaying in output
-        for i in list_pw:
-            list_table.append([place, i[0], i[-3], i[-1]])
-            place += 1
-        print(tabulate(list_table, headers=["Index", "Account", "Password", "Last Modified"], numalign="center"))
-
-        # Dump intermediary list after use
-        list_table = []
+        # Use Tabulate to print selected columns to ternimal
+        display_data = display(list_pw)
+        print(display_data)
 
         # TRY/EXCEPT handles if input is not INT
         try:
@@ -289,31 +263,17 @@ def show_pw(func):
     print(line)
 
     # Query the passwords table and insert all into list_pw ordered by account name
-    sql_cursor.execute("""
-                       SELECT * 
-                       FROM passwords 
-                       ORDER BY account ASC;
-                       """)
-    list_pw = sql_cursor.fetchall()
+    list_pw = get_list_pw()
 
-    # Check if list_pw is empty to avoid app crash when input expects user to give index of record that exists
+    # Check if list_pw is empty
     if list_pw != []:
-        # Create intermediary list to display data to terminal with Tabulate
-        list_table = []
-        place = 1
-        # Loop through the contents of list_pw to place in list_table since Tabulate won't allow to
-        # Omit certain fields, this allows us to use the returned data as vairables without displaying in output
-        for i in list_pw:
-            list_table.append([place, i[0], i[-3], i[-1]])
-            place += 1
-        print(tabulate(list_table, headers=["Index", "Account", "Password", "Last Modified"], numalign="center"))
-
-        # Dump intermediary list after use
-        list_table = []
+        # Use Tabulate to print selected columns to ternimal
+        display_data = display(list_pw)
+        print(display_data)
 
         # TRY/EXCEPT handles if input is not INT
         try:
-            index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
+            index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1 )
             # Check if user input for index veriable is within the range of list_pw
             if int(index) <= len(list_pw):
                 # Before decrypting the password we need to save the returned Encryption Key for that record
@@ -341,6 +301,35 @@ def show_pw(func):
         empty(mode)
 
 
+# Query the passwords table and insert all into list_pw ordered by account name
+def get_list_pw():
+    sql_cursor.execute("""
+                        SELECT * 
+                        FROM passwords 
+                        ORDER BY account ASC;
+                        """)
+    list_pw = sql_cursor.fetchall()
+    return list_pw
+
+
+def display(list_pw):
+    # Create intermediary list to display data to terminal with Tabulate
+    list_table = []
+    place = 1
+    # Loop through the contents of list_pw to place in list_table since Tabulate won't allow to
+    # Omit certain fields, this allows us to use the returned data as vairables without displaying in output
+    for i in list_pw:
+        list_table.append([place, i[0], i[-3], i[-1]])
+        place += 1
+
+    data = (tabulate(list_table, headers=["Index", "Account", "Password", "Last Modified"], numalign="center"))
+
+    # Dump intermediary list after use
+    list_table = []
+
+    return data
+
+
 # Handles user inputted values raising ValueErrors or out of range of list
 def go_home(wrong):
     print( line + f'You entered {wrong}, which is not a valid selection.')
@@ -354,7 +343,7 @@ def empty(mode):
     yes_no(home)
 
 
-# Handles Yes No choices for DRY code
+# Handles Yes No choices
 def yes_no(choice):
     if choice.lower() == "y":
         start()
@@ -369,6 +358,8 @@ def yes_no(choice):
 def try_again(mode, acct, func, fixed_done):
     again = str(input( line + mode + fixed_done + acct + done[1] + mode + another ))
     if again.lower() == "y":
+        # We need to pass func variable as an argument when calling func variable
+        # Because each function expects a func argument so it can call try_again() if needed
         func(func)
     elif again.lower() == "n":
         start()
