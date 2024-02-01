@@ -57,8 +57,8 @@ S:::::::::::::::SS      P::::::::P              M::::::M               M::::::M
                             Simple Password Manager                                                           
 """
 line = "##################################################################################\n"
-yes_no = "Type Y for Yes or N for No\n(y/n)\n"
-another = f" another password?\n{yes_no}"
+y_n = "Type Y for Yes or N for No\n(y/n)\n"
+another = f" another password?\n{y_n}"
 select = ["Select a password to ", " by typing the index of the account: "]
 doing = "ing password..."
 done = ["ed password for ", "...\n"]
@@ -101,10 +101,10 @@ def start():
                     i[-1](i[-1])
         # This handles when input is outside of list range
         else:
-            home(choice)
+            go_home(choice)
     # Try/Except handles ValueError raised when user inputs anything other than an INT
     except ValueError:
-        home(choice)
+        go_home(choice)
 
 
 # User inputs account, username and password
@@ -137,7 +137,7 @@ def add_pw(func):
         sql_connection.commit()
 
         # Return to Start Menu or repeat
-        again(mode, new_acct, func, (done[0]))
+        try_again(mode, new_acct, func, (done[0]))
     else:
         print("All fields are required")
         add_pw()
@@ -201,14 +201,14 @@ def edit_pw(func):
                 sql_connection.commit()
 
                 # Return to Start Menu or repeat
-                again(mode, (list_pw[index][0]), func, (done[0]))
+                try_again(mode, (list_pw[index][0]), func, (done[0]))
             # This handles when the index variable is outside of the range of list_pw
             else:
-                home((int(index) + 1))
+                go_home((int(index) + 1))
         # Try/Except handles ValueError raised when user inputs anything other than an INT
         # Reference index variable instead of (index + 1) since this handles when index is STRING
         except ValueError:
-            home(index)
+            go_home(index)
     else:
         empty(mode)
 
@@ -252,7 +252,7 @@ def del_pw(func):
                 old_pw = str(list_pw[index][-3])
 
                 # Check if the user wants to delete the chosen pw
-                sure = str(input(f"{line}Are you sure you want to delete the password for {list_pw[index][0]} ?\n{yes_no}"))
+                sure = str(input(f"{line}Are you sure you want to delete the password for {list_pw[index][0]} ?\n{y_n}"))
                 if sure.lower() == "y":
                     # Success statement needs to slice first letter off mode
                     print(mode[:-1] + doing)
@@ -266,19 +266,19 @@ def del_pw(func):
                 elif sure.lower() == "n":
                     start()
                 else:
-                    home(sure)
+                    go_home(sure)
 
                 # Return to Start Menu or repeat
                 # Success statement needs to slice first letter off mode
                 # Other funcs incl edit, add, drecypted so deleteed is wrong
-                again(mode, (list_pw[index][0]), func, (done[0][1:]))
+                try_again(mode, (list_pw[index][0]), func, (done[0][1:]))
             # This handles when the index variable is outside of the range of list_pw
             else:
-                home((int(index) + 1))
+                go_home((int(index) + 1))
         # Try/Except handles ValueError raised when user inputs anything other than an INT
         # Reference index variable instead of (index + 1) since this handles when index is STRING
         except ValueError:
-            home(index)
+            go_home(index)
     else:
         empty(mode)
 
@@ -329,50 +329,51 @@ def show_pw(func):
                 print(f"\n{decoded_pw.decode()}\n")
 
                 # Return to Start Menu or repeat
-                again(mode, (list_pw[index][0]), func, (done[0]))
+                try_again(mode, (list_pw[index][0]), func, (done[0]))
             # This handles when the index variable is outside of the range of list_pw
             else:
-                home((int(index) + 1))
+                go_home((int(index) + 1))
         # Try/Except handles ValueError raised when user inputs anything other than an INT
         # Reference index variable instead of (index + 1) since this handles when index is STRING
         except ValueError:
-            home(index)
+            go_home(index)
     else:
         empty(mode)
 
 
 # Handles user inputted values raising ValueErrors or out of range of list
-def home(wrong):
+def go_home(wrong):
     print( line + f'You entered {wrong}, which is not a valid selection.')
-    go_home = str(input( go_back + yes_no ))
-    if go_home.lower() == "y":
-        start()
-    elif go_home.lower() == "n":
-        exit()
-    else:
-        home(go_home) 
+    home = str(input( go_back + y_n ))
+    yes_no(home)
 
 
 # The list_pw list is empty - user chooses to return to Start or Exit
 def empty(mode):
-    go_home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + yes_no ))
-    if go_home.lower() == "y":
+    home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + y_n ))
+    yes_no(home)
+
+
+# Handles Yes No choices for DRY code
+def yes_no(choice):
+    if choice.lower() == "y":
         start()
-    elif go_home.lower() == "n":
-      exit()
+    elif choice.lower() == "n":
+        exit()
     else:
-        home(go_home)
+        go_home(choice) 
 
 
 # User chooses to perform the function again or return to Start
-def again(mode, acct, func, fixed_done):
+# Ran into issues using the yes_no function because this calls the extra argument of func
+def try_again(mode, acct, func, fixed_done):
     again = str(input( line + mode + fixed_done + acct + done[1] + mode + another ))
     if again.lower() == "y":
         func(func)
     elif again.lower() == "n":
         start()
     else:
-        home(again)
+        go_home(again)
 
 
 
