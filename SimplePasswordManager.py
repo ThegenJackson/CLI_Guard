@@ -132,116 +132,69 @@ def add_pw(func):
 # Edit a password from the encrypted passwords table based on it's index
 def edit_pw(func):
     mode = "Edit"
-    print(line)
 
-    # Query the passwords table and insert all into list_pw ordered by account name
-    list_pw = query_data()
-
-    # Check if list_pw is empty
-    if list_pw != []:
-        # Use Tabulate to print selected columns to ternimal
-        display_data = display(list_pw)
-        print(display_data)
-
-        # TRY/EXCEPT handles if input is not INT
-        try:
-            # User chooses a record that corresponds with record row when ORDER BY account ASC
-            index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1 )
-            # Check if user input for index veriable is within the range of list_pw
-            if int(index) <= len(list_pw):
-                update_pw(list_pw, index, mode, func)
-            # This handles when the index variable is outside of the range of list_pw
-            else:
-                go_home((int(index) + 1))
-        # Try/Except handles ValueError raised when user inputs anything other than an INT
-        # Reference index variable instead of (index + 1) since this handles when index is STRING
-        except ValueError:
-            go_home(index)
-    else:
-        empty(mode)
+    do_action(mode, func)
 
 
 # Remove a password from the encrypted passwords table based on it's index
 def del_pw(func):
     mode = "Delete"
-    print(line)
 
-    # Query the passwords table and insert all into list_pw ordered by account name
-    list_pw = query_data()
-
-    # Check if list_pw is empty
-    if list_pw != []:
-        # Use Tabulate to print selected columns to ternimal
-        display_data = display(list_pw)
-        print(display_data)
-
-        # TRY/EXCEPT handles if input is not INT
-        try:
-            index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1 )
-            # Check if user input for index veriable is within the range of list_pw
-            if int(index) <= len(list_pw):
-                delete_pw(list_pw, index, mode, func)
-            # This handles when the index variable is outside of the range of list_pw
-            else:
-                go_home((int(index) + 1))
-        # Try/Except handles ValueError raised when user inputs anything other than an INT
-        # Reference index variable instead of (index + 1) since this handles when index is STRING
-        except ValueError:
-            go_home(index)
-    else:
-        empty(mode)
+    do_action(mode, func)
 
 
 # Choose a password to display based on it's index in the encrypted passwords table
 def show_pw(func):
     mode = "Decrypt"
-    print(line)
 
-    # Query the passwords table and insert all into list_pw ordered by account name
-    list_pw = query_data()
-
-    # Check if list_pw is empty
-    if list_pw != []:
-        # Use Tabulate to print selected columns to ternimal
-        display_data = display(list_pw)
-        print(display_data)
-
-        # TRY/EXCEPT handles if input is not INT
-        try:
-            index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1 )
-            # Check if user input for index veriable is within the range of list_pw
-            if int(index) <= len(list_pw):
-                display_pw(list_pw, index, mode, func)
-            # This handles when the index variable is outside of the range of list_pw
-            else:
-                go_home((int(index) + 1))
-        # Try/Except handles ValueError raised when user inputs anything other than an INT
-        # Reference index variable instead of (index + 1) since this handles when index is STRING
-        except ValueError:
-            go_home(index)
-    else:
-        empty(mode)
+    do_action(mode, func)
 
 
-# Get Index then perform action
-def do_action():
+# Get func arg then perform action
+def do_action(mode, func):
     # Define function index and function name
     funcs = [
-        (1, add_pw),
-        (2, edit_pw),
-        (3, del_pw),
-        (4, show_pw),
-        (5, exit)
+        (update_pw, edit_pw),
+        (delete_pw, del_pw),
+        (display_pw, show_pw)
     ]
 
-    for func in funcs:
-        if func[0] != int():
+    for i in funcs:
+        if i[-1] != func:
             continue
         # Execute chosen function
         else:
-            # We need to pass func variable as an argument when calling func variable
-            # Because each function expects a func argument so it can call try_again() if needed
-            func[-1](func[-1])
+            print(line)
+            # Query the passwords table and insert all into list_pw ordered by account name
+            list_pw = query_data()
+
+            # Check if list_pw is empty
+            if list_pw != []:
+                # Use Tabulate to print selected columns to ternimal
+                display_data = display(list_pw)
+                print(display_data)
+
+                # TRY/EXCEPT handles if input is not INT
+                try:
+                    # User chooses record to perform action against
+                    index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1 )
+                    # Check if user input for index veriable is within the range of list_pw
+                    if int(index) <= len(list_pw):
+
+                        # Execute func (func == i[0]) with required args
+                        i[0](list_pw, index, mode, func)
+
+                    # This handles when the index variable is outside of the range of list_pw
+                    else:
+                        go_home((int(index) + 1))
+                # Try/Except handles ValueError raised when user inputs anything other than an INT
+                # Reference index variable instead of (index + 1) since this handles when index is STRING
+                except ValueError:
+                    go_home(index)
+            else:
+                empty(mode)
+                    # We need to pass func variable as an argument when calling func variable
+                    # Because each function expects a func argument so it can call try_again() if needed
 
 
 def display(list_pw):
@@ -266,37 +219,40 @@ def display(list_pw):
 def go_home(wrong):
     print( line + f'You entered {wrong}, which is not a valid selection.')
     home = str(input( go_back + y_n ))
-    yes_no(home)
+    yes_no(home, func=0)
 
 
 # The list_pw list is empty - user chooses to return to Start or Exit
 def empty(mode):
     home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + y_n ))
-    yes_no(home)
-
-
-# Handles Yes No choices
-def yes_no(choice):
-    if choice.lower() == "y":
-        start()
-    elif choice.lower() == "n":
-        exit()
-    else:
-        go_home(choice) 
+    yes_no(home, func=0)
 
 
 # User chooses to perform the function again or return to Start
 # Ran into issues using the yes_no function because this calls the extra argument of func
 def try_again(mode, acct, func, fixed_done):
     again = str(input( line + mode + fixed_done + acct + done[1] + mode + another ))
-    if again.lower() == "y":
-        # We need to pass func variable as an argument when calling func variable
-        # Because each function expects a func argument so it can call try_again() if needed
-        func(func)
-    elif again.lower() == "n":
-        start()
+    yes_no(again, func)
+
+
+# Handles Yes No choices
+def yes_no(choice, func):
+    if func == 0:
+        if choice.lower() == "y":
+            start()
+        elif choice.lower() == "n":
+            exit()
+        else:
+            go_home(choice) 
     else:
-        go_home(again)
+        if choice.lower() == "y":
+            # To try_again we need to pass func variable as an argument when calling func variable
+            # Because each function expects a func argument so it can call try_again() if needed
+            func(func)
+        elif choice.lower() == "n":
+            start()
+        else:
+            go_home(choice) 
 
 
 # Encrypt
