@@ -98,7 +98,7 @@ def start():
                     continue
                 else:
                     # Execute chosen function
-                    i[-1]()
+                    i[-1](i[-1])
         # This handles when input is outside of list range
         else:
             home(choice)
@@ -109,7 +109,7 @@ def start():
 
 # User inputs account, username and password
 # Password is encrypted then added to the encrypted passwords table
-def add_pw():
+def add_pw(func):
     mode = "Add"   
     new_acct = str(input("Account: "))
     new_username = str(input("Username: "))
@@ -137,18 +137,14 @@ def add_pw():
         sql_connection.commit()
 
         # Return to Start Menu or repeat
-        again = str(input( line + mode + done[0] + new_acct + done[1] + mode + another ))
-        if again.lower() == "y":
-            add_pw()
-        else:
-            start()
+        again(mode, new_acct, func, (done[0]))
     else:
         print("All fields are required")
         add_pw()
 
 
 # Edit a password from the encrypted passwords table based on it's index
-def edit_pw():
+def edit_pw(func):
     mode = "Edit"
     print(line)
 
@@ -205,11 +201,7 @@ def edit_pw():
                 sql_connection.commit()
 
                 # Return to Start Menu or repeat
-                again = str(input( line + mode + done[0] + list_pw[index][0] + done[1] + mode + another ))
-                if again.lower() == "y":
-                    edit_pw()
-                else:
-                    start()
+                again(mode, (list_pw[index][0]), func, (done[0]))
             # This handles when the index variable is outside of the range of list_pw
             else:
                 home((int(index) + 1))
@@ -222,7 +214,7 @@ def edit_pw():
 
 
 # Remove a password from the encrypted passwords table based on it's index
-def del_pw():
+def del_pw(func):
     mode = "Delete"
     print(line)
 
@@ -273,15 +265,13 @@ def del_pw():
                     sql_connection.commit()
                 elif sure.lower() == "n":
                     start()
+                else:
+                    home(sure)
 
                 # Return to Start Menu or repeat
                 # Success statement needs to slice first letter off mode
                 # Other funcs incl edit, add, drecypted so deleteed is wrong
-                again = str(input( line + mode[:-1] + done[0] + list_pw[index][0] + done[1] + mode + another ))
-                if again.lower() == "y":
-                    del_pw()
-                else:
-                    start()
+                again(mode, (list_pw[index][0]), func, (done[0][1:]))
             # This handles when the index variable is outside of the range of list_pw
             else:
                 home((int(index) + 1))
@@ -294,7 +284,7 @@ def del_pw():
 
 
 # Choose a password to display based on it's index in the encrypted passwords table
-def show_pw():
+def show_pw(func):
     mode = "Decrypt"
     print(line)
 
@@ -339,11 +329,7 @@ def show_pw():
                 print(f"\n{decoded_pw.decode()}\n")
 
                 # Return to Start Menu or repeat
-                again = str(input( line + mode + done[0] + list_pw[index][0] + done[1] + mode + another ))
-                if again.lower() == "y":
-                    show_pw()
-                else:
-                    start()
+                again(mode, (list_pw[index][0]), func, (done[0]))
             # This handles when the index variable is outside of the range of list_pw
             else:
                 home((int(index) + 1))
@@ -361,8 +347,10 @@ def home(wrong):
     go_home = str(input( go_back + yes_no ))
     if go_home.lower() == "y":
         start()
+    elif go_home.lower() == "n":
+        exit()
     else:
-        exit() 
+        home(go_home) 
 
 
 # The list_pw list is empty - user chooses to return to Start or Exit
@@ -370,8 +358,21 @@ def empty(mode):
     go_home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + yes_no ))
     if go_home.lower() == "y":
         start()
+    elif go_home.lower() == "n":
+      exit()
     else:
-        exit()
+        home(go_home)
+
+
+# User chooses to perform the function again or return to Start
+def again(mode, acct, func, fixed_done):
+    again = str(input( line + mode + fixed_done + acct + done[1] + mode + another ))
+    if again.lower() == "y":
+        func(func)
+    elif again.lower() == "n":
+        start()
+    else:
+        home(again)
 
 
 
