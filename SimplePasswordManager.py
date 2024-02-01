@@ -82,8 +82,8 @@ def start():
     # Print CLI Splash for program Start
     print( line + splash + line )
     # List available functions by human-readable index
-    for i in funcs:
-        print(i[0], i[1])
+    for func in funcs:
+        print(func[0], func[1])
 
     # TRY/EXCEPT handles if input is not INT
     try:
@@ -109,7 +109,6 @@ def start():
         go_home(choice)
 
 
-# User inputs account, username and password
 # Password is encrypted then added to the encrypted passwords SQLite table
 def add_pw(func):
     mode = "Add"   
@@ -120,23 +119,8 @@ def add_pw(func):
     # Check all fields are populated before proceeding
     if new_acct != "" and new_username != "" and new_pw != "":
         print(mode + doing)
-        # User inputted value for new_pw is encoded then saved to a new variable per documentation
-        encrypted_pw = fernet.encrypt(new_pw.encode())
-        # The variable needs var.decode() when adding to the encrypted passwords table
-        # This converts the values datatype from BITS to STRING
-        # Otherwise it saves to the list as b'var' instead of 'var'
-        # Decode is different to Decrypt, remember to read the docs more
-        # The encoded pw is BITS datatype once encrypted and needs it's own variable
-        sql_cursor.execute(f"""
-                        INSERT INTO passwords 
-                        VALUES(
-                           '{new_acct}',
-                           '{new_username}',
-                           '{encrypted_pw.decode()}',
-                           '{session_pw_key.decode()}',
-                           '{today}');
-                        """)
-        sql_connection.commit()
+        save_pw = encrypt_pw(new_pw)
+        insert_data(new_acct, new_username, save_pw)
 
         # Return to Start Menu or repeat
         try_again(mode, new_acct, func, (done[0]))
@@ -151,7 +135,7 @@ def edit_pw(func):
     print(line)
 
     # Query the passwords table and insert all into list_pw ordered by account name
-    list_pw = get_list_pw()
+    list_pw = query_data()
 
     # Check if list_pw is empty
     if list_pw != []:
@@ -162,34 +146,10 @@ def edit_pw(func):
         # TRY/EXCEPT handles if input is not INT
         try:
             # User chooses a record that corresponds with record row when ORDER BY account ASC
-            index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
+            index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1 )
             # Check if user input for index veriable is within the range of list_pw
             if int(index) <= len(list_pw):
-                # Before updating the password we need to save the returned account and username for the update statement
-                # Ran into errors when using list_pw[index][1 or 0] directly in the SQLite update statement
-                acct = str(list_pw[index][0])
-                usr = str(list_pw[index][1])
-                old_pw = str(list_pw[index][-3])
-                
-                replace_pw = str(input("New Password: "))
-                print(mode + doing)
-                # User input value for replace_pw is encoded then saved to a new variable
-                replace_encrypted_pw = fernet.encrypt(replace_pw.encode())
-                # Remember the new variable needs to be DECODED before adding to the encrypted passwords table
-                # This converts the values datatype from BITS to STRING
-                sql_cursor.execute(f"""
-                                UPDATE passwords 
-                                SET password = '{replace_encrypted_pw.decode()}', 
-                                pw_key = '{session_pw_key.decode()}',
-                                last_modified = '{today}' 
-                                WHERE account = '{acct}' 
-                                AND username = '{usr}'
-                                AND password = '{old_pw}';
-                                """)
-                sql_connection.commit()
-
-                # Return to Start Menu or repeat
-                try_again(mode, (list_pw[index][0]), func, (done[0]))
+                update_pw(list_pw, index, mode, func)
             # This handles when the index variable is outside of the range of list_pw
             else:
                 go_home((int(index) + 1))
@@ -207,7 +167,7 @@ def del_pw(func):
     print(line)
 
     # Query the passwords table and insert all into list_pw ordered by account name
-    list_pw = get_list_pw()
+    list_pw = query_data()
 
     # Check if list_pw is empty
     if list_pw != []:
@@ -217,35 +177,10 @@ def del_pw(func):
 
         # TRY/EXCEPT handles if input is not INT
         try:
-            index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1)
+            index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1 )
             # Check if user input for index veriable is within the range of list_pw
             if int(index) <= len(list_pw):
-                # Before deleting the password we need to save the returned account and username for the delete statement
-                acct = str(list_pw[index][0])
-                usr = str(list_pw[index][1])
-                old_pw = str(list_pw[index][-3])
-
-                # Check if the user wants to delete the chosen pw
-                sure = str(input(f"{line}Are you sure you want to delete the password for {list_pw[index][0]} ?\n{y_n}"))
-                if sure.lower() == "y":
-                    # Success statement needs to slice first letter off mode
-                    print(mode[:-1] + doing)
-                    sql_cursor.execute(f"""
-                                    DELETE FROM passwords 
-                                    WHERE account = '{acct}' 
-                                    AND username = '{usr}'
-                                    AND password = '{old_pw}';
-                                    """)
-                    sql_connection.commit()
-                elif sure.lower() == "n":
-                    start()
-                else:
-                    go_home(sure)
-
-                # Return to Start Menu or repeat
-                # Success statement needs to slice first letter off mode
-                # Other funcs incl edit, add, drecypted so deleteed is wrong
-                try_again(mode, (list_pw[index][0]), func, (done[0][1:]))
+                delete_pw(list_pw, index, mode, func)
             # This handles when the index variable is outside of the range of list_pw
             else:
                 go_home((int(index) + 1))
@@ -263,7 +198,7 @@ def show_pw(func):
     print(line)
 
     # Query the passwords table and insert all into list_pw ordered by account name
-    list_pw = get_list_pw()
+    list_pw = query_data()
 
     # Check if list_pw is empty
     if list_pw != []:
@@ -276,20 +211,7 @@ def show_pw(func):
             index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1 )
             # Check if user input for index veriable is within the range of list_pw
             if int(index) <= len(list_pw):
-                # Before decrypting the password we need to save the returned Encryption Key for that record
-                pw_key = list_pw[index][-2]
-
-                print(mode + doing)
-                # Decrypted password needs to be saved to its own variable
-                # We use Fernet(pw_key) here instead of fernet variable to
-                # Decrypt with the relevant records Encryption Key
-                decoded_pw = Fernet(pw_key).decrypt(list_pw[index][-3])
-                # Remember to decode the new variable to convert from BITS datatype to STRING
-                # This removes the leading b value changing b'variable' to 'variable'
-                print(f"\n{decoded_pw.decode()}\n")
-
-                # Return to Start Menu or repeat
-                try_again(mode, (list_pw[index][0]), func, (done[0]))
+                display_pw(list_pw, index, mode, func)
             # This handles when the index variable is outside of the range of list_pw
             else:
                 go_home((int(index) + 1))
@@ -301,15 +223,25 @@ def show_pw(func):
         empty(mode)
 
 
-# Query the passwords table and insert all into list_pw ordered by account name
-def get_list_pw():
-    sql_cursor.execute("""
-                        SELECT * 
-                        FROM passwords 
-                        ORDER BY account ASC;
-                        """)
-    list_pw = sql_cursor.fetchall()
-    return list_pw
+# Get Index then perform action
+def do_action():
+    # Define function index and function name
+    funcs = [
+        (1, add_pw),
+        (2, edit_pw),
+        (3, del_pw),
+        (4, show_pw),
+        (5, exit)
+    ]
+
+    for func in funcs:
+        if func[0] != int():
+            continue
+        # Execute chosen function
+        else:
+            # We need to pass func variable as an argument when calling func variable
+            # Because each function expects a func argument so it can call try_again() if needed
+            func[-1](func[-1])
 
 
 def display(list_pw):
@@ -365,6 +297,139 @@ def try_again(mode, acct, func, fixed_done):
         start()
     else:
         go_home(again)
+
+
+# Encrypt
+def encrypt_pw(pw):
+    # Password is encoded then saved to a new variable per documentation
+    encrypted_pw = fernet.encrypt(pw.encode())
+    # The variable needs var.decode() when adding to the encrypted passwords table
+    # This converts the values datatype from BITS to STRING
+    # Otherwise it saves to the list as b'var' instead of 'var'
+    # Decode is different to Decrypt, remember to read the docs more
+    # The encoded pw is BITS datatype once encrypted and needs it's own variable
+    return encrypted_pw.decode()
+
+
+# Decrypt
+def decrypt_pw(key, pw):
+    # Decrypted password needs to be saved to its own variable
+    # We use Fernet(pw_key) here instead of fernet variable to
+    # Decrypt with the relevant records Encryption Key
+    decrypted_pw = Fernet(key).decrypt(pw)
+    # Remember to DECODE the new variable to convert from BITS datatype to STRING
+    # This removes the leading b value changing b'variable' to 'variable'
+    return decrypted_pw.decode()
+
+
+# Update password
+def update_pw(list_pw, index, mode, func):
+    # Before updating the password we need to save the returned account and username for the update statement
+    # Ran into errors when using list_pw[index][1 or 0] directly in the SQLite update statement
+    acct = str(list_pw[index][0])
+    usr = str(list_pw[index][1])
+    old_pw = str(list_pw[index][-3])
+
+    replace_pw = str(input("New Password: "))
+    if replace_pw != "":
+        print(mode + doing)
+        save_pw = encrypt_pw(replace_pw)
+        update_data(save_pw, acct, usr, old_pw)
+
+        # Return to Start Menu or repeat
+        try_again(mode, (list_pw[index][0]), func, (done[0]))
+    else:
+        print("New password was not entered")
+        # Return to Start Menu or repeat
+        try_again(mode, (list_pw[index][0]), func, (done[0]))
+
+
+# Delete password
+def delete_pw(list_pw, index, mode, func):
+    # Before deleting the password we need to save the returned account and username for the delete statement
+    acct = str(list_pw[index][0])
+    usr = str(list_pw[index][1])
+    old_pw = str(list_pw[index][-3])
+
+    # Check if the user wants to delete the chosen pw
+    sure = str(input(f"{line}Are you sure you want to delete the password for {list_pw[index][0]} ?\n{y_n}"))
+    if sure.lower() == "y":
+        # Success statement needs to slice first letter off mode
+        print(mode[:-1] + doing)
+        # Delete data from SQLite table
+        delete_data(acct, usr, old_pw)
+    elif sure.lower() == "n":
+        start()
+    else:
+        go_home(sure)
+    # Return to Start Menu or repeat
+    # Success statement needs to slice first letter off mode
+    # Other funcs incl edit, add, drecypted so deleteed is wrong
+    try_again(mode, (list_pw[index][0]), func, (done[0][1:]))
+
+
+# Display password
+def display_pw(list_pw, index, mode, func):
+    # Before decrypting the password we need to save the returned Encryption Key for that record
+    pw_key = list_pw[index][-2]
+    pw = list_pw[index][-3]
+
+    print(mode + doing)
+    decrypted_pw = decrypt_pw(pw_key, pw)
+    print(f"\n{decrypted_pw}\n")
+
+    # Return to Start Menu or repeat
+    try_again(mode, (list_pw[index][0]), func, (done[0]))
+
+
+# Query the passwords table and insert all into list_pw ordered by account name
+def query_data():
+    sql_cursor.execute("""
+                        SELECT * 
+                        FROM passwords 
+                        ORDER BY account ASC;
+                        """)
+    list_pw = sql_cursor.fetchall()
+    return list_pw
+
+
+# INSERT new records into passwords SQLite table
+def insert_data(acct, username, pw):
+    sql_cursor.execute(f"""
+                    INSERT INTO passwords 
+                    VALUES(
+                        '{acct}',
+                        '{username}',
+                        '{pw}',
+                        '{session_pw_key.decode()}',
+                        '{today}');
+                    """)
+    sql_connection.commit()
+
+
+# UPDATE records in the passwords SQLite table
+def update_data(pw, acct, usr, old_pw):
+    sql_cursor.execute(f"""
+                    UPDATE passwords 
+                    SET password = '{pw}', 
+                    pw_key = '{session_pw_key}',
+                    last_modified = '{today}' 
+                    WHERE account = '{acct}' 
+                    AND username = '{usr}'
+                    AND password = '{old_pw}';
+                    """)
+    sql_connection.commit()
+
+
+# DELETE records from the passwords SQLite table
+def delete_data(acct, usr, pw):
+    sql_cursor.execute(f"""
+                    DELETE FROM passwords 
+                    WHERE account = '{acct}' 
+                    AND username = '{usr}'
+                    AND password = '{pw}';
+                    """)
+    sql_connection.commit()
 
 
 
