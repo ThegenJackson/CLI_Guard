@@ -8,6 +8,12 @@ from cryptography.fernet import Fernet
 # Tabulate is used to output list_pw data to terminal in grid format
 from tabulate import tabulate
 
+# Colour the SPlash
+from colorama import Fore
+
+# OS is imported to send 'cls' to the terminal between functions
+from os import system
+
 # DateTime used when editing passwords or adding new passwords
 from datetime import date
 
@@ -38,25 +44,24 @@ list_pw = []
 # Overuse of lists for message-pieces makes creating messages confusing
 splash = f"""                                           
    SSSSSSSSSSSSSSS      PPPPPPPPPPPPPPPPP       MMMMMMMM               MMMMMMMM
- SS:::::::::::::::S     P::::::::::::::::P      M:::::::M             M:::::::M
-S:::::SSSSSS::::::S     P::::::PPPPPP:::::P     M::::::::M           M::::::::M
-S:::::S     SSSSSSS     PP:::::P     P:::::P    M:::::::::M         M:::::::::M
-S:::::S                   P::::P     P:::::P    M::::::::::M       M::::::::::M
-S:::::S                   P::::P     P:::::P    M:::::::::::M     M:::::::::::M
- S::::SSSS                P::::PPPPPP:::::P     M:::::::M::::M   M::::M:::::::M
-  SS::::::SSSSS           P:::::::::::::PP      M::::::M M::::M M::::M M::::::M
-    SSS::::::::SS         P::::PPPPPPPPP        M::::::M  M::::M::::M  M::::::M
-       SSSSSS::::S        P::::P                M::::::M   M:::::::M   M::::::M
-            S:::::S       P::::P                M::::::M    M:::::M    M::::::M
-            S:::::S       P::::P                M::::::M     MMMMM     M::::::M
-SSSSSSS     S:::::S     PP::::::PP              M::::::M               M::::::M
-S::::::SSSSSS:::::S     P::::::::P              M::::::M               M::::::M
-S:::::::::::::::SS      P::::::::P              M::::::M               M::::::M
- SSSSSSSSSSSSSSS        PPPPPPPPPP              MMMMMMMM               MMMMMMMM
+ SSSSSSSSSSSSSSSSSS     PPPPPPPPPPPPPPPPPP      MMMMMMMMM             MMMMMMMMM
+SSSSSSSSSSSSSSSSSSS     PPPPPPPPPPPPPPPPPPP     MMMMMMMMMM           MMMMMMMMMM
+SSSSSSS     S{Fore.GREEN}Simple{Fore.WHITE}     PPPPPPPP     PPPPPPP    MMMMMMMMMMM         MMMMMMMMMMM
+SSSSSSS                   PPPPPP     PPPPPPP    MMMMMMMMMMMM       MMMMMMMMMMMM
+SSSSSSS                   PPPPPP     PPPPPPP    MMMMMMMMMMMMM     MMMMMMMMMMMMM
+ SSSSSSSSS                PPPPPPPPPPPPPPPPP     MMMMMMMMMMMMMM   MMMMMMMMMMMMMM
+  SSSSSSSSSSSSS           PPPPPPPPPPPPPPPP      MMMMMMMM MMMMMM MMMMMM MMMMMMMM
+    SSSSSSSSSSSSS         PPPPPP{Fore.GREEN}Password{Fore.WHITE}        MMMMMMMM  MMMMMMMMMMM  MMMMMMMM
+       SSSSSSSSSSS        PPPPPP                MMMMMMMM   MMMMMMMMM   MMMMMMMM
+            SSSSSSS       PPPPPP                MMMMMMMM    MMMMMMM    MMMMMMMM
+            SSSSSSS       PPPPPP                MMMMMMMM     MMMMM     MMMMMMMM
+SSSSSSS     SSSSSSS     PPPPPPPPPP              MMMMMMMM               MMMMMMMM
+SSSSSSSSSSSSSSSSSSS     PPPPPPPPPP              MMMMMMMM               MMMMMMMM
+SSSSSSSSSSSSSSSSSS      PPPPPPPPPP              MMMMMMMM               MMMMMMMM
+ SSSSSSSSSSSSSSS        PPPPPPPPPP              M{Fore.GREEN}Manager{Fore.WHITE}               MMMMMMMM
 
-                            Simple Password Manager                                                           
+                            {Fore.GREEN}Simple Password Manager{Fore.WHITE}                                                           
 """
-line = "##################################################################################\n"
 y_n = "Type Y for Yes or N for No\n(y/n)\n"
 another = f" another password?\n{y_n}"
 select = ["Select a password to ", " by typing the index of the account: "]
@@ -65,11 +70,14 @@ done = ["ed password for ", "...\n"]
 empty_list = ["There are no passwords to ", "...\n"]
 go_back = "Return to Start Menu?\n"
 mode = ""
+line = f"##################################################################################\n"
 
 
 
 # Display Splash and Start Menu to CLI - User chooses function
 def start():
+    # Clear Terminal
+    system('cls')
     # Define function index, human-readable text, function name
     funcs = [
         (1, "Create new password", "Add"),
@@ -89,7 +97,7 @@ def start():
     try:
         # User chooses function, later converted to INT for comparison
         # Choice variable is not set as INT initially to avoid TRY/EXCEPT issues encounted
-        choice = input(f"Select an option by typing {funcs[0][0]}-{funcs[-1][0]}:\n")
+        choice = input(f"Select an option by typing 1-{len(funcs)}:\n")
         # Check choice is within range of funcs list or else raise error
         if int(choice) <= len(funcs):
             # Exit if users chooses exit, exit() does not take args that do_action takes
@@ -115,6 +123,8 @@ def start():
 
 # Get func arg then perform action
 def do_action(mode):
+    # Clear Terminal
+    system('cls')
     # Define function index and function name
     funcs = [
         (update_pw, "Edit"),
@@ -212,7 +222,7 @@ def delete_pw(list_pw, index, mode):
     old_pw = str(list_pw[index][-3])
 
     # Check if the user wants to delete the chosen pw
-    sure = str(input(f"{line}Are you sure you want to delete the password for {list_pw[index][0]} ?\n{y_n}"))
+    sure = str(input(f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the password for {Fore.YELLOW}{list_pw[index][0]}{Fore.WHITE} ?\n{y_n}"))
     if sure.lower() == "y":
         # Success statement needs to slice first letter off mode
         print(mode[:-1] + doing)
@@ -284,7 +294,9 @@ def decrypt_pw(key, pw):
 
 # Handles user inputted values raising ValueErrors or out of range of list
 def go_home(wrong):
-    print( line + f'You entered {wrong}, which is not a valid selection.')
+    # Clear Terminal
+    system('cls')
+    print( f"{Fore.RED}{line}{Fore.WHITE}\nYou entered {Fore.RED}{wrong}{Fore.WHITE}, which is not a valid selection.")
     home = str(input( go_back + y_n ))
     yes_no(home, mode=0)
 
@@ -298,7 +310,7 @@ def empty(mode):
 # User chooses to perform the function again or return to Start
 # Ran into issues using the yes_no function because this calls the extra argument of func
 def try_again(mode, acct, fixed_done):
-    again = str(input( line + mode + fixed_done + acct + done[1] + mode + another ))
+    again = str(input( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another ))
     yes_no(again, mode)
 
 
