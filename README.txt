@@ -17,14 +17,7 @@ Libraries and Packages used:
 	https://sqlitestudio.pl/
 -	Tabulate
 	https://pypi.org/project/tabulate/
+-	Colorama
+	https://pypi.org/project/colorama/
 -	PyInstaller
 	https://pyinstaller.org/en/stable/
-	### From DIR <path\script.py> in CMD
-	### python -m PyInstaller --onefile --name <script.py> <path\script.py>
-	### Edit SPEC file to start with:
-	### Import kivy
-	### from kivy.deps import sdl2, glew, gstreamer
-	### SPEC file body amendments:
-	### exe = EXE(pyz, Tree('<path\\>'), a.scripts, a.binaries, a.zipfiles, a.datas, *[Tree(p) for p in (sdl2.dep_bins + glew.dep_bins)], upx=True, name='<script>')
-	### Remember to use double \\ in above
-	### python -m PyInstaller <path\script.py>
