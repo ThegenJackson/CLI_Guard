@@ -11,13 +11,8 @@ from tabulate import tabulate
 # Colour the Splash and others
 from colorama import Fore, Back
 
-# Keyboard input to select from available options and navigate program
-import keyboard
-
 # OS is imported to send 'cls' to the terminal between functions
 from os import system
-
-import time
 
 # DateTime used when editing passwords or adding new passwords
 from datetime import date
@@ -82,6 +77,8 @@ line = f"#######################################################################
 
 # Display Splash and Start Menu to CLI - User chooses function
 def start():
+    # Clear Terminal
+    system('cls')
     # Define function index, human-readable text, function name
     funcs = [
         (1, "Create new password", "Add"),
@@ -91,40 +88,39 @@ def start():
         (5, "Exit")
     ]
 
-    current_option = 0
+    # Print CLI Splash for program Start
+    print( line + splash + line )
+    # List available functions by human-readable index
+    for func in funcs:
+        print(func[0], func[1])
 
-    while True:
-        # Clear Terminal
-        system('cls')
-
-        # Print CLI Splash for program Start
-        print( line + splash + line )
-
-        # List available functions by human-readable index with highlighting
-        for index, func in enumerate(funcs):
-            if index == current_option:
-                print(Back.WHITE + Fore.BLACK + f"{func[0]}. {func[1]}" + Back.RESET + Fore.RESET)
-            else:
-                print(f"{func[0]}. {func[1]}")
-
-        # Wait for arrow key input
-        key = keyboard.read_event(suppress=True).name
-
-        if key == 'up':
-            current_option = (current_option - 1) % len(funcs)
-        elif key == 'down':
-            current_option = (current_option + 1) % len(funcs)
-        elif key == 'enter':
-            selected_func = funcs[current_option]
-
-            if selected_func[0] == 5:
-                print("\nExiting...")
+    # TRY/EXCEPT handles if input is not INT
+    try:
+        # User chooses function, later converted to INT for comparison
+        # Choice variable is not set as INT initially to avoid TRY/EXCEPT issues encounted
+        choice = input(f"Select an option by typing 1-{len(funcs)}:\n")
+        # Check choice is within range of funcs list or else raise error
+        if int(choice) <= len(funcs):
+            # Exit if users chooses exit, exit() does not take args that do_action takes
+            if int(choice) == 5:
+                print("Exiting...")
                 exit()
             else:
-                do_action(selected_func[2])
-
-        # Add a short delay to prevent rapid scrolling
-        time.sleep(0.15)
+                # Loop through funcs list skipping where func != choice
+                for func in funcs:
+                    if func[0] != int(choice):
+                        continue
+                # Execute chosen function
+                    else:
+                        # We need to pass func variable as an argument when calling func variable
+                        # Because each function expects a func argument so it can call try_again() if needed
+                        do_action(func[-1])
+        # This handles when input is outside of list range
+        else:
+            go_home(choice)
+    # Try/Except handles ValueError raised when user inputs anything other than an INT
+    except ValueError:
+        go_home(choice)
 
 
 # Get func arg then perform action
@@ -155,7 +151,7 @@ def do_action(mode):
                     # Use Tabulate to print selected columns to ternimal
                     display_data = display(list_pw)
                     print(display_data)
-                    
+
                     # TRY/EXCEPT handles if input is not INT
                     try:
                         # User chooses record to perform action against
@@ -304,16 +300,12 @@ def go_home(wrong):
     system('cls')
     print( f"{Fore.RED}{line}{Fore.WHITE}\nYou entered {Fore.RED}{wrong}{Fore.WHITE}, which is not a valid selection.")
     home = str(input( go_back + y_n ))
-    # Add a short delay to prevent too many inputs - avoiding loop of return to start menu selects first function for single enter press
-    time.sleep(0.15)
     yes_no(home, mode=0)
 
 
 # The list_pw list is empty - user chooses to return to Start or Exit
 def empty(mode):
     home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + y_n ))
-    # Add a short delay to prevent too many inputs - avoiding loop of return to start menu selects first function for single enter press
-    time.sleep(0.15)
     yes_no(home, mode=0)
 
 
@@ -321,8 +313,6 @@ def empty(mode):
 # Ran into issues using the yes_no function because this calls the extra argument of func
 def try_again(mode, acct, fixed_done):
     again = str(input( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another ))
-    # Add a short delay to prevent too many inputs - avoiding loop of return to start menu selects first function for single enter press
-    time.sleep(0.15)
     yes_no(again, mode)
 
 
