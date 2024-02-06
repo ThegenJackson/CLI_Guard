@@ -8,8 +8,8 @@ from cryptography.fernet import Fernet
 # Tabulate is used to output list_pw data to terminal in grid format
 from tabulate import tabulate
 
-# Colour the SPlash
-from colorama import Fore
+# Colour the Splash and others
+from colorama import Fore, Back
 
 # OS is imported to send 'cls' to the terminal between functions
 from os import system
@@ -19,6 +19,7 @@ from datetime import date
 
 
 today = date.today()
+
 
 # Generate the Fernet Encryption Key
 # Required for encryption and decryption with Fernet as per documentation
@@ -102,6 +103,7 @@ def start():
         if int(choice) <= len(funcs):
             # Exit if users chooses exit, exit() does not take args that do_action takes
             if int(choice) == 5:
+                print("Exiting...")
                 exit()
             else:
                 # Loop through funcs list skipping where func != choice
@@ -320,6 +322,7 @@ def yes_no(choice, mode):
         if choice.lower() == "y":
             start()
         elif choice.lower() == "n":
+            print("Exiting...")
             exit()
         else:
             go_home(choice) 
