@@ -8,10 +8,10 @@ import cryptography
 from cryptography.fernet import Fernet
 
 # DateTime used when editing passwords or adding new passwords
-from datetime import date
-
+from datetime import date, timedelta
 
 today = date.today()
+tomorrow = date.today() + timedelta(1)
 
 
 # Generate the Fernet Encryption Key

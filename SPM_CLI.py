@@ -47,6 +47,7 @@ go_back = "Return to Start Menu?\n"
 mode = ""
 line = f"##################################################################################\n"
 login = "Select a user "
+incorrect = "Incorrect password entered 3 times"
 
 
 
@@ -57,30 +58,55 @@ def cliLogIn():
     print( line + splash + line )
     # Query the users table and insert all into list_users
     list_users = query_data("users")
-
     # Check if list_users is empty
     if list_users != []:
-        # Before decrypting the password we need to save the returned Encryption Key for that record
-        user_key = list_users[0][1]
-        user_pw = list_users[0][0]
-        logIn(user_key, user_pw)
+        # Open log file and pull last line to check if account is locked
+        f = open(".\\SPM_LOGS.txt", "r")
+        for lines in f:
+            pass
+        last_line = lines.strip("\n")
+        f.close()
+        # Check if account is locked before logging in
+        if str(last_line) == f"[{today}] Account locked until {tomorrow}":
+            print(f"Account locked until {tomorrow}\nExiting...")
+            exit()
+        else:
+            # Make number of attempted passwords 0 from Attempt Log In screen
+            attempt = 0
+            # Before decrypting the password we need to save the returned Encryption Key for that record
+            user_key = list_users[0][1]
+            user_pw = list_users[0][0]
+            # Proceed to Log In screen from Attempt Log In screen
+            logIn(attempt, user_key, user_pw)
     else:
+        # Create a new user if none exist
         newUser()
 
 
 # Log In screen to avoid splash everytime
-def logIn(user_key, user_pw):
-    # Decrypt user password to compare with password entered
-    decrypted_user_pw = decrypt_pw(user_key, user_pw)
-    attempted_pw = str(input("Password: "))
-    if attempted_pw == decrypted_user_pw:
-        # Need to fix this to check is user password = pw saved to db for userID
-        cliStart()
+def logIn(attempt, user_key, user_pw):
+    # 3 attempts to Log In before logging to log file and locking account for 1 day
+    if attempt < 3:
+        # Decrypt user password to compare with password entered
+        decrypted_user_pw = decrypt_pw(user_key, user_pw)
+        attempted_pw = str(input("Password: "))
+        if attempted_pw == decrypted_user_pw:
+            # Need to fix this to check is user password = pw saved to db for userID
+            cliStart()
+        else:
+            # Clear Terminal
+            system("cls")
+            # Add attempt to attempts before returning to Log In screen
+            attempt += 1
+            print(f"{Fore.RED}{line}{Fore.WHITE}Incorrect password attempted")
+            logIn(attempt, user_key, user_pw)
     else:
-        # Clear Terminal
-        system("cls")
-        print(f"{Fore.RED}{line}Incorrect password attempted{Fore.WHITE}")
-        logIn(user_key, user_pw)
+        # Use "a" to APPEND to log file
+        f = open(".\\SPM_LOGS.txt", "a")
+        f.write(f"[{today}] {incorrect}\n[{today}] Account locked until {tomorrow}")
+        f.close()
+        print(f"{incorrect}\nExiting...")
+        exit()
 
 
 # Display Splash and Start Menu to CLI - User chooses function
@@ -190,6 +216,10 @@ def newUser():
         print("Adding new user details...")
         save_pw = encrypt_pw(new_user_pw)
         insert_user(save_pw)
+        # Use "a" to APPEND to log file
+        f = open(".\\SPM_LOGS.txt", "a")
+        f.write(f"[{today}] New user created\n")
+        f.close()
         # Return to Log In screen
         cliLogIn()
     else:
@@ -312,7 +342,7 @@ def empty(mode):
 # User chooses to perform the function again or return to Start
 # Ran into issues using the yes_no function because this calls the extra argument of func
 def try_again(mode, acct, fixed_done):
-    # Use "a" to APPEND files to any directory
+    # Use "a" to APPEND to log file
     f = open(".\\SPM_LOGS.txt", "a")
     f.write(f"[{today}] {mode}{fixed_done} {acct}\n")
     f.close()
