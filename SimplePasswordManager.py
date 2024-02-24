@@ -466,7 +466,7 @@ def update_data(pw, acct, usr, old_pw):
     sql_cursor.execute(f"""
                     UPDATE passwords 
                     SET password = '{pw}', 
-                    pw_key = '{session_pw_key}',
+                    pw_key = '{session_pw_key.decode()}',
                     last_modified = '{today}' 
                     WHERE account = '{acct}' 
                     AND username = '{usr}'
