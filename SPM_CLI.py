@@ -2,7 +2,6 @@
 
 # Import SPM Python packages
 from SPM import *
-from SPM import encrypt_pw, decrypt_pw, query_data, insert_data, update_data, delete_data
 
 # Tabulate is used to output list_pw data to terminal in grid format
 from tabulate import tabulate
@@ -264,6 +263,10 @@ def empty(mode):
 # User chooses to perform the function again or return to Start
 # Ran into issues using the yes_no function because this calls the extra argument of func
 def try_again(mode, acct, fixed_done):
+    # Use "a" to APPEND files to any directory
+    f = open(".\\SPM_LOGS.txt", "a")
+    f.write(f"[{today}] {mode}{fixed_done} {acct}\n")
+    f.close()
     again = str(input( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another ))
     yes_no(again, mode)
 
@@ -289,6 +292,5 @@ def yes_no(choice, mode):
             go_home(choice)
 
 
-
-# Start the CLI app
+# Start SPM CLI
 cliStart()

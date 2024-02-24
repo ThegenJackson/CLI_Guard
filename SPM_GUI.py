@@ -2,7 +2,6 @@
 
 # Import SPM Python packages
 from SPM import *
-from SPM import encrypt_pw, decrypt_pw, query_data, insert_data, update_data, delete_data
 
 # Tkinter packages for GUI
 from tkinter import *
@@ -13,10 +12,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
 
-
 # Create the mainWindow and styling
 mainWindow = ttk.Window(title="Simple Password Manager", size=(500, 600), themename="superhero")
-
 
 
 # Create the Optionmenu variable and set to blank
@@ -49,12 +46,5 @@ quitButton = ttk.Button(mainWindow, text="Quit", bootstyle=DANGER, command=mainW
 quitButton.pack(side=TOP, padx=5, pady=10)
 
 
-# Call guiStart function from SPM Launcher
-def guiStart():
-    # Start the program using the mainWindow
-    mainWindow.mainloop()
-
-
-
-# Start the CLI app
-guiStart()
+# Start the program using the mainWindow
+mainWindow.mainloop()
