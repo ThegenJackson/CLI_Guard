@@ -1,3 +1,11 @@
+# Simple Password Manager
+
+# Import SPM Python packages
+from SPM_CLI import *
+from SPM_GUI import *
+from SPM_API import *
+from SPG import *
+
 # Import SQLite library
 import sqlite3
 
@@ -389,4 +397,7 @@ def delete_data(acct, usr, pw):
 
 
 # Start the CLI app
-start()
+#start()
+
+# Start the program using the mainWindow
+mainWindow.mainloop()
