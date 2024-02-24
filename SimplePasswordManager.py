@@ -83,7 +83,7 @@ incorrect = "Incorrect password entered 3 times"
 
 
 # Attempt Log In if user exists
-def cliLogIn():
+def spmLogIn():
     # Clear Terminal then SPLASH
     system("cls")
     print( line + splash + line )
@@ -110,8 +110,8 @@ def cliLogIn():
             # Proceed to Log In screen from Attempt Log In screen
             logIn(attempt, user_key, user_pw)
     else:
-        # Create a new user if none exist
-        newUser()
+        # Create a new master password if doesn't exist
+        new_Master()
 
 
 # Log In screen to avoid splash everytime
@@ -120,10 +120,10 @@ def logIn(attempt, user_key, user_pw):
     if attempt < 3:
         # Decrypt user password to compare with password entered
         decrypted_user_pw = decrypt_pw(user_key, user_pw)
-        attempted_pw = str(input("Password: "))
+        attempted_pw = str(input("Master password: "))
         if attempted_pw == decrypted_user_pw:
             # Need to fix this to check is user password = pw saved to db for userID
-            cliStart()
+            Start()
         else:
             # Clear Terminal
             system("cls")
@@ -140,28 +140,48 @@ def logIn(attempt, user_key, user_pw):
         exit()
 
 
-# Create new user
-def newUser():
-    new_user_pw = str(input("Create new user password: "))
+# Create new master password
+def new_Master():
+    new_master_pw = str(input("Create new master password: "))
 
     # Check all fields are populated before proceeding
-    if new_user_pw != "":
-        print("Adding new user details...")
-        save_pw = encrypt_pw(new_user_pw)
-        insert_user(save_pw)
+    if new_master_pw != "":
+        print("Adding new master password...")
+        save_pw = encrypt_pw(new_master_pw)
+        insert_master(save_pw)
         # Use "a" to APPEND to log file
         f = open(".\\SPM_LOGS.txt", "a")
-        f.write(f"[{today}] New user created\n")
+        f.write(f"[{today}] New master password created\n")
         f.close()
         # Return to Log In screen
-        cliLogIn()
+        spmLogIn()
     else:
         print("No password was entered!")
-        newUser()
+        new_Master()
+
+
+# Create new master password
+def update_Master():
+    new_master_pw = str(input("Enter new master password: "))
+
+    # Check all fields are populated before proceeding
+    if new_master_pw != "":
+        print("Editing master password...")
+        save_pw = encrypt_pw(new_master_pw)
+        update_master_pw(save_pw)
+        # Use "a" to APPEND to log file
+        f = open(".\\SPM_LOGS.txt", "a")
+        f.write(f"[{today}] Master password updated\n")
+        f.close()
+        # Return to Log In screen
+        spmLogIn()
+    else:
+        print("No password was entered!")
+        update_Master()
 
 
 # Display Splash and Start Menu to CLI - User chooses function
-def cliStart():
+def Start():
     # Clear Terminal
     system("cls")
     # Define function index, human-readable text, function name
@@ -170,6 +190,7 @@ def cliStart():
         ("Edit a password", "Edit"),
         ("Delete a password", "Delete"),
         ("Display a password", "Decrypt"),
+        ("Edit master password", "Master password"),
         ("Exit", "exit")
     ]
 
@@ -221,6 +242,8 @@ def do_action(mode):
 
     if mode == "Add":
         add_pw(mode)
+    elif mode == "Master password":
+        update_Master()
     else:
         for func in funcs:
             if func[-1] != mode:
@@ -314,7 +337,7 @@ def delete_pw(list_pw, index, mode):
         # Delete data from SQLite table
         delete_data(acct, usr, old_pw)
     elif sure.lower() == "n":
-        cliStart()
+        Start()
     else:
         go_home(sure)
     # Return to Start Menu or repeat
@@ -385,7 +408,7 @@ def try_again(mode, acct, fixed_done):
 def yes_no(choice, mode):
     if mode == 0:
         if choice.lower() == "y":
-            cliStart()
+            Start()
         elif choice.lower() == "n":
             print("Exiting...")
             exit()
@@ -397,7 +420,7 @@ def yes_no(choice, mode):
             # Because each function expects a func argument so it can call try_again() if needed
             do_action(mode)
         elif choice.lower() == "n":
-            cliStart()
+            Start()
         else:
             go_home(choice)
 
@@ -436,7 +459,7 @@ def query_data(table):
 
 
 # INSERT new user into users SQLite table
-def insert_user(pw):
+def insert_master(pw):
     sql_cursor.execute(f"""
                     INSERT INTO users 
                     VALUES(
@@ -457,6 +480,17 @@ def insert_data(acct, username, pw):
                         '{pw}',
                         '{session_pw_key.decode()}',
                         '{today}');
+                    """)
+    sql_connection.commit()
+
+
+# UPDATE records in the passwords SQLite table
+def update_master_pw(pw):
+    sql_cursor.execute(f"""
+                    UPDATE users 
+                    SET master_pw = '{pw}', 
+                    master_pw_key = '{session_pw_key.decode()}',
+                    master_last_modified = '{today}';
                     """)
     sql_connection.commit()
 
@@ -488,4 +522,4 @@ def delete_data(acct, usr, pw):
 
 # Start SPM CLI full screen Terminal
 keyboard.press('F11')
-cliLogIn()
+spmLogIn()
