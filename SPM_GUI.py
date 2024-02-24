@@ -1,10 +1,8 @@
 # Simple Password Manager Graphic User Interface
 
 # Import SPM Python packages
-from SPM_CLI import *
-from SPM_API import *
 from SPM import *
-from SPG import *
+from SPM import encrypt_pw, decrypt_pw, query_data, insert_data, update_data, delete_data
 
 # Tkinter packages for GUI
 from tkinter import *
@@ -45,11 +43,18 @@ for detail in requiredDetails:
 # Currently for testing
 testingButton = ttk.Button(mainWindow, text="Button", bootstyle=PRIMARY)
 testingButton.pack(side=TOP, padx=5, pady=10)
+
 # Quit button sends command to destroy mainWindow
 quitButton = ttk.Button(mainWindow, text="Quit", bootstyle=DANGER, command=mainWindow.destroy)
 quitButton.pack(side=TOP, padx=5, pady=10)
 
 
+# Call guiStart function from SPM Launcher
+def guiStart():
+    # Start the program using the mainWindow
+    mainWindow.mainloop()
 
-# Start the program using the mainWindow
-#mainWindow.mainloop()
+
+
+# Start the CLI app
+guiStart()
