@@ -3,17 +3,18 @@
 # Import SPM Python packages
 from SPM import *
 
-# Tabulate is used to output list_pw data to terminal in grid format
+# Tabulate is used to output list_pw and list_users data to Terminal in grid format
 from tabulate import tabulate
 
 # Colour the Splash and others
 from colorama import Fore, Back
 
-# OS is imported to send 'cls' to the terminal between functions
+# OS is imported to send 'cls' to the Terminal between functions
 from os import system
 
 
-# Formatting terminal output
+
+# Formatting Terminal output
 # Not all message-pieces should be kept in a list
 # Overuse of lists for message-pieces makes creating messages confusing
 splash = f"""                                           
@@ -45,13 +46,47 @@ empty_list = ["There are no passwords to ", "...\n"]
 go_back = "Return to Start Menu?\n"
 mode = ""
 line = f"##################################################################################\n"
+login = "Select a user "
 
+
+
+# Attempt Log In if user exists
+def cliLogIn():
+    # Clear Terminal then SPLASH
+    system("cls")
+    print( line + splash + line )
+    # Query the users table and insert all into list_users
+    list_users = query_data("users")
+
+    # Check if list_users is empty
+    if list_users != []:
+        # Before decrypting the password we need to save the returned Encryption Key for that record
+        user_key = list_users[0][1]
+        user_pw = list_users[0][0]
+        logIn(user_key, user_pw)
+    else:
+        newUser()
+
+
+# Log In screen to avoid splash everytime
+def logIn(user_key, user_pw):
+    # Decrypt user password to compare with password entered
+    decrypted_user_pw = decrypt_pw(user_key, user_pw)
+    attempted_pw = str(input("Password: "))
+    if attempted_pw == decrypted_user_pw:
+        # Need to fix this to check is user password = pw saved to db for userID
+        cliStart()
+    else:
+        # Clear Terminal
+        system("cls")
+        print(f"{Fore.RED}{line}Incorrect password attempted{Fore.WHITE}")
+        logIn(user_key, user_pw)
 
 
 # Display Splash and Start Menu to CLI - User chooses function
 def cliStart():
     # Clear Terminal
-    system('cls')
+    system("cls")
     # Define function index, human-readable text, function name
     funcs = [
         (1, "Create new password", "Add"),
@@ -99,7 +134,7 @@ def cliStart():
 # Get func arg then perform action
 def do_action(mode):
     # Clear Terminal
-    system('cls')
+    system("cls")
     # Define function index and function name
     funcs = [
         (update_pw, "Edit"),
@@ -117,13 +152,13 @@ def do_action(mode):
             else:
                 print(line)
                 # Query the passwords table and insert all into list_pw ordered by account name
-                list_pw = query_data()
+                list_pw = query_data("passwords")
 
                 # Check if list_pw is empty
                 if list_pw != []:
                     # Use Tabulate to print selected columns to ternimal
-                    display_data = display(list_pw)
-                    print(display_data)
+                    display_passwords = display(list_pw)
+                    print(display_passwords)
 
                     # TRY/EXCEPT handles if input is not INT
                     try:
@@ -144,8 +179,22 @@ def do_action(mode):
                         go_home(index)
                 else:
                     empty(mode)
-                        # We need to pass func variable as an argument when calling func variable
-                        # Because each function expects a func argument so it can call try_again() if needed
+
+
+# Create new user
+def newUser():
+    new_user_pw = str(input("Create new user password: "))
+
+    # Check all fields are populated before proceeding
+    if new_user_pw != "":
+        print("Adding new user details...")
+        save_pw = encrypt_pw(new_user_pw)
+        insert_user(save_pw)
+        # Return to Log In screen
+        cliLogIn()
+    else:
+        print("No password was entered!")
+        newUser()
 
 
 # Password is encrypted then added to the encrypted passwords SQLite table
@@ -228,7 +277,7 @@ def display_pw(list_pw, index, mode):
 
 
 def display(list_pw):
-    # Create intermediary list to display data to terminal with Tabulate
+    # Create intermediary list to display data to Terminal with Tabulate
     list_table = []
     place = 1
     # Loop through the contents of list_pw to place in list_table since Tabulate won't allow to
@@ -248,7 +297,7 @@ def display(list_pw):
 # Handles user inputted values raising ValueErrors or out of range of list
 def go_home(wrong):
     # Clear Terminal
-    system('cls')
+    system("cls")
     print( f"{Fore.RED}{line}{Fore.WHITE}\nYou entered {Fore.RED}{wrong}{Fore.WHITE}, which is not a valid selection.")
     home = str(input( go_back + y_n ))
     yes_no(home, mode=0)
@@ -293,4 +342,4 @@ def yes_no(choice, mode):
 
 
 # Start SPM CLI
-cliStart()
+cliLogIn()
