@@ -397,7 +397,7 @@ def delete_data(acct, usr, pw):
 
 
 # Start the CLI app
-#start()
+start()
 
 # Start the program using the mainWindow
-mainWindow.mainloop()
+# mainWindow.mainloop()
