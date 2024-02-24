@@ -58,17 +58,28 @@ def decrypt_pw(key, pw):
     return decrypted_pw.decode()
 
 
-# Query the passwords table and insert all into list_pw ordered by account name
-def query_data():
-    sql_cursor.execute("""
+# Query the passwords table and insert all into list_pw ordered by account name or userID
+def query_data(table):
+    sql_cursor.execute(f"""
                         SELECT * 
-                        FROM vw_passwords 
-                        ORDER BY account ASC;
+                        FROM vw_{table};
                         """)
     list_pw = sql_cursor.fetchall()
     return list_pw
 
 
+# INSERT new user into users SQLite table
+def insert_user(pw):
+    sql_cursor.execute(f"""
+                    INSERT INTO users 
+                    VALUES(
+                        '{pw}',
+                        '{session_pw_key.decode()}',
+                        '{today}');
+                    """)
+    sql_connection.commit()
+    
+    
 # INSERT new records into passwords SQLite table
 def insert_data(acct, username, pw):
     sql_cursor.execute(f"""
