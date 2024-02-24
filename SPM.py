@@ -62,7 +62,7 @@ def decrypt_pw(key, pw):
 def query_data():
     sql_cursor.execute("""
                         SELECT * 
-                        FROM passwords 
+                        FROM vw_passwords 
                         ORDER BY account ASC;
                         """)
     list_pw = sql_cursor.fetchall()
