@@ -1,3 +1,11 @@
+# Simple Password Manager Graphic User Interface
+
+# Import SPM Python packages
+from SPM_CLI import *
+from SPM_API import *
+from SPM import *
+from SPG import *
+
 # Tkinter packages for GUI
 from tkinter import *
 from tkinter import Menu
@@ -9,20 +17,20 @@ from ttkbootstrap.constants import *
 
 
 # Create the mainWindow and styling
-mainWindow = ttk.Window(title="Web App Deployer", size=(500, 600), themename="superhero")
+mainWindow = ttk.Window(title="Simple Password Manager", size=(500, 600), themename="superhero")
 
 
 
 # Create the Optionmenu variable and set to blank
-webapp = StringVar()
-webapp.set("Select Web App to Deploy")
+testing = StringVar()
+testing.set("Select Password")
 # List available web apps to deploy in the Optionmenu
-options = ["Select Web App to Deploy", "Web Service", "Web Logger"]
-OptionMenu(mainWindow, webapp, *(options)).pack(side=TOP, padx=5, pady=10)
+options = ["Select Password", "Test", "Testing"]
+OptionMenu(mainWindow, testing, *(options)).pack(side=TOP, padx=5, pady=10)
 
 
 # List of requiredDetails with labels and entry widgets
-requiredDetails = ['Server Name', 'Database Name']
+requiredDetails = ['Account', 'Password']
 # List of requiredDetails values
 entries = []
 # Add labels and entry widgets for all requiredDetails and pack into the mainWindow
@@ -35,7 +43,7 @@ for detail in requiredDetails:
 
 
 # Currently for testing
-testingButton = ttk.Button(mainWindow, text="Deploy", bootstyle=PRIMARY)
+testingButton = ttk.Button(mainWindow, text="Button", bootstyle=PRIMARY)
 testingButton.pack(side=TOP, padx=5, pady=10)
 # Quit button sends command to destroy mainWindow
 quitButton = ttk.Button(mainWindow, text="Quit", bootstyle=DANGER, command=mainWindow.destroy)

@@ -1,3 +1,11 @@
+# Simple Password Manager
+
+# Import SPM Python packages
+from SPM_CLI import *
+from SPM_GUI import *
+from SPM_API import *
+from SPG import *
+
 # Import SQLite library
 import sqlite3
 
@@ -19,7 +27,7 @@ from datetime import date
 
 
 today = date.today()
-from SPM_GUI import *
+
 
 # Generate the Fernet Encryption Key
 # Required for encryption and decryption with Fernet as per documentation
