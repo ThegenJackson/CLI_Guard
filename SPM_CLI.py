@@ -12,6 +12,9 @@ from colorama import Fore, Back
 # OS is imported to send 'cls' to the Terminal between functions
 from os import system
 
+# Make Terminal full screen
+import keyboard
+
 
 
 # Formatting Terminal output
@@ -109,24 +112,44 @@ def logIn(attempt, user_key, user_pw):
         exit()
 
 
+# Create new user
+def newUser():
+    new_user_pw = str(input("Create new user password: "))
+
+    # Check all fields are populated before proceeding
+    if new_user_pw != "":
+        print("Adding new user details...")
+        save_pw = encrypt_pw(new_user_pw)
+        insert_user(save_pw)
+        # Use "a" to APPEND to log file
+        f = open(".\\SPM_LOGS.txt", "a")
+        f.write(f"[{today}] New user created\n")
+        f.close()
+        # Return to Log In screen
+        cliLogIn()
+    else:
+        print("No password was entered!")
+        newUser()
+
+
 # Display Splash and Start Menu to CLI - User chooses function
 def cliStart():
     # Clear Terminal
     system("cls")
     # Define function index, human-readable text, function name
     funcs = [
-        (1, "Create new password", "Add"),
-        (2, "Edit a password", "Edit"),
-        (3, "Delete a password", "Delete"),
-        (4, "Display a password", "Decrypt"),
-        (5, "Exit")
+        ("Create new password", "Add"),
+        ("Edit a password", "Edit"),
+        ("Delete a password", "Delete"),
+        ("Display a password", "Decrypt"),
+        ("Exit", "exit")
     ]
 
     # Print CLI Splash for program Start
     print( line + splash + line )
     # List available functions by human-readable index
     for func in funcs:
-        print(func[0], func[1])
+        print(((funcs.index(func) + 1)), func[0])
 
     # TRY/EXCEPT handles if input is not INT
     try:
@@ -136,13 +159,13 @@ def cliStart():
         # Check choice is within range of funcs list or else raise error
         if int(choice) <= len(funcs):
             # Exit if users chooses exit, exit() does not take args that do_action takes
-            if int(choice) == 5:
+            if int(choice) == len(funcs):
                 print("Exiting...")
                 exit()
             else:
                 # Loop through funcs list skipping where func != choice
                 for func in funcs:
-                    if func[0] != int(choice):
+                    if int(choice) != ((funcs.index(func) + 1)):
                         continue
                 # Execute chosen function
                     else:
@@ -205,26 +228,6 @@ def do_action(mode):
                         go_home(index)
                 else:
                     empty(mode)
-
-
-# Create new user
-def newUser():
-    new_user_pw = str(input("Create new user password: "))
-
-    # Check all fields are populated before proceeding
-    if new_user_pw != "":
-        print("Adding new user details...")
-        save_pw = encrypt_pw(new_user_pw)
-        insert_user(save_pw)
-        # Use "a" to APPEND to log file
-        f = open(".\\SPM_LOGS.txt", "a")
-        f.write(f"[{today}] New user created\n")
-        f.close()
-        # Return to Log In screen
-        cliLogIn()
-    else:
-        print("No password was entered!")
-        newUser()
 
 
 # Password is encrypted then added to the encrypted passwords SQLite table
@@ -371,5 +374,6 @@ def yes_no(choice, mode):
             go_home(choice)
 
 
-# Start SPM CLI
+# Start SPM CLI full screen Terminal
+keyboard.press('F11')
 cliLogIn()
