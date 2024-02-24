@@ -19,7 +19,7 @@ from datetime import date
 
 
 today = date.today()
-
+from SPM_GUI import *
 
 # Generate the Fernet Encryption Key
 # Required for encryption and decryption with Fernet as per documentation
@@ -389,4 +389,7 @@ def delete_data(acct, usr, pw):
 
 
 # Start the CLI app
-start()
+#start()
+
+# Start the program using the mainWindow
+mainWindow.mainloop()
