@@ -1,6 +1,6 @@
 # Simple Password Manager
 
-# Tabulate is used to output list_pw and list_users data to Terminal in grid format
+# Tabulate is used to output list_pw and list_master data to Terminal in grid format
 from tabulate import tabulate
 
 # Colour the Splash and others
@@ -87,10 +87,10 @@ def spmLogIn():
     # Clear Terminal then SPLASH
     system("cls")
     print( line + splash + line )
-    # Query the users table and insert all into list_users
-    list_users = query_data("users")
-    # Check if list_users is empty
-    if list_users != []:
+    # Query the users table and insert all into list_master
+    list_master = query_data("users")
+    # Check if list_master is empty
+    if list_master != []:
         # Open log file and pull last line to check if account is locked
         f = open(".\\SPM_LOGS.txt", "r")
         for lines in f:
@@ -105,23 +105,23 @@ def spmLogIn():
             # Make number of attempted passwords 0 from Attempt Log In screen
             attempt = 0
             # Before decrypting the password we need to save the returned Encryption Key for that record
-            user_key = list_users[0][1]
-            user_pw = list_users[0][0]
+            master_key = list_master[0][1]
+            master_pw = list_master[0][0]
             # Proceed to Log In screen from Attempt Log In screen
-            logIn(attempt, user_key, user_pw)
+            logIn(attempt, master_key, master_pw)
     else:
         # Create a new master password if doesn't exist
         new_Master()
 
 
 # Log In screen to avoid splash everytime
-def logIn(attempt, user_key, user_pw):
+def logIn(attempt, master_key, master_pw):
     # 3 attempts to Log In before logging to log file and locking account for 1 day
     if attempt < 3:
         # Decrypt user password to compare with password entered
-        decrypted_user_pw = decrypt_pw(user_key, user_pw)
+        decrypted_master_pw = decrypt_pw(master_key, master_pw)
         attempted_pw = str(input("Master password: "))
-        if attempted_pw == decrypted_user_pw:
+        if attempted_pw == decrypted_master_pw:
             # Need to fix this to check is user password = pw saved to db for userID
             Start()
         else:
@@ -130,7 +130,7 @@ def logIn(attempt, user_key, user_pw):
             # Add attempt to attempts before returning to Log In screen
             attempt += 1
             print(f"{Fore.RED}{line}{Fore.WHITE}Incorrect password attempted")
-            logIn(attempt, user_key, user_pw)
+            logIn(attempt, master_key, master_pw)
     else:
         # Use "a" to APPEND to log file
         f = open(".\\SPM_LOGS.txt", "a")
@@ -489,7 +489,7 @@ def update_master_pw(pw):
     sql_cursor.execute(f"""
                     UPDATE users 
                     SET master_pw = '{pw}', 
-                    master_pw_key = '{session_pw_key.decode()}',
+                    master_key = '{session_pw_key.decode()}',
                     master_last_modified = '{today}';
                     """)
     sql_connection.commit()
