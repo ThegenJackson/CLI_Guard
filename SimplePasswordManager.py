@@ -140,46 +140,6 @@ def logIn(attempt, master_key, master_pw):
         exit()
 
 
-# Create new master password
-def new_Master():
-    new_master_pw = str(input("Create new master password: "))
-
-    # Check all fields are populated before proceeding
-    if new_master_pw != "":
-        print("Adding new master password...")
-        save_pw = encrypt_pw(new_master_pw)
-        insert_master(save_pw)
-        # Use "a" to APPEND to log file
-        f = open(".\\SPM_LOGS.txt", "a")
-        f.write(f"[{today}] New master password created\n")
-        f.close()
-        # Return to Log In screen
-        spmLogIn()
-    else:
-        print("No password was entered!")
-        new_Master()
-
-
-# Create new master password
-def update_Master():
-    new_master_pw = str(input("Enter new master password: "))
-
-    # Check all fields are populated before proceeding
-    if new_master_pw != "":
-        print("Editing master password...")
-        save_pw = encrypt_pw(new_master_pw)
-        update_master_pw(save_pw)
-        # Use "a" to APPEND to log file
-        f = open(".\\SPM_LOGS.txt", "a")
-        f.write(f"[{today}] Master password updated\n")
-        f.close()
-        # Return to Log In screen
-        spmLogIn()
-    else:
-        print("No password was entered!")
-        update_Master()
-
-
 # Display Splash and Start Menu to CLI - User chooses function
 def Start():
     # Clear Terminal
@@ -378,6 +338,46 @@ def display(list_pw):
     return data
 
 
+# Create new master password
+def new_Master():
+    new_master_pw = str(input("Create new master password: "))
+
+    # Check all fields are populated before proceeding
+    if new_master_pw != "":
+        print("Adding new master password...")
+        save_pw = encrypt_pw(new_master_pw)
+        insert_master(save_pw)
+        # Use "a" to APPEND to log file
+        f = open(".\\SPM_LOGS.txt", "a")
+        f.write(f"[{today}] New master password created\n")
+        f.close()
+        # Return to Log In screen
+        spmLogIn()
+    else:
+        print("No password was entered!")
+        new_Master()
+
+
+# Create new master password
+def update_Master():
+    new_master_pw = str(input("Enter new master password: "))
+
+    # Check all fields are populated before proceeding
+    if new_master_pw != "":
+        print("Editing master password...")
+        save_pw = encrypt_pw(new_master_pw)
+        update_master_pw(save_pw)
+        # Use "a" to APPEND to log file
+        f = open(".\\SPM_LOGS.txt", "a")
+        f.write(f"[{today}] Master password updated\n")
+        f.close()
+        # Return to Log In screen
+        spmLogIn()
+    else:
+        print("No password was entered!")
+        update_Master()
+
+
 # Handles user inputted values raising ValueErrors or out of range of list
 def go_home(wrong):
     # Clear Terminal
@@ -520,6 +520,5 @@ def delete_data(acct, usr, pw):
     sql_connection.commit()
 
 
-# Start SPM CLI full screen Terminal
-keyboard.press('F11')
+# Start SPM CLI
 spmLogIn()
