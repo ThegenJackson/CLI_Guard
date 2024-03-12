@@ -9,6 +9,9 @@ from colorama import Fore, Back
 # OS is imported to send 'cls' to the Terminal between functions
 from os import system
 
+# Make Terminal full screen
+import keyboard
+
 # DateTime used when editing passwords or adding new passwords
 from datetime import date, timedelta
 
