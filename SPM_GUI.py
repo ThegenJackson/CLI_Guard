@@ -73,4 +73,5 @@ else:
 
 
 # Start the program using the loginWindow
-#loginWindow.mainloop()
+# if __name__ == "__main__":
+#     loginWindow.mainloop()
