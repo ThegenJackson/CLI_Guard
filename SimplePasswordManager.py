@@ -74,7 +74,6 @@ empty_list = ["There are no passwords to ", "...\n"]
 go_back = "Return to Start Menu?\n"
 mode = ""
 line = f"##################################################################################\n"
-login = "Select a user "
 incorrect = "Incorrect password entered 3 times"
 
 
@@ -88,31 +87,26 @@ def spmLogIn():
     list_master = query_data("users")
     # Check if list_master is empty
     if list_master != []:
-        # Open log file and pull last line to check if account is locked
-        f = open(".\\SPM_LOGS.txt", "r")
-        for lines in f:
-            pass
-        last_line = lines.strip("\n")
-        f.close()
         # Check if account is locked before logging in
-        if str(last_line) == f"[{today}] Account locked until {tomorrow}":
+        if str(list_master[0][-1]) == str(today):
             print(f"Account locked until {tomorrow}\nExiting...")
             exit()
         else:
             # Make number of attempted passwords 0 from Attempt Log In screen
             attempt = 0
             # Before decrypting the password we need to save the returned Encryption Key for that record
-            master_key = list_master[0][1]
-            master_pw = list_master[0][0]
+            user = list_master[0][0]
+            master_key = list_master[0][2]
+            master_pw = list_master[0][1]
             # Proceed to Log In screen from Attempt Log In screen
-            logIn(attempt, master_key, master_pw)
+            logIn(user, attempt, master_key, master_pw)
     else:
         # Create a new master password if doesn't exist
         new_Master()
 
 
 # Log In screen to avoid splash everytime
-def logIn(attempt, master_key, master_pw):
+def logIn(user, attempt, master_key, master_pw):
     # 3 attempts to Log In before logging to log file and locking account for 1 day
     if attempt < 3:
         # Decrypt user password to compare with password entered
@@ -120,25 +114,28 @@ def logIn(attempt, master_key, master_pw):
         attempted_pw = str(input("Master password: "))
         if attempted_pw == decrypted_master_pw:
             # Need to fix this to check is user password = pw saved to db for userID
-            Start()
+            Start(user)
         else:
             # Clear Terminal
             system("cls")
             # Add attempt to attempts before returning to Log In screen
             attempt += 1
             print(f"{Fore.RED}{line}{Fore.WHITE}Incorrect password attempted")
-            logIn(attempt, master_key, master_pw)
+            logIn(user, attempt, master_key, master_pw)
     else:
-        # Use "a" to APPEND to log file
+        # Use "a" to APPEND to log file for Account Lock
         f = open(".\\SPM_LOGS.txt", "a")
         f.write(f"[{today}] {incorrect}\n[{today}] Account locked until {tomorrow}")
         f.close()
+        # Set last_locked to today on the users table
+        lock_master(user)
+        # Print exiting to screen
         print(f"{incorrect}\nExiting...")
         exit()
 
 
 # Display Splash and Start Menu to CLI - User chooses function
-def Start():
+def Start(user):
     # Clear Terminal
     system("cls")
     # Define function index, human-readable text, function name
@@ -177,17 +174,17 @@ def Start():
                     else:
                         # We need to pass func variable as an argument when calling func variable
                         # Because each function expects a func argument so it can call try_again() if needed
-                        do_action(func[-1])
+                        do_action(user, mode=func[-1])
         # This handles when input is outside of list range
         else:
-            go_home(choice)
+            go_home(user, choice)
     # Try/Except handles ValueError raised when user inputs anything other than an INT
     except ValueError:
-        go_home(choice)
+        go_home(user, choice)
 
 
 # Get func arg then perform action
-def do_action(mode):
+def do_action(user, mode):
     # Clear Terminal
     system("cls")
     # Define function index and function name
@@ -198,9 +195,9 @@ def do_action(mode):
     ]
 
     if mode == "Add":
-        add_pw(mode)
+        add_pw(user, mode)
     elif mode == "Master password":
-        update_Master()
+        update_Master(user)
     else:
         for func in funcs:
             if func[-1] != mode:
@@ -225,21 +222,21 @@ def do_action(mode):
                         if int(index) <= len(list_pw):
 
                             # Execute func (func == i[0]) with required args
-                            func[0](list_pw, index, mode)
+                            func[0]((list_pw[index][0]), list_pw, index, mode)
 
                         # This handles when the index variable is outside of the range of list_pw
                         else:
-                            go_home((int(index) + 1))
+                            go_home((list_pw[index][0]), (int(index) + 1))
                     # Try/Except handles ValueError raised when user inputs anything other than an INT
                     # Reference index variable instead of (index + 1) since this handles when index is STRING
                     except ValueError:
-                        go_home(index)
+                        go_home((list_pw[index][0]), index)
                 else:
-                    empty(mode)
+                    empty((list_pw[index][0]), mode)
 
 
 # Password is encrypted then added to the encrypted passwords SQLite table
-def add_pw(mode): 
+def add_pw(user, mode): 
     new_acct = str(input("Account: "))
     new_username = str(input("Username: "))
     new_pw = str(input("Password: "))
@@ -248,21 +245,21 @@ def add_pw(mode):
     if new_acct != "" and new_username != "" and new_pw != "":
         print(mode + doing)
         save_pw = encrypt_pw(new_pw)
-        insert_data(new_acct, new_username, save_pw)
+        insert_data(user, new_acct, new_username, save_pw)
 
         # Return to Start Menu or repeat
-        try_again(mode, new_acct, (done[0]))
+        try_again(user, mode, new_acct, (done[0]))
     else:
         print("All fields are required")
-        add_pw()
+        add_pw(user)
 
 
 # Update password
-def update_pw(list_pw, index, mode):
+def update_pw(user, list_pw, index, mode):
     # Before updating the password we need to save the returned account and username for the update statement
     # Ran into errors when using list_pw[index][1 or 0] directly in the SQLite update statement
-    acct = str(list_pw[index][0])
-    usr = str(list_pw[index][1])
+    acct = str(list_pw[index][1])
+    usr = str(list_pw[index][2])
     old_pw = str(list_pw[index][-3])
 
     replace_pw = str(input("New Password: "))
@@ -272,39 +269,39 @@ def update_pw(list_pw, index, mode):
         update_data(save_pw, acct, usr, old_pw)
 
         # Return to Start Menu or repeat
-        try_again(mode, (list_pw[index][0]), (done[0]))
+        try_again(user, mode, (list_pw[index][1]), (done[0]))
     else:
         print("New password was not entered")
         # Return to Start Menu or repeat
-        try_again(mode, (list_pw[index][0]), (done[0]))
+        try_again(user, mode, (list_pw[index][1]), (done[0]))
 
 
 # Delete password
-def delete_pw(list_pw, index, mode):
+def delete_pw(user, list_pw, index, mode):
     # Before deleting the password we need to save the returned account and username for the delete statement
-    acct = str(list_pw[index][0])
-    usr = str(list_pw[index][1])
+    acct = str(list_pw[index][1])
+    usr = str(list_pw[index][2])
     old_pw = str(list_pw[index][-3])
 
     # Check if the user wants to delete the chosen pw
-    sure = str(input(f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the password for {Fore.YELLOW}{list_pw[index][0]}{Fore.WHITE} ?\n{y_n}"))
+    sure = str(input(f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the password for {Fore.YELLOW}{list_pw[index][1]}{Fore.WHITE} ?\n{y_n}"))
     if sure.lower() == "y":
         # Success statement needs to slice first letter off mode
         print(mode[:-1] + doing)
         # Delete data from SQLite table
-        delete_data(acct, usr, old_pw)
+        delete_data(user, acct, usr, old_pw)
     elif sure.lower() == "n":
-        Start()
+        Start(user)
     else:
-        go_home(sure)
+        go_home(user, sure)
     # Return to Start Menu or repeat
     # Success statement needs to slice first letter off mode
     # Other funcs incl edit, add, drecypted so deleteed is wrong
-    try_again(mode, (list_pw[index][0]), (done[0][1:]))
+    try_again(user, mode, (list_pw[index][1]), (done[0][1:]))
 
 
 # Display password
-def display_pw(list_pw, index, mode):
+def display_pw(user, list_pw, index, mode):
     # Before decrypting the password we need to save the returned Encryption Key for that record
     pw_key = list_pw[index][-2]
     pw = list_pw[index][-3]
@@ -314,7 +311,7 @@ def display_pw(list_pw, index, mode):
     print(f"\n{decrypted_pw}\n")
 
     # Return to Start Menu or repeat
-    try_again(mode, (list_pw[index][0]), (done[0]))
+    try_again((list_pw[index][0]), mode, (list_pw[index][1]), (done[0]))
 
 
 def display(list_pw):
@@ -337,89 +334,90 @@ def display(list_pw):
 
 # Create new master password
 def new_Master():
+    new_master_user = str(input("Create new master user: "))
     new_master_pw = str(input("Create new master password: "))
 
     # Check all fields are populated before proceeding
-    if new_master_pw != "":
+    if new_master_user != "" and new_master_pw != "":
         print("Adding new master password...")
         save_pw = encrypt_pw(new_master_pw)
-        insert_master(save_pw)
+        insert_master(new_master_user, save_pw)
         # Use "a" to APPEND to log file
         f = open(".\\SPM_LOGS.txt", "a")
-        f.write(f"[{today}] New master password created\n")
+        f.write(f"[{today}] New master user and password created for {new_master_user}\n")
         f.close()
         # Return to Log In screen
         spmLogIn()
     else:
-        print("No password was entered!")
+        print("1 or more required fields is missing!")
         new_Master()
 
 
 # Create new master password
-def update_Master():
+def update_Master(user):
     new_master_pw = str(input("Enter new master password: "))
 
     # Check all fields are populated before proceeding
     if new_master_pw != "":
         print("Editing master password...")
         save_pw = encrypt_pw(new_master_pw)
-        update_master_pw(save_pw)
+        update_master_pw(user, save_pw)
         # Use "a" to APPEND to log file
         f = open(".\\SPM_LOGS.txt", "a")
-        f.write(f"[{today}] Master password updated\n")
+        f.write(f"[{today}] Master password updated for {user}\n")
         f.close()
         # Return to Log In screen
         spmLogIn()
     else:
         print("No password was entered!")
-        update_Master()
+        update_Master(user)
 
 
 # Handles user inputted values raising ValueErrors or out of range of list
-def go_home(wrong):
+def go_home(user, wrong):
     # Clear Terminal
     system("cls")
     print( f"{Fore.RED}{line}{Fore.WHITE}\nYou entered {Fore.RED}{wrong}{Fore.WHITE}, which is not a valid selection.")
     home = str(input( go_back + y_n ))
-    yes_no(home, mode=0)
+    yes_no(user, home, mode=0)
 
 
 # The list_pw list is empty - user chooses to return to Start or Exit
-def empty(mode):
+def empty(user, mode):
     home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + y_n ))
-    yes_no(home, mode=0)
+    yes_no(user, home, mode=0)
 
 
 # User chooses to perform the function again or return to Start
 # Ran into issues using the yes_no function because this calls the extra argument of func
-def try_again(mode, acct, fixed_done):
+def try_again(user, mode, acct, fixed_done):
     # Use "a" to APPEND to log file
     f = open(".\\SPM_LOGS.txt", "a")
     f.write(f"[{today}] {mode}{fixed_done} {acct}\n")
     f.close()
     again = str(input( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another ))
-    yes_no(again, mode)
+    yes_no(user, again, mode)
 
 
 # Handles Yes No choices
-def yes_no(choice, mode):
+def yes_no(user, choice, mode):
     if mode == 0:
         if choice.lower() == "y":
-            Start()
+            Start(user)
         elif choice.lower() == "n":
             print("Exiting...")
             exit()
         else:
-            go_home(choice) 
+            go_home(user, choice) 
     else:
         if choice.lower() == "y":
             # To try_again we need to pass func variable as an argument when calling func variable
             # Because each function expects a func argument so it can call try_again() if needed
-            do_action(mode)
+            do_action(user, mode)
         elif choice.lower() == "n":
-            Start()
+            Start(user)
         else:
-            go_home(choice)
+            go_home(user, choice)
 
 
 # Encrypt
@@ -456,22 +454,35 @@ def query_data(table):
 
 
 # INSERT new user into users SQLite table
-def insert_master(pw):
+def insert_master(user, pw):
     sql_cursor.execute(f"""
-                    INSERT INTO users 
+                    INSERT INTO users
+                    (user, master_pw, master_key, master_last_modified) 
                     VALUES(
+                        '{user}',
                         '{pw}',
                         '{session_pw_key.decode()}',
                         '{today}');
                     """)
     sql_connection.commit()
+
+
+# UPDATE records in the passwords SQLite table
+def lock_master(user):
+    sql_cursor.execute(f"""
+                    UPDATE users 
+                    SET last_locked = '{today}' 
+                    WHERE user = '{user}';
+                    """)
+    sql_connection.commit()
     
     
 # INSERT new records into passwords SQLite table
-def insert_data(acct, username, pw):
+def insert_data(user, acct, username, pw):
     sql_cursor.execute(f"""
                     INSERT INTO passwords 
                     VALUES(
+                        '{user}',
                         '{acct}',
                         '{username}',
                         '{pw}',
@@ -482,12 +493,13 @@ def insert_data(acct, username, pw):
 
 
 # UPDATE records in the passwords SQLite table
-def update_master_pw(pw):
+def update_master_pw(user, pw):
     sql_cursor.execute(f"""
                     UPDATE users 
                     SET master_pw = '{pw}', 
                     master_key = '{session_pw_key.decode()}',
-                    master_last_modified = '{today}';
+                    master_last_modified = '{today}'
+                    WHERE user = '{user}';
                     """)
     sql_connection.commit()
 
@@ -507,10 +519,11 @@ def update_data(pw, acct, usr, old_pw):
 
 
 # DELETE records from the passwords SQLite table
-def delete_data(acct, usr, pw):
+def delete_data(user, acct, usr, pw):
     sql_cursor.execute(f"""
                     DELETE FROM passwords 
-                    WHERE account = '{acct}' 
+                    WHERE user = '{user}'
+                    AND account = '{acct}' 
                     AND username = '{usr}'
                     AND password = '{pw}';
                     """)
@@ -518,4 +531,5 @@ def delete_data(acct, usr, pw):
 
 
 # Start SPM CLI
-spmLogIn()
+if __name__ == "__main__":
+    spmLogIn()
