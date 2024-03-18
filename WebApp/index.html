@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Simple Password Generator</title>
+    <style>
+      h1, h2, h3, p {
+          color: #FFFFFF;
+          font-family: system-ui;
+          }
+      body {
+          background-color: #222629;
+          }
+      label {
+          color: #86C232;
+          font-family: system-ui;
+          font-size: 20px;
+          }
+      button {
+          background-color: #86C232;
+          border-color: #86C232;
+          color: #FFFFFF;
+          font-family: system-ui;
+          font-size: 20px;
+          font-weight: bold;
+          width: 140px;
+          }
+      input {
+          color: #222629;
+          font-family: system-ui;
+          font-size: 20px;
+          width: 100px;
+          }
+      </style>
+      <link rel="stylesheet" href="style.css">
+      <script>
+        // callAPI function that takes the firstword, lastword and checkboxes as parameters
+        var callAPI = (firstword, lastword)=>{
+            // instantiate a headers object
+            var myHeaders = new Headers();
+            // add content type header to object
+            myHeaders.append("Content-Type", "application/json");
+            // using built in JSON utility package turn object to string and store in a variable
+            var raw = JSON.stringify({"firstword":firstword,"lastword":lastword});
+            // create a JSON object with parameters for API call and store in a variable
+            var requestOptions = {
+                method: 'POST',
+                headers: myHeaders,
+                body: raw,
+                redirect: 'follow'
+            };
+            // make API call with parameters and use promises to get response
+            fetch("https://enk20h08aj.execute-api.ap-southeast-2.amazonaws.com/Prod", requestOptions)
+            .then(response => response.text())
+            .then(result => alert(JSON.parse(result).body))
+            .catch(error => console.log('error', error));
+            }
+        </script>
+  </head>
+
+  <body>
+    <h2>
+        Simple Password Generator
+    </h2>
+    <h3>
+        Password Logic
+    </h3>
+    <p>
+        Password logic allows you to create <strong>unique</strong>, <strong>secure</strong> and <strong>easily memorable</strong> passwords quickly.<br><br>
+        With password logic, you never need to remember a password!<br>
+        You only need to ask yourself "What account am I trying to access?" Then apply the password logic in your head.<br><br>
+        <strong>What password logic does Simple Password Generator use?</strong><br>
+        Simple Password Generator accepts 2 words, and scrambles them according to some simple password logic.<br>
+        We recommend using the Account as one word, and a random word as a constant.<br>
+        Each word should be 8 characters or less to ensure the final password meets most criteria.<br><br>
+        If making a password for a Gmail account, "Gmail" would be perfectly suitable word to use, however "Microsoft Azure" might be too long, so consider using "Azure" instead.<br>
+        The constant word should be something entirely random but something you can grow to remember.<br>
+        What's you favourite colour? Whats the closest object to you right now? If it was a table, "Table" would eventually be easily memorable password logic.<br><br>
+        <strong>Scrambling</strong><br>
+        Simple Password Generator scrambles words by replacing letters with visually similar characters. For instance, all "<strong>E</strong>" letters become "<strong>3</strong>", and all "<strong>A</strong>" letters become "<strong>@</strong>".<br>
+        Then, every 3rd character is forced UPPERCASE if it is a letter, while any UPPERCASE letters are forced LOWERCASE if they are not the 3rd character<br><br>
+    </p>
+    <h3>
+        Generate a password
+    </h3>
+    <form action="">
+      <label for="firstword">First Word:</label>
+      <input type="text" id="firstword" name="firstword">
+      <br><br>
+      <label for="lastword">Last Word:</label>
+      <input type="text" id="lastword" name="lastword">
+      <br><br>
+
+      <button type="button" onclick="callAPI(document.getElementById('firstword').value,document.getElementById('lastword').value)">Generate</button>
+    </form>
+  </body>
+
+</html>
