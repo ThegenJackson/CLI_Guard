@@ -14,7 +14,7 @@ Simple Password Manager is a CLI program to easily encrypt, store and manage you
 
 
 ### Installation
-To install Simple Password Manager, download the "Installation" folder within this repository.  
+To install Simple Password Manager, download this repository.  
 
 
 ### Prerequisites
@@ -23,32 +23,32 @@ To install Simple Password Manager, download the "Installation" folder within th
 
 
 ### Database Management System
--	SQLite Studio
-	https://sqlitestudio.pl/
+-	SQLite Studio \
+	https://sqlitestudio.pl/ \
 	https://www.sqlite.org/docs.html
 
 
 ### Libraries and Packages used
--	DateTime
+-	DateTime \
 	https://docs.python.org/3/library/datetime.html
--	OS
+-	OS \
 	https://docs.python.org/3/library/os.html
--	Cryptography
+-	Cryptography \
 	https://cryptography.io
--	SQLite3
+-	SQLite3 \
 	https://docs.python.org/3/library/sqlite3.html
--	Tabulate
+-	Tabulate \
 	https://pypi.org/project/tabulate/
--	Colorama
+-	Colorama \
 	https://pypi.org/project/colorama/
--	PyInstaller
+-	PyInstaller \
 	https://pyinstaller.org/en/stable/
 
 
 ##### GUI Libraries and Packages
--	Tkinter
+-	Tkinter \
 	https://docs.python.org/3/library/tkinter.html
--	TTKbootstrap
+-	TTKbootstrap \
 	https://ttkbootstrap.readthedocs.io/en/latest/
 
 
