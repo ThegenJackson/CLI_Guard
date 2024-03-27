@@ -8,7 +8,7 @@ from tkinter.ttk import *
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
-from SimplePasswordManager import *
+import SimplePasswordManager as spm
 
 
 def testing():
@@ -39,7 +39,7 @@ def testing():
 # Create the loginWindow and styling
 loginWindow = ttk.Window(title="Simple Password Manager", size=(300, 400), themename="superhero")
 
-list_master = query_data("users")
+list_master = spm.query_data("users")
 # Check if list_master is empty
 if list_master != []:
 
