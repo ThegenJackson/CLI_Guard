@@ -5,3 +5,5 @@
 *.html linguist-detectable=false
 *.md linguist-detectable=false
 *.tex linguist-detectable=false
+*.bkp linguist-detectable=false
+*.svg linguist-detectable=false
