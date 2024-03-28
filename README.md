@@ -1,9 +1,9 @@
 #	Simple Password Manager
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54) ![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white) ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white) ![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)
+
 Simple Password Manager is a CLI program to easily encrypt, store and manage your passwords. To interact directly with the Simple Password Manager database, download SQLite from the below included URL.
 
 ---
-
-![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54) ![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white) ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white) ![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)
 
 ## Table of Contents
 - [Installation](#installation)
@@ -45,9 +45,11 @@ To install Simple Password Manager, download this repository.
 
 
 ### Simple Password Generator
-==Currently In Development==
+:warning: :warning: Currently In Development :warning: :warning:
+
 #### Web Application
-SHORTURL.AT/BIU04
+https://SHORTURL.AT/BIU04
+
 #### AWS Architecture
 ![AWS-SPG](/AWS_SPG.svg)
 
@@ -66,7 +68,6 @@ SHORTURL.AT/BIU04
 	https://pypi.org/project/colorama/
 -	PyInstaller \
 	https://pyinstaller.org/en/stable/
-
 
 #### GUI Libraries and Packages
 -	Tkinter \
