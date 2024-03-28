@@ -48,7 +48,7 @@ To install Simple Password Manager, download this repository.
 :warning: :warning: Currently In Development :warning: :warning:
 
 #### Web Application
-https://SHORTURL.AT/BIU04
+https://prod.d2px0taen1p9zb.amplifyapp.com/
 
 #### AWS Architecture
 ![AWS-SPG](/AWS_SPG.svg)
