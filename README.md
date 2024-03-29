@@ -41,7 +41,7 @@ To install Simple Password Manager, download this repository.
 
 
 ### Process Flowchart
-![Flowchart](/flowchart.svg)
+![Flowchart](/SPM/flowchart.svg)
 
 
 ### Simple Password Generator
@@ -51,7 +51,7 @@ To install Simple Password Manager, download this repository.
 https://prod.d2px0taen1p9zb.amplifyapp.com/
 
 #### AWS Architecture
-![AWS-SPG](/AWS_SPG.svg)
+![AWS-SPG](/SPG/AWS_SPG.svg)
 
 ### Libraries and Packages used
 -	DateTime \
