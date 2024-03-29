@@ -79,34 +79,42 @@ incorrect = "Incorrect password entered 3 times"
 
 
 # Attempt Log In if user exists
-def spmLogIn():
+def spmLogIn() -> None:
     # Clear Terminal then SPLASH
     system("cls")
     print( line + splash + line )
     # Query the users table and insert all into list_master
-    list_master = query_data("users")
+    list_master = query_data(table = "users")
     # Check if list_master is empty
-    if list_master != []:
+    if listNotEmpty(list_master):
         # Check if account is locked before logging in
-        if str(list_master[0][-1]) == str(today):
+        if accountLocked(list_master):
             print(f"Account locked until {tomorrow}\nExiting...")
             exit()
         else:
-            # Make number of attempted passwords 0 from Attempt Log In screen
-            attempt = 0
-            # Before decrypting the password we need to save the returned Encryption Key for that record
-            user = list_master[0][0]
-            master_key = list_master[0][2]
-            master_pw = list_master[0][1]
             # Proceed to Log In screen from Attempt Log In screen
-            logIn(user, attempt, master_key, master_pw)
+            # Before decrypting the password we need to save the returned Encryption Key for that record
+            # Make number of attempted passwords 0 from Attempt Log In screen
+            logIn(user = list_master[0][0], attempt = 0, master_key = list_master[0][2], master_pw = list_master[0][1])
     else:
         # Create a new master password if doesn't exist
         new_Master()
 
 
+def accountLocked(list) -> bool:
+    return str(list[0][-1]) == str(today)
+
+
+def listNotEmpty(list) -> bool:
+    return list != []
+
+
+def fieldNotEmpty(*field) -> bool:
+    return field != ''
+
+
 # Log In screen to avoid splash everytime
-def logIn(user, attempt, master_key, master_pw):
+def logIn(user, attempt, master_key, master_pw) -> None:
     # 3 attempts to Log In before logging to log file and locking account for 1 day
     if attempt < 3:
         # Decrypt user password to compare with password entered
@@ -135,7 +143,7 @@ def logIn(user, attempt, master_key, master_pw):
 
 
 # Display Splash and Start Menu to CLI - User chooses function
-def Start(user):
+def Start(user) -> None:
     # Clear Terminal
     system("cls")
     # Define function index, human-readable text, function name
@@ -178,13 +186,13 @@ def Start(user):
         # This handles when input is outside of list range
         else:
             go_home(user, choice)
-    # Try/Except handles ValueError raised when user inputs anything other than an INT
+    # Try/Except handles Valueerrors raised when user inputs anything other than an INT
     except ValueError:
         go_home(user, choice)
 
 
 # Get func arg then perform action
-def do_action(user, mode):
+def do_action(user, mode) -> None:
     # Clear Terminal
     system("cls")
     # Define function index and function name
@@ -206,10 +214,10 @@ def do_action(user, mode):
             else:
                 print(line)
                 # Query the passwords table and insert all into list_pw ordered by account name
-                list_pw = query_data("passwords")
+                list_pw = query_data(table = "passwords")
 
                 # Check if list_pw is empty
-                if list_pw != []:
+                if listNotEmpty(list_pw):
                     # Use Tabulate to print selected columns to ternimal
                     display_passwords = display(list_pw)
                     print(display_passwords)
@@ -218,6 +226,7 @@ def do_action(user, mode):
                     try:
                         # User chooses record to perform action against
                         index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1 )
+
                         # Check if user input for index veriable is within the range of list_pw
                         if int(index) <= len(list_pw):
 
@@ -227,22 +236,22 @@ def do_action(user, mode):
                         # This handles when the index variable is outside of the range of list_pw
                         else:
                             go_home((list_pw[index][0]), (int(index) + 1))
-                    # Try/Except handles ValueError raised when user inputs anything other than an INT
+                    # Try/Except handles Valueerrors raised when user inputs anything other than an INT
                     # Reference index variable instead of (index + 1) since this handles when index is STRING
                     except ValueError:
-                        go_home((list_pw[index][0]), index)
+                        go_home(user, index)
                 else:
-                    empty((list_pw[index][0]), mode)
+                    empty(user, mode)
 
 
 # Password is encrypted then added to the encrypted passwords SQLite table
-def add_pw(user, mode): 
+def add_pw(user, mode) -> None: 
     new_acct = str(input("Account: "))
     new_username = str(input("Username: "))
     new_pw = str(input("Password: "))
 
     # Check all fields are populated before proceeding
-    if new_acct != "" and new_username != "" and new_pw != "":
+    if fieldNotEmpty(new_acct, new_username, new_pw):
         print(mode + doing)
         save_pw = encrypt_pw(new_pw)
         insert_data(user, new_acct, new_username, save_pw)
@@ -255,7 +264,7 @@ def add_pw(user, mode):
 
 
 # Update password
-def update_pw(user, list_pw, index, mode):
+def update_pw(user, list_pw, index, mode) -> None:
     # Before updating the password we need to save the returned account and username for the update statement
     # Ran into errors when using list_pw[index][1 or 0] directly in the SQLite update statement
     acct = str(list_pw[index][1])
@@ -263,7 +272,7 @@ def update_pw(user, list_pw, index, mode):
     old_pw = str(list_pw[index][-3])
 
     replace_pw = str(input("New Password: "))
-    if replace_pw != "":
+    if fieldNotEmpty(replace_pw):
         print(mode + doing)
         save_pw = encrypt_pw(replace_pw)
         update_data(save_pw, acct, usr, old_pw)
@@ -277,7 +286,7 @@ def update_pw(user, list_pw, index, mode):
 
 
 # Delete password
-def delete_pw(user, list_pw, index, mode):
+def delete_pw(user, list_pw, index, mode) -> None:
     # Before deleting the password we need to save the returned account and username for the delete statement
     acct = str(list_pw[index][1])
     usr = str(list_pw[index][2])
@@ -301,7 +310,7 @@ def delete_pw(user, list_pw, index, mode):
 
 
 # Display password
-def display_pw(user, list_pw, index, mode):
+def display_pw(user, list_pw, index, mode) -> None:
     # Before decrypting the password we need to save the returned Encryption Key for that record
     pw_key = list_pw[index][-2]
     pw = list_pw[index][-3]
@@ -314,7 +323,7 @@ def display_pw(user, list_pw, index, mode):
     try_again((list_pw[index][0]), mode, (list_pw[index][1]), (done[0]))
 
 
-def display(list_pw):
+def display(list_pw) -> str:
     # Create intermediary list to display data to Terminal with Tabulate
     list_table = []
     place = 1
@@ -333,12 +342,12 @@ def display(list_pw):
 
 
 # Create new master password
-def new_Master():
+def new_Master() -> None:
     new_master_user = str(input("Create new master user: "))
     new_master_pw = str(input("Create new master password: "))
 
     # Check all fields are populated before proceeding
-    if new_master_user != "" and new_master_pw != "":
+    if fieldNotEmpty(new_master_user, new_master_pw):
         print("Adding new master password...")
         save_pw = encrypt_pw(new_master_pw)
         insert_master(new_master_user, save_pw)
@@ -354,11 +363,11 @@ def new_Master():
 
 
 # Create new master password
-def update_Master(user):
+def update_Master(user) -> None:
     new_master_pw = str(input("Enter new master password: "))
 
     # Check all fields are populated before proceeding
-    if new_master_pw != "":
+    if fieldNotEmpty(new_master_pw):
         print("Editing master password...")
         save_pw = encrypt_pw(new_master_pw)
         update_master_pw(user, save_pw)
@@ -373,8 +382,8 @@ def update_Master(user):
         update_Master(user)
 
 
-# Handles user inputted values raising ValueErrors or out of range of list
-def go_home(user, wrong):
+# Handles user inputted values raising errors or out of range of list
+def go_home(user, wrong) -> None:
     # Clear Terminal
     system("cls")
     print( f"{Fore.RED}{line}{Fore.WHITE}\nYou entered {Fore.RED}{wrong}{Fore.WHITE}, which is not a valid selection.")
@@ -383,14 +392,14 @@ def go_home(user, wrong):
 
 
 # The list_pw list is empty - user chooses to return to Start or Exit
-def empty(user, mode):
+def empty(user, mode) -> None:
     home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + y_n ))
     yes_no(user, home, mode=0)
 
 
 # User chooses to perform the function again or return to Start
 # Ran into issues using the yes_no function because this calls the extra argument of func
-def try_again(user, mode, acct, fixed_done):
+def try_again(user, mode, acct, fixed_done) -> None:
     # Use "a" to APPEND to log file
     f = open(".\\SPM_LOGS.txt", "a")
     f.write(f"[{today}] {mode}{fixed_done} {acct}\n")
@@ -400,7 +409,7 @@ def try_again(user, mode, acct, fixed_done):
 
 
 # Handles Yes No choices
-def yes_no(user, choice, mode):
+def yes_no(user, choice, mode) -> None:
     if mode == 0:
         if choice.lower() == "y":
             Start(user)
@@ -421,7 +430,7 @@ def yes_no(user, choice, mode):
 
 
 # Encrypt
-def encrypt_pw(pw):
+def encrypt_pw(pw) -> str:
     # Password is encoded then saved to a new variable per documentation
     encrypted_pw = fernet.encrypt(pw.encode())
     # The variable needs var.decode() when adding to the encrypted passwords table
@@ -433,7 +442,7 @@ def encrypt_pw(pw):
 
 
 # Decrypt
-def decrypt_pw(key, pw):
+def decrypt_pw(key, pw) -> str:
     # Decrypted password needs to be saved to its own variable
     # We use Fernet(pw_key) here instead of fernet variable to
     # Decrypt with the relevant records Encryption Key
@@ -444,7 +453,7 @@ def decrypt_pw(key, pw):
 
 
 # Query the passwords table and insert all into list_pw ordered by account name or userID
-def query_data(table):
+def query_data(table) -> list:
     sql_cursor.execute(f"""
                         SELECT * 
                         FROM vw_{table};
@@ -454,7 +463,7 @@ def query_data(table):
 
 
 # INSERT new user into users SQLite table
-def insert_master(user, pw):
+def insert_master(user, pw) -> None:
     sql_cursor.execute(f"""
                     INSERT INTO users
                     (user, master_pw, master_key, master_last_modified) 
@@ -468,7 +477,7 @@ def insert_master(user, pw):
 
 
 # UPDATE records in the passwords SQLite table
-def lock_master(user):
+def lock_master(user) -> None:
     sql_cursor.execute(f"""
                     UPDATE users 
                     SET last_locked = '{today}' 
@@ -478,7 +487,7 @@ def lock_master(user):
     
     
 # INSERT new records into passwords SQLite table
-def insert_data(user, acct, username, pw):
+def insert_data(user, acct, username, pw) -> None:
     sql_cursor.execute(f"""
                     INSERT INTO passwords 
                     VALUES(
@@ -493,7 +502,7 @@ def insert_data(user, acct, username, pw):
 
 
 # UPDATE records in the passwords SQLite table
-def update_master_pw(user, pw):
+def update_master_pw(user, pw) -> None:
     sql_cursor.execute(f"""
                     UPDATE users 
                     SET master_pw = '{pw}', 
@@ -505,7 +514,7 @@ def update_master_pw(user, pw):
 
 
 # UPDATE records in the passwords SQLite table
-def update_data(pw, acct, usr, old_pw):
+def update_data(pw, acct, usr, old_pw) -> None:
     sql_cursor.execute(f"""
                     UPDATE passwords 
                     SET password = '{pw}', 
@@ -519,7 +528,7 @@ def update_data(pw, acct, usr, old_pw):
 
 
 # DELETE records from the passwords SQLite table
-def delete_data(user, acct, usr, pw):
+def delete_data(user, acct, usr, pw) -> None:
     sql_cursor.execute(f"""
                     DELETE FROM passwords 
                     WHERE user = '{user}'
