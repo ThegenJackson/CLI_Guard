@@ -1,4 +1,5 @@
-# Simple Password Manager
+# Simple Password Manager SQL
+import  SPM.SPM_SQL as sqlite
 
 # Tabulate is used to output list_pw and list_master data to Terminal in grid format
 from tabulate import tabulate
@@ -29,14 +30,6 @@ from cryptography.fernet import Fernet
 key = Fernet.generate_key()
 fernet = Fernet(key)
 session_pw_key = key
-
-# Import SQLite library
-import sqlite3
-
-# Connet to database file included in Simple Program Manager
-sql_connection = sqlite3.connect('SPMdb.db')
-# Create a cursor - read more docs on this
-sql_cursor = sql_connection.cursor()
 
 # Create empty list of encrypted passwords
 list_pw = []
@@ -84,7 +77,7 @@ def spmLogIn() -> None:
     system("cls")
     print( line + splash + line )
     # Query the users table and insert all into list_master
-    list_master = query_data(table = "users")
+    list_master = sqlite.query_data(table = "users")
     # Check if list_master is empty
     if listNotEmpty(list_master):
         # Check if account is locked before logging in
@@ -131,12 +124,10 @@ def logIn(user, attempt, master_key, master_pw) -> None:
             print(f"{Fore.RED}{line}{Fore.WHITE}Incorrect password attempted")
             logIn(user, attempt, master_key, master_pw)
     else:
-        # Use "a" to APPEND to log file for Account Lock
-        f = open(".\\SPM_LOGS.txt", "a")
-        f.write(f"[{today}] {incorrect}\n[{today}] Account locked until {tomorrow}")
-        f.close()
+        #  Write to log file
+        logging(message = f"[{today}] {incorrect}\n[{today}] Account locked until {tomorrow}")
         # Set last_locked to today on the users table
-        lock_master(user)
+        sqlite.lock_master(user, today)
         # Print exiting to screen
         print(f"{incorrect}\nExiting...")
         exit()
@@ -214,7 +205,7 @@ def do_action(user, mode) -> None:
             else:
                 print(line)
                 # Query the passwords table and insert all into list_pw ordered by account name
-                list_pw = query_data(table = "passwords")
+                list_pw = sqlite.query_data(table = "passwords")
 
                 # Check if list_pw is empty
                 if listNotEmpty(list_pw):
@@ -254,7 +245,7 @@ def add_pw(user, mode) -> None:
     if fieldNotEmpty(new_acct, new_username, new_pw):
         print(mode + doing)
         save_pw = encrypt_pw(new_pw)
-        insert_data(user, new_acct, new_username, save_pw)
+        sqlite.insert_data(user, new_acct, new_username, save_pw, session_pw_key.decode(), today)
 
         # Return to Start Menu or repeat
         try_again(user, mode, new_acct, (done[0]))
@@ -275,7 +266,7 @@ def update_pw(user, list_pw, index, mode) -> None:
     if fieldNotEmpty(replace_pw):
         print(mode + doing)
         save_pw = encrypt_pw(replace_pw)
-        update_data(save_pw, acct, usr, old_pw)
+        sqlite.update_data(save_pw, acct, usr, old_pw, session_pw_key.decode(), today)
 
         # Return to Start Menu or repeat
         try_again(user, mode, (list_pw[index][1]), (done[0]))
@@ -298,7 +289,7 @@ def delete_pw(user, list_pw, index, mode) -> None:
         # Success statement needs to slice first letter off mode
         print(mode[:-1] + doing)
         # Delete data from SQLite table
-        delete_data(user, acct, usr, old_pw)
+        sqlite.delete_data(user, acct, usr, old_pw)
     elif sure.lower() == "n":
         Start(user)
     else:
@@ -350,11 +341,9 @@ def new_Master() -> None:
     if fieldNotEmpty(new_master_user, new_master_pw):
         print("Adding new master password...")
         save_pw = encrypt_pw(new_master_pw)
-        insert_master(new_master_user, save_pw)
-        # Use "a" to APPEND to log file
-        f = open(".\\SPM_LOGS.txt", "a")
-        f.write(f"[{today}] New master user and password created for {new_master_user}\n")
-        f.close()
+        sqlite.insert_master(new_master_user, save_pw, session_pw_key.decode(), today)
+        #  Write to log file
+        logging(message = f"[{today}] New master user and password created for {new_master_user}\n")
         # Return to Log In screen
         spmLogIn()
     else:
@@ -370,11 +359,9 @@ def update_Master(user) -> None:
     if fieldNotEmpty(new_master_pw):
         print("Editing master password...")
         save_pw = encrypt_pw(new_master_pw)
-        update_master_pw(user, save_pw)
-        # Use "a" to APPEND to log file
-        f = open(".\\SPM_LOGS.txt", "a")
-        f.write(f"[{today}] Master password updated for {user}\n")
-        f.close()
+        sqlite.update_master_pw(user, save_pw, session_pw_key.decode(), today)
+        #  Write to log file
+        logging(message = f"[{today}] Master password updated for {user}\n")
         # Return to Log In screen
         spmLogIn()
     else:
@@ -401,7 +388,7 @@ def empty(user, mode) -> None:
 # Ran into issues using the yes_no function because this calls the extra argument of func
 def try_again(user, mode, acct, fixed_done) -> None:
     # Use "a" to APPEND to log file
-    f = open(".\\SPM_LOGS.txt", "a")
+    f = open(".\\Logs.txt", "a")
     f.write(f"[{today}] {mode}{fixed_done} {acct}\n")
     f.close()
     again = str(input( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another ))
@@ -452,91 +439,11 @@ def decrypt_pw(key, pw) -> str:
     return decrypted_pw.decode()
 
 
-# Query the passwords table and insert all into list_pw ordered by account name or userID
-def query_data(table) -> list:
-    sql_cursor.execute(f"""
-                        SELECT * 
-                        FROM vw_{table};
-                        """)
-    list_pw = sql_cursor.fetchall()
-    return list_pw
-
-
-# INSERT new user into users SQLite table
-def insert_master(user, pw) -> None:
-    sql_cursor.execute(f"""
-                    INSERT INTO users
-                    (user, master_pw, master_key, master_last_modified) 
-                    VALUES(
-                        '{user}',
-                        '{pw}',
-                        '{session_pw_key.decode()}',
-                        '{today}');
-                    """)
-    sql_connection.commit()
-
-
-# UPDATE records in the passwords SQLite table
-def lock_master(user) -> None:
-    sql_cursor.execute(f"""
-                    UPDATE users 
-                    SET last_locked = '{today}' 
-                    WHERE user = '{user}';
-                    """)
-    sql_connection.commit()
-    
-    
-# INSERT new records into passwords SQLite table
-def insert_data(user, acct, username, pw) -> None:
-    sql_cursor.execute(f"""
-                    INSERT INTO passwords 
-                    VALUES(
-                        '{user}',
-                        '{acct}',
-                        '{username}',
-                        '{pw}',
-                        '{session_pw_key.decode()}',
-                        '{today}');
-                    """)
-    sql_connection.commit()
-
-
-# UPDATE records in the passwords SQLite table
-def update_master_pw(user, pw) -> None:
-    sql_cursor.execute(f"""
-                    UPDATE users 
-                    SET master_pw = '{pw}', 
-                    master_key = '{session_pw_key.decode()}',
-                    master_last_modified = '{today}'
-                    WHERE user = '{user}';
-                    """)
-    sql_connection.commit()
-
-
-# UPDATE records in the passwords SQLite table
-def update_data(pw, acct, usr, old_pw) -> None:
-    sql_cursor.execute(f"""
-                    UPDATE passwords 
-                    SET password = '{pw}', 
-                    pw_key = '{session_pw_key.decode()}',
-                    last_modified = '{today}' 
-                    WHERE account = '{acct}' 
-                    AND username = '{usr}'
-                    AND password = '{old_pw}';
-                    """)
-    sql_connection.commit()
-
-
-# DELETE records from the passwords SQLite table
-def delete_data(user, acct, usr, pw) -> None:
-    sql_cursor.execute(f"""
-                    DELETE FROM passwords 
-                    WHERE user = '{user}'
-                    AND account = '{acct}' 
-                    AND username = '{usr}'
-                    AND password = '{pw}';
-                    """)
-    sql_connection.commit()
+#  Write to Logs.txt
+def logging(message):
+        f = open(".\\Logs.txt", "a")
+        f.write(message)
+        f.close()
 
 
 # Start SPM CLI
