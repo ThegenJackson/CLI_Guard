@@ -35,10 +35,10 @@ def lambda_handler(event, context):
     # Convert word to a list to modify individual characters
     word_list = list(words)
     
-    # Set place variable as 0 before itterating to replace every 3rd letter with uppercase
+    # Set place variable as 1 before itterating to replace every 3rd letter with uppercase
     place = 1
     
-    # Use range(len(word_list)) to iterate over indices
+    # Use a range the length of words_list to iterate over indices
     for i in range(len(word_list)):
         
         # Check if the character is in the dictionary
