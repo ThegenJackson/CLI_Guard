@@ -10,6 +10,7 @@ Simple Password Manager is a CLI program to easily encrypt, store and manage you
 - [Prerequisites](#prerequisites)
 - [Database Management System](#database-management-system)
 - [Development Roadmap](#development-roadmap)
+	- [To Do](#to-do)
 - [Process Flowchart](#process-flowchart)
 - [Simple Password Generator](#simple-password-generator)
 	- [Web Application](#web-application)
@@ -39,6 +40,13 @@ To install Simple Password Manager, download this repository.
 - [ ] Simple Password Generator
 - [ ] Web Application
 
+
+#### To Do
+- CLI Program
+- GUI Program
+- Simple Password Generator
+	- [ ] Fix word scrambler to allow for 2 separate words and option to scramble one or both 
+- Web Application
 
 ### Process Flowchart
 ![Flowchart](/SPM/flowchart.svg)
