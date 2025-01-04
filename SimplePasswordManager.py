@@ -237,15 +237,16 @@ def do_action(user, mode) -> None:
 
 # Password is encrypted then added to the encrypted passwords SQLite table
 def add_pw(user, mode) -> None: 
+    new_category = str(input("Category: "))
     new_acct = str(input("Account: "))
     new_username = str(input("Username: "))
     new_pw = str(input("Password: "))
 
     # Check all fields are populated before proceeding
-    if fieldNotEmpty(new_acct, new_username, new_pw):
+    if fieldNotEmpty(new_category, new_acct, new_username, new_pw):
         print(mode + doing)
         save_pw = encrypt_pw(new_pw)
-        sqlite.insert_data(user, new_acct, new_username, save_pw, session_pw_key.decode(), today)
+        sqlite.insert_data(user, new_category, new_acct, new_username, save_pw, session_pw_key.decode(), today)
 
         # Return to Start Menu or repeat
         try_again(user, mode, new_acct, (done[0]))
