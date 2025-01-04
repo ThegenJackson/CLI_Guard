@@ -43,11 +43,12 @@ def lock_master(user, today) -> None:
     
     
 # INSERT new records into passwords SQLite table
-def insert_data(user, acct, username, pw, session_key, today) -> None:
+def insert_data(user, category, acct, username, pw, session_key, today) -> None:
     sql_cursor.execute(f"""
                     INSERT INTO passwords 
                     VALUES(
                         '{user}',
+                        '{category}',
                         '{acct}',
                         '{username}',
                         '{pw}',
@@ -84,10 +85,11 @@ def update_data(pw, acct, usr, old_pw, session_key, today) -> None:
 
 
 # DELETE records from the passwords SQLite table
-def delete_data(user, acct, usr, pw) -> None:
+def delete_data(user, category, acct, usr, pw) -> None:
     sql_cursor.execute(f"""
                     DELETE FROM passwords 
                     WHERE user = '{user}'
+                    AND category = '{category}',
                     AND account = '{acct}' 
                     AND username = '{usr}'
                     AND password = '{pw}';
