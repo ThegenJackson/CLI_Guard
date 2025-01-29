@@ -4,7 +4,7 @@ import  SPM.SPM_SQL as sqlite
 # Tabulate is used to output list_pw and list_master data to Terminal in grid format
 from tabulate import tabulate
 
-# Colour the Splash and others
+# Colour text and others
 from colorama import Fore, Back
 
 # OS is imported to send 'cls' to the Terminal between functions
@@ -19,6 +19,8 @@ tomorrow = date.today() + timedelta(1)
 # Import Python Cryptography library and Fernet module according to documentation
 import cryptography
 from cryptography.fernet import Fernet
+
+
 
 # Generate the Fernet Encryption Key
 # Required for encryption and decryption with Fernet as per documentation
@@ -38,26 +40,60 @@ list_pw = []
 # Formatting Terminal output
 # Not all message-pieces should be kept in a list
 # Overuse of lists for message-pieces makes creating messages confusing
-splash = f"""                                           
-   SSSSSSSSSSSSSSS      PPPPPPPPPPPPPPPPP       MMMMMMMM               MMMMMMMM
- SSSSSSSSSSSSSSSSSS     PPPPPPPPPPPPPPPPPP      MMMMMMMMM             MMMMMMMMM
-SSSSSSSSSSSSSSSSSSS     PPPPPPPPPPPPPPPPPPP     MMMMMMMMMM           MMMMMMMMMM
-SSSSSSS     S{Fore.GREEN}Simple{Fore.WHITE}     PPPPPPPP     PPPPPPP    MMMMMMMMMMM         MMMMMMMMMMM
-SSSSSSS                   PPPPPP     PPPPPPP    MMMMMMMMMMMM       MMMMMMMMMMMM
-SSSSSSS                   PPPPPP     PPPPPPP    MMMMMMMMMMMMM     MMMMMMMMMMMMM
- SSSSSSSSS                PPPPPPPPPPPPPPPPP     MMMMMMMMMMMMMM   MMMMMMMMMMMMMM
-  SSSSSSSSSSSSS           PPPPPPPPPPPPPPPP      MMMMMMMM MMMMMM MMMMMM MMMMMMMM
-    SSSSSSSSSSSSS         PPPPPP{Fore.GREEN}Password{Fore.WHITE}        MMMMMMMM  MMMMMMMMMMM  MMMMMMMM
-       SSSSSSSSSSS        PPPPPP                MMMMMMMM   MMMMMMMMM   MMMMMMMM
-            SSSSSSS       PPPPPP                MMMMMMMM    MMMMMMM    MMMMMMMM
-            SSSSSSS       PPPPPP                MMMMMMMM     MMMMM     MMMMMMMM
-SSSSSSS     SSSSSSS     PPPPPPPPPP              MMMMMMMM               MMMMMMMM
-SSSSSSSSSSSSSSSSSSS     PPPPPPPPPP              MMMMMMMM               MMMMMMMM
-SSSSSSSSSSSSSSSSSS      PPPPPPPPPP              MMMMMMMM               MMMMMMMM
- SSSSSSSSSSSSSSS        PPPPPPPPPP              M{Fore.GREEN}Manager{Fore.WHITE}               MMMMMMMM
-
-                            {Fore.GREEN}Simple Password Manager{Fore.WHITE}                                                           
+splash = f"""                                                                                                      
+                                                              {Fore.BLUE}███████{Fore.WHITE}   ▒█                          
+                                                            {Fore.BLUE}███████████{Fore.WHITE}██                           
+                                      {Fore.LIGHTBLUE_EX}██████             █████████████{Fore.WHITE}██                            
+                            {Fore.LIGHTBLUE_EX}░░░   █████   ███████████████████{Fore.WHITE}        █▓                             
+                                      {Fore.CYAN}████         ▓█████████{Fore.WHITE}       ██                              
+                             {Fore.CYAN}░ ████████░ ██████████████▒{Fore.WHITE}           ██                               
+                                              {Fore.LIGHTCYAN_EX}████{Fore.WHITE}                ██                                
+                                                                 ██                                 
+                                                                ██                                  
+                                                               ██                                   
+                                             ███              ██                                    
+                                           ███████           ██                                     
+                                     ███  ███    ███        ██                                      
+                                   █████ ███  ████  ██     ██         █████                         
+                 █                  ████████   █████████ ███      ▒█████████████                    
+                █                     ░       ██████    ███  ▓███████████████████                   
+               ████                         ██████  █  ████ ░██████████████████████                 
+                  █████████████             ███████ ░  ██  ███████████████  ████                    
+               ███  █████   ████           ██▓███████████▒█ ████████████████████                    
+              ██  ████████  ▓███         ▒███              ███████████ ████████                     
+              █   ███░ ████ ███▓         ████      {Fore.RED}██{Fore.WHITE}      ▒  ░██████   ██████▓                     
+                ██ ▓██▓ ██████                  {Fore.RED}████████{Fore.WHITE}  █       ▒███ ██████                      
+               ██ ████  █████            █████     {Fore.RED}██{Fore.WHITE}      █ █ ██ ██    ██ ███                      
+                 █████▒████              █████     {Fore.RED}██{Fore.WHITE}    █████ ▓█  █▓  ▓██                        
+                     ██████       ░████████████           █████████▒██ ██                           
+                     █████████████████░  █████████      ██ ██████████████       ███                 
+                      ██████▓  ██████            ████████  █████████████████████████              
+                              ███████                   █  █████████████████████ ███               
+                             ████████                    █  ███████████████  ███ ███                
+                             ███████                     ██ ███████         ██   ███               
+                             ░████▒  █         █    █   ██▒   █           ███    ███               
+                              ███  ░█   ███  ███  ███ ███████▒ ██      █████  ░███                  
+                               ██████ ████  ███▒██████                ░███    ███                   
+                               ██████████████████                                                   
+                            ███████████  ██████                                                     
+                          █████████   ██████         {Fore.BLUE}██████╗ ██╗      ██╗     ██████╗  ██╗   ██╗  █████╗  ██████╗  ██████╗{Fore.WHITE}
+                       ████████    ██████           {Fore.BLUE}██╔════╝ ██║      ██║    ██╔════╝  ██║   ██║ ██╔══██╗ ██╔══██╗ ██╔══██╗{Fore.WHITE}
+                        ████        █████           {Fore.LIGHTBLUE_EX}██║      ██║      ██║    ██║  ███╗ ██║   ██║ ███████║ ██████╔╝ ██║  ██║{Fore.WHITE}
+                          ███          ████         {Fore.LIGHTBLUE_EX}██║      ██║      ██║    ██║   ██║ ██║   ██║ ██╔══██║ ██╔══██╗ ██║  ██║{Fore.WHITE}
+                            ████         ▒███▓      {Fore.CYAN}╚██████╗ ███████╗ ██║    ╚██████╔╝ ╚██████╔╝ ██║  ██║ ██║  ██║ ██████╔╝{Fore.WHITE}
+                             █████         ██        {Fore.LIGHTCYAN_EX}╚═════╝ ╚══════╝ ╚═╝     ╚═════╝   ╚═════╝  ╚═╝  ╚═╝ ╚═╝  ╚═╝ ╚═════╝ {Fore.WHITE}
+                                 ████       █████                            
 """
+
+logo = f"""                                                                                                      
+      {Fore.BLUE}██████╗ ██╗      ██╗     ██████╗  ██╗   ██╗  █████╗  ██████╗  ██████╗{Fore.WHITE}
+      {Fore.BLUE}██╔════╝ ██║      ██║    ██╔════╝  ██║   ██║ ██╔══██╗ ██╔══██╗ ██╔══██╗{Fore.WHITE}
+      {Fore.LIGHTBLUE_EX}██║      ██║      ██║    ██║  ███╗ ██║   ██║ ███████║ ██████╔╝ ██║  ██║{Fore.WHITE}
+      {Fore.CYAN}██║      ██║      ██║    ██║   ██║ ██║   ██║ ██╔══██║ ██╔══██╗ ██║  ██║{Fore.WHITE}
+      {Fore.LIGHTCYAN_EX}╚██████╗ ███████╗ ██║    ╚██████╔╝ ╚██████╔╝ ██║  ██║ ██║  ██║ ██████╔╝{Fore.WHITE}
+      {Fore.WHITE}╚═════╝ ╚══════╝ ╚═╝     ╚═════╝   ╚═════╝  ╚═╝  ╚═╝ ╚═╝  ╚═╝ ╚═════╝ {Fore.WHITE}                     
+"""
+
 y_n = "Type Y for Yes or N for No\n(y/n)\n"
 another = f" another password?\n{y_n}"
 select = ["Select a password to ", " by typing the index of the account: "]
@@ -66,7 +102,7 @@ done = ["ed password for ", "...\n"]
 empty_list = ["There are no passwords to ", "...\n"]
 go_back = "Return to Start Menu?\n"
 mode = ""
-line = f"##################################################################################\n"
+line = f"\n###################################################################################\n"
 incorrect = "Incorrect password entered 3 times"
 
 
@@ -75,7 +111,7 @@ incorrect = "Incorrect password entered 3 times"
 def spmLogIn() -> None:
     # Clear Terminal then SPLASH
     system("cls")
-    print( line + splash + line )
+    print(splash)
     # Query the users table and insert all into list_master
     list_master = sqlite.query_data(table = "users")
     # Check if list_master is empty
@@ -117,8 +153,9 @@ def logIn(user, attempt, master_key, master_pw) -> None:
             # Need to fix this to check is user password = pw saved to db for userID
             Start(user)
         else:
-            # Clear Terminal
+            # Clear Terminal and print Splash
             system("cls")
+            print(splash)
             # Add attempt to attempts before returning to Log In screen
             attempt += 1
             print(f"{Fore.RED}{line}{Fore.WHITE}Incorrect password attempted")
@@ -148,7 +185,7 @@ def Start(user) -> None:
     ]
 
     # Print CLI Splash for program Start
-    print( line + splash + line )
+    print( splash + line )
     # List available functions by human-readable index
     for func in funcs:
         print(((funcs.index(func) + 1)), func[0])
@@ -203,7 +240,7 @@ def do_action(user, mode) -> None:
                 continue
             # Execute chosen function
             else:
-                print(line)
+                print( logo + line )
                 # Query the passwords table and insert all into list_pw ordered by account name
                 list_pw = sqlite.query_data(table = "passwords")
 
@@ -237,6 +274,7 @@ def do_action(user, mode) -> None:
 
 # Password is encrypted then added to the encrypted passwords SQLite table
 def add_pw(user, mode) -> None: 
+    print( logo + line )
     new_category = str(input("Category: "))
     new_acct = str(input("Account: "))
     new_username = str(input("Username: "))
@@ -354,6 +392,7 @@ def new_Master() -> None:
 
 # Create new master password
 def update_Master(user) -> None:
+    print( logo + line )
     new_master_pw = str(input("Enter new master password: "))
 
     # Check all fields are populated before proceeding
@@ -372,8 +411,10 @@ def update_Master(user) -> None:
 
 # Handles user inputted values raising errors or out of range of list
 def go_home(user, wrong) -> None:
-    # Clear Terminal
+    # Clear Terminal and print Logo
     system("cls")
+    print( logo + line )
+
     print( f"{Fore.RED}{line}{Fore.WHITE}\nYou entered {Fore.RED}{wrong}{Fore.WHITE}, which is not a valid selection.")
     home = str(input( go_back + y_n ))
     yes_no(user, home, mode=0)
