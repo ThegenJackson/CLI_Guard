@@ -11,9 +11,10 @@ from colorama import Fore, Back
 from os import system
 
 # DateTime used when editing passwords or adding new passwords
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 today = date.today()
+todaysTime = datetime.now().strftime('%Y-%m-%d %H-%M')
 tomorrow = date.today() + timedelta(1)
 
 # Import Python Cryptography library and Fernet module according to documentation
@@ -86,12 +87,12 @@ splash = f"""
 """
 
 logo = f"""                                                                                                      
-      {Fore.BLUE}██████╗ ██╗      ██╗     ██████╗  ██╗   ██╗  █████╗  ██████╗  ██████╗{Fore.WHITE}
+       {Fore.BLUE}██████╗ ██╗      ██╗     ██████╗  ██╗   ██╗  █████╗  ██████╗  ██████╗{Fore.WHITE}
       {Fore.BLUE}██╔════╝ ██║      ██║    ██╔════╝  ██║   ██║ ██╔══██╗ ██╔══██╗ ██╔══██╗{Fore.WHITE}
       {Fore.LIGHTBLUE_EX}██║      ██║      ██║    ██║  ███╗ ██║   ██║ ███████║ ██████╔╝ ██║  ██║{Fore.WHITE}
-      {Fore.CYAN}██║      ██║      ██║    ██║   ██║ ██║   ██║ ██╔══██║ ██╔══██╗ ██║  ██║{Fore.WHITE}
-      {Fore.LIGHTCYAN_EX}╚██████╗ ███████╗ ██║    ╚██████╔╝ ╚██████╔╝ ██║  ██║ ██║  ██║ ██████╔╝{Fore.WHITE}
-      {Fore.WHITE}╚═════╝ ╚══════╝ ╚═╝     ╚═════╝   ╚═════╝  ╚═╝  ╚═╝ ╚═╝  ╚═╝ ╚═════╝ {Fore.WHITE}                     
+      {Fore.LIGHTBLUE_EX}██║      ██║      ██║    ██║   ██║ ██║   ██║ ██╔══██║ ██╔══██╗ ██║  ██║{Fore.WHITE}
+      {Fore.CYAN}╚██████╗ ███████╗ ██║    ╚██████╔╝ ╚██████╔╝ ██║  ██║ ██║  ██║ ██████╔╝{Fore.WHITE}
+       {Fore.LIGHTCYAN_EX}╚═════╝ ╚══════╝ ╚═╝     ╚═════╝   ╚═════╝  ╚═╝  ╚═╝ ╚═╝  ╚═╝ ╚═════╝ {Fore.WHITE}                     
 """
 
 y_n = "Type Y for Yes or N for No\n(y/n)\n"
@@ -162,7 +163,7 @@ def logIn(user, attempt, master_key, master_pw) -> None:
             logIn(user, attempt, master_key, master_pw)
     else:
         #  Write to log file
-        logging(message = f"[{today}] {incorrect}\n[{today}] Account locked until {tomorrow}")
+        logging(message = f"[{todaysTime}] {incorrect}\n[{todaysTime}] Account locked until {tomorrow}")
         # Set last_locked to today on the users table
         sqlite.lock_master(user, today)
         # Print exiting to screen
@@ -247,7 +248,7 @@ def do_action(user, mode) -> None:
                 # Check if list_pw is empty
                 if listNotEmpty(list_pw):
                     # Use Tabulate to print selected columns to ternimal
-                    display_passwords = display(list_pw)
+                    display_passwords = display_all_pw(list_pw)
                     print(display_passwords)
 
                     # TRY/EXCEPT handles if input is not INT
@@ -297,8 +298,8 @@ def add_pw(user, mode) -> None:
 def update_pw(user, list_pw, index, mode) -> None:
     # Before updating the password we need to save the returned account and username for the update statement
     # Ran into errors when using list_pw[index][1 or 0] directly in the SQLite update statement
-    acct = str(list_pw[index][1])
-    usr = str(list_pw[index][2])
+    acct = str(list_pw[index][2])
+    usr = str(list_pw[index][3])
     old_pw = str(list_pw[index][-3])
 
     replace_pw = str(input("New Password: "))
@@ -308,22 +309,22 @@ def update_pw(user, list_pw, index, mode) -> None:
         sqlite.update_data(save_pw, acct, usr, old_pw, session_pw_key.decode(), today)
 
         # Return to Start Menu or repeat
-        try_again(user, mode, (list_pw[index][1]), (done[0]))
+        try_again(user, mode, (list_pw[index][2]), (done[0]))
     else:
         print("New password was not entered")
         # Return to Start Menu or repeat
-        try_again(user, mode, (list_pw[index][1]), (done[0]))
+        try_again(user, mode, (list_pw[index][2]), (done[0]))
 
 
 # Delete password
 def delete_pw(user, list_pw, index, mode) -> None:
     # Before deleting the password we need to save the returned account and username for the delete statement
-    acct = str(list_pw[index][1])
-    usr = str(list_pw[index][2])
+    acct = str(list_pw[index][2])
+    usr = str(list_pw[index][3])
     old_pw = str(list_pw[index][-3])
 
     # Check if the user wants to delete the chosen pw
-    sure = str(input(f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the password for {Fore.YELLOW}{list_pw[index][1]}{Fore.WHITE} ?\n{y_n}"))
+    sure = str(input(f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the password for {Fore.YELLOW}{list_pw[index][2]}{Fore.WHITE} ?\n{y_n}"))
     if sure.lower() == "y":
         # Success statement needs to slice first letter off mode
         print(mode[:-1] + doing)
@@ -336,7 +337,7 @@ def delete_pw(user, list_pw, index, mode) -> None:
     # Return to Start Menu or repeat
     # Success statement needs to slice first letter off mode
     # Other funcs incl edit, add, drecypted so deleteed is wrong
-    try_again(user, mode, (list_pw[index][1]), (done[0][1:]))
+    try_again(user, mode, (list_pw[index][2]), (done[0][1:]))
 
 
 # Display password
@@ -350,20 +351,20 @@ def display_pw(user, list_pw, index, mode) -> None:
     print(f"\n{decrypted_pw}\n")
 
     # Return to Start Menu or repeat
-    try_again((list_pw[index][0]), mode, (list_pw[index][1]), (done[0]))
+    try_again((list_pw[index][0]), mode, (list_pw[index][2]), (done[0]))
 
 
-def display(list_pw) -> str:
+def display_all_pw(list_pw) -> str:
     # Create intermediary list to display data to Terminal with Tabulate
     list_table = []
     place = 1
     # Loop through the contents of list_pw to place in list_table since Tabulate won't allow to
     # Omit certain fields, this allows us to use the returned data as vairables without displaying in output
     for i in list_pw:
-        list_table.append([place, i[0], i[-3], i[-1]])
+        list_table.append([place, i[1], i[2], i[3], i[-3], i[-1]])
         place += 1
 
-    data = (tabulate(list_table, headers=["Index", "Account", "Password", "Last Modified"], numalign="center"))
+    data = (tabulate(list_table, headers=["Index", "Category", "Account", "Username", "Password", "Last Modified"], numalign="center"))
 
     # Dump intermediary list after use
     list_table = []
@@ -382,7 +383,7 @@ def new_Master() -> None:
         save_pw = encrypt_pw(new_master_pw)
         sqlite.insert_master(new_master_user, save_pw, session_pw_key.decode(), today)
         #  Write to log file
-        logging(message = f"[{today}] New master user and password created for {new_master_user}\n")
+        logging(message = f"[{todaysTime}] New master user and password created for {new_master_user}\n")
         # Return to Log In screen
         spmLogIn()
     else:
@@ -401,7 +402,7 @@ def update_Master(user) -> None:
         save_pw = encrypt_pw(new_master_pw)
         sqlite.update_master_pw(user, save_pw, session_pw_key.decode(), today)
         #  Write to log file
-        logging(message = f"[{today}] Master password updated for {user}\n")
+        logging(message = f"[{todaysTime}] Master password updated for {user}\n")
         # Return to Log In screen
         spmLogIn()
     else:
@@ -431,7 +432,7 @@ def empty(user, mode) -> None:
 def try_again(user, mode, acct, fixed_done) -> None:
     # Use "a" to APPEND to log file
     f = open(".\\Logs.txt", "a")
-    f.write(f"[{today}] {mode}{fixed_done} {acct}\n")
+    f.write(f"[{todaysTime}] {mode}{fixed_done} {acct}\n")
     f.close()
     again = str(input( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another ))
     yes_no(user, again, mode)

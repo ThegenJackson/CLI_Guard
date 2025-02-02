@@ -85,11 +85,10 @@ def update_data(pw, acct, usr, old_pw, session_key, today) -> None:
 
 
 # DELETE records from the passwords SQLite table
-def delete_data(user, category, acct, usr, pw) -> None:
+def delete_data(user, acct, usr, pw) -> None:
     sql_cursor.execute(f"""
                     DELETE FROM passwords 
                     WHERE user = '{user}'
-                    AND category = '{category}',
                     AND account = '{acct}' 
                     AND username = '{usr}'
                     AND password = '{pw}';
