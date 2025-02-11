@@ -21,6 +21,12 @@ tomorrow = date.today() + timedelta(1)
 import cryptography
 from cryptography.fernet import Fernet
 
+# Import PyGetWindow to get current CLI size
+import pygetwindow as gw
+
+# Import PyAutoGui to send keyboard presses
+import pyautogui
+
 
 
 # Generate the Fernet Encryption Key
@@ -112,6 +118,7 @@ incorrect = "Incorrect password entered 3 times"
 def spmLogIn() -> None:
     # Clear Terminal then SPLASH
     system("cls")
+
     print(splash)
     # Query the users table and insert all into list_master
     list_master = sqlite.query_data(table = "users")
