@@ -10,6 +10,9 @@ from colorama import Fore, Back
 # OS is imported to send 'cls' to the Terminal between functions
 from os import system
 
+# Import PyGetWindow to get current window size
+import pygetwindow as gw
+
 # DateTime used when editing passwords or adding new passwords
 from datetime import date, datetime, timedelta
 
@@ -18,14 +21,10 @@ todaysTime = datetime.now().strftime('%Y-%m-%d %H:%M')
 tomorrow = date.today() + timedelta(1)
 
 # Import Python Cryptography library and Fernet module according to documentation
-import cryptography
 from cryptography.fernet import Fernet
 
 # Import Glob to search for Files
 import glob
-
-# Import PyGetWindow to get current CLI size
-import pygetwindow as gw
 
 
 
@@ -114,15 +113,32 @@ incorrect = "Incorrect password entered 3 times"
 
 
 
+# Maximize the terminal using pygetwindow
+def maximize_terminal():
+    # Get all windows and filter by titles that match the criteria
+    windows = gw.getAllWindows()
+    
+    for window in windows:
+        # Check if the title is either 'Command Prompt' or contains '\cmd'
+        if "Command Prompt" in window.title or "\\cmd" in window.title:
+            window.maximize()  # Maximize the window if it matches
+
 # Attempt Log In if user exists
 def TerminalLogIn() -> None:
+    # Maximize terminal window
+    maximize_terminal()
     # Clear Terminal then SPLASH
     system("cls")
-
+    # Print CLI Guard Splash
     print(splash)
-    # Query the users table and insert all into list_master
-    list_master = sqlite.query_data(table = "users")
-    # Check if list_master is empty
+    # Ensure database connection is established first
+    if sqlite.sql_connection is None or sqlite.sql_cursor is None:
+        debug_logging(error_message = "ERROR: Database connection is not established.")
+        exit()
+    else:
+        # Query the users table and insert all into list_master
+        list_master = sqlite.query_data(table = "users")
+        # Check if list_master is empty
     if listNotEmpty(list_master):
         # Check if account is locked before logging in
         if accountLocked(list_master):
@@ -170,7 +186,7 @@ def logIn(user, attempt, master_key, master_pw) -> None:
             logIn(user, attempt, master_key, master_pw)
     else:
         #  Write to log file
-        user_logging(message = f"[{todaysTime}] {incorrect}\n[{todaysTime}] Account locked until {tomorrow}")
+        user_logging(message = f"{incorrect}\n[{todaysTime}] Account locked until {tomorrow}")
         # Set last_locked to today on the users table
         sqlite.lock_master(user, today)
         # Print exiting to screen
@@ -390,7 +406,7 @@ def new_Master() -> None:
         save_pw = encrypt_pw(new_master_pw)
         sqlite.insert_master(new_master_user, save_pw, session_pw_key.decode(), today)
         #  Write to log file
-        user_logging(message = f"[{todaysTime}] New master user and password created for {new_master_user}\n")
+        user_logging(message = f"New master user and password created for {new_master_user}")
         # Return to Log In screen
         TerminalLogIn()
     else:
@@ -409,7 +425,7 @@ def update_Master(user) -> None:
         save_pw = encrypt_pw(new_master_pw)
         sqlite.update_master_pw(user, save_pw, session_pw_key.decode(), today)
         #  Write to log file
-        user_logging(message = f"[{todaysTime}] Master password updated for {user}\n")
+        user_logging(message = f"Master password updated for {user}")
         # Return to Log In screen
         TerminalLogIn()
     else:
@@ -437,7 +453,7 @@ def empty(user, mode) -> None:
 # Ran into issues using the yes_no function because this calls the extra argument of func
 def try_again(user, mode, acct, fixed_done) -> None:
     #  Write to log file
-    user_logging(message = f"[{todaysTime}] {mode}{fixed_done} {acct}\n")
+    user_logging(message = f"{mode}{fixed_done} {acct}")
     again = str(input( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another ))
     yes_no(user, again, mode)
 
@@ -493,14 +509,14 @@ def user_logging(message):
     # Iterate over each Log file and append the message
     for file in log_files:
         with open(file, "a") as f:
-            f.write(message)
+            f.write(f"[{todaysTime}] {message} \n")
             f.close()
 
 
 # Write to Debugging Log file
 def debug_logging(error_message):
     f = open(".\\Logs\Logs_Debugging.txt", "a")
-    f.write(error_message)
+    f.write(f"[{todaysTime}] {error_message}\n")
     f.close()
 
 
