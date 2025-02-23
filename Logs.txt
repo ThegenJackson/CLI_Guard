@@ -1,4 +1,0 @@
-[2025-02-11 16-59] New master user and password created for test
-[2025-02-11 16-59] Added password for  a
-[2025-02-11 16-59] Decrypted password for  a
-[2025-02-11 16-59] Deleted password for  a

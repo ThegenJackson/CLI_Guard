@@ -1,5 +1,5 @@
 # Simple Password Manager SQL
-import  SPM.SPM_SQL as sqlite
+import  SQL_DB.CLI_Guard_SQL as sqlite
 
 # Tabulate is used to output list_pw and list_master data to Terminal in grid format
 from tabulate import tabulate
@@ -14,18 +14,18 @@ from os import system
 from datetime import date, datetime, timedelta
 
 today = date.today()
-todaysTime = datetime.now().strftime('%Y-%m-%d %H-%M')
+todaysTime = datetime.now().strftime('%Y-%m-%d %H:%M')
 tomorrow = date.today() + timedelta(1)
 
 # Import Python Cryptography library and Fernet module according to documentation
 import cryptography
 from cryptography.fernet import Fernet
 
+# Import Glob to search for Files
+import glob
+
 # Import PyGetWindow to get current CLI size
 import pygetwindow as gw
-
-# Import PyAutoGui to send keyboard presses
-import pyautogui
 
 
 
@@ -115,7 +115,7 @@ incorrect = "Incorrect password entered 3 times"
 
 
 # Attempt Log In if user exists
-def spmLogIn() -> None:
+def TerminalLogIn() -> None:
     # Clear Terminal then SPLASH
     system("cls")
 
@@ -170,7 +170,7 @@ def logIn(user, attempt, master_key, master_pw) -> None:
             logIn(user, attempt, master_key, master_pw)
     else:
         #  Write to log file
-        logging(message = f"[{todaysTime}] {incorrect}\n[{todaysTime}] Account locked until {tomorrow}")
+        user_logging(message = f"[{todaysTime}] {incorrect}\n[{todaysTime}] Account locked until {tomorrow}")
         # Set last_locked to today on the users table
         sqlite.lock_master(user, today)
         # Print exiting to screen
@@ -390,9 +390,9 @@ def new_Master() -> None:
         save_pw = encrypt_pw(new_master_pw)
         sqlite.insert_master(new_master_user, save_pw, session_pw_key.decode(), today)
         #  Write to log file
-        logging(message = f"[{todaysTime}] New master user and password created for {new_master_user}\n")
+        user_logging(message = f"[{todaysTime}] New master user and password created for {new_master_user}\n")
         # Return to Log In screen
-        spmLogIn()
+        TerminalLogIn()
     else:
         print("1 or more required fields is missing!")
         new_Master()
@@ -409,9 +409,9 @@ def update_Master(user) -> None:
         save_pw = encrypt_pw(new_master_pw)
         sqlite.update_master_pw(user, save_pw, session_pw_key.decode(), today)
         #  Write to log file
-        logging(message = f"[{todaysTime}] Master password updated for {user}\n")
+        user_logging(message = f"[{todaysTime}] Master password updated for {user}\n")
         # Return to Log In screen
-        spmLogIn()
+        TerminalLogIn()
     else:
         print("No password was entered!")
         update_Master(user)
@@ -422,7 +422,6 @@ def go_home(user, wrong) -> None:
     # Clear Terminal and print Logo
     system("cls")
     print( logo + line )
-
     print( f"{Fore.RED}{line}{Fore.WHITE}\nYou entered {Fore.RED}{wrong}{Fore.WHITE}, which is not a valid selection.")
     home = str(input( go_back + y_n ))
     yes_no(user, home, mode=0)
@@ -437,10 +436,8 @@ def empty(user, mode) -> None:
 # User chooses to perform the function again or return to Start
 # Ran into issues using the yes_no function because this calls the extra argument of func
 def try_again(user, mode, acct, fixed_done) -> None:
-    # Use "a" to APPEND to log file
-    f = open(".\\Logs.txt", "a")
-    f.write(f"[{todaysTime}] {mode}{fixed_done} {acct}\n")
-    f.close()
+    #  Write to log file
+    user_logging(message = f"[{todaysTime}] {mode}{fixed_done} {acct}\n")
     again = str(input( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another ))
     yes_no(user, again, mode)
 
@@ -489,13 +486,24 @@ def decrypt_pw(key, pw) -> str:
     return decrypted_pw.decode()
 
 
-#  Write to Logs.txt
-def logging(message):
-        f = open(".\\Logs.txt", "a")
-        f.write(message)
-        f.close()
+#  Write to all Log files so that Debug Logging contains all Logs and User Logging is less verbose
+def user_logging(message):
+# Find Log files
+    log_files = glob.glob(".\\Logs\Logs*.txt")
+    # Iterate over each Log file and append the message
+    for file in log_files:
+        with open(file, "a") as f:
+            f.write(message)
+            f.close()
 
 
-# Start SPM CLI
+# Write to Debugging Log file
+def debug_logging(error_message):
+    f = open(".\\Logs\Logs_Debugging.txt", "a")
+    f.write(error_message)
+    f.close()
+
+
+# Start CLI Guard in Terminal
 if __name__ == "__main__":
-    spmLogIn()
+    TerminalLogIn()
