@@ -23,9 +23,6 @@ tomorrow = date.today() + timedelta(1)
 # Import Python Cryptography library and Fernet module according to documentation
 from cryptography.fernet import Fernet
 
-# Import Glob to search for Files
-import glob
-
 
 
 # Generate the Fernet Encryption Key
@@ -131,14 +128,9 @@ def TerminalLogIn() -> None:
     system("cls")
     # Print CLI Guard Splash
     print(splash)
-    # Ensure database connection is established first
-    if sqlite.sql_connection is None or sqlite.sql_cursor is None:
-        debug_logging(error_message = "ERROR: Database connection is not established.")
-        exit()
-    else:
-        # Query the users table and insert all into list_master
-        list_master = sqlite.query_data(table = "users")
-        # Check if list_master is empty
+    # Query the users table and insert all into list_master
+    list_master = sqlite.query_data(table = "users")
+    # Check if list_master is empty
     if listNotEmpty(list_master):
         # Check if account is locked before logging in
         if accountLocked(list_master):
@@ -186,7 +178,7 @@ def logIn(user, attempt, master_key, master_pw) -> None:
             logIn(user, attempt, master_key, master_pw)
     else:
         #  Write to log file
-        user_logging(message = f"{incorrect}\n[{todaysTime}] Account locked until {tomorrow}")
+        logging(message = f"{incorrect}\n[{todaysTime}] Account locked until {tomorrow}")
         # Set last_locked to today on the users table
         sqlite.lock_master(user, today)
         # Print exiting to screen
@@ -406,7 +398,7 @@ def new_Master() -> None:
         save_pw = encrypt_pw(new_master_pw)
         sqlite.insert_master(new_master_user, save_pw, session_pw_key.decode(), today)
         #  Write to log file
-        user_logging(message = f"New master user and password created for {new_master_user}")
+        logging(message = f"New master user and password created for {new_master_user}")
         # Return to Log In screen
         TerminalLogIn()
     else:
@@ -425,7 +417,7 @@ def update_Master(user) -> None:
         save_pw = encrypt_pw(new_master_pw)
         sqlite.update_master_pw(user, save_pw, session_pw_key.decode(), today)
         #  Write to log file
-        user_logging(message = f"Master password updated for {user}")
+        logging(message = f"Master password updated for {user}")
         # Return to Log In screen
         TerminalLogIn()
     else:
@@ -453,7 +445,7 @@ def empty(user, mode) -> None:
 # Ran into issues using the yes_no function because this calls the extra argument of func
 def try_again(user, mode, acct, fixed_done) -> None:
     #  Write to log file
-    user_logging(message = f"{mode}{fixed_done} {acct}")
+    logging(message = f"{mode}{fixed_done} {acct}")
     again = str(input( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another ))
     yes_no(user, again, mode)
 
@@ -502,19 +494,8 @@ def decrypt_pw(key, pw) -> str:
     return decrypted_pw.decode()
 
 
-#  Write to all Log files so that Debug Logging contains all Logs and User Logging is less verbose
-def user_logging(message):
-# Find Log files
-    log_files = glob.glob(".\\Logs\Logs*.txt")
-    # Iterate over each Log file and append the message
-    for file in log_files:
-        with open(file, "a") as f:
-            f.write(f"[{todaysTime}] {message} \n")
-            f.close()
-
-
-# Write to Debugging Log file
-def debug_logging(error_message):
+# Write to Log file
+def logging(error_message):
     f = open(".\\Logs\Logs_Debugging.txt", "a")
     f.write(f"[{todaysTime}] {error_message}\n")
     f.close()
