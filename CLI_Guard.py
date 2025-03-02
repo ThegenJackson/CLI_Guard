@@ -113,7 +113,7 @@ go_back = "Return to Start Menu?\n"
 mode = ""
 line = f"\n###################################################################################\n"
 incorrect = "Incorrect password entered 3 times"
-
+navigation = f"{Fore.CYAN}Use ↑ and ↓ to navigate. Press Enter to select.{Style.RESET_ALL}\n"
 
 
 # Maximize the terminal using pygetwindow
@@ -124,7 +124,7 @@ def maximize_terminal():
     for window in windows:
         # Check if the title is either 'Command Prompt' or contains '\cmd'
         if "Command Prompt" in window.title or "\\cmd" in window.title:
-            window.maximize()  # Maximize the window if it matches
+            window.maximize()
 
 # Attempt Log In if user exists
 def TerminalLogIn() -> None:
@@ -203,14 +203,14 @@ def Start(user) -> None:
         ("Delete a password", "Delete"),
         ("Display a password", "Decrypt"),
         ("Edit master password", "Master password"),
-        ("Exit", "exit")
+        ("Quit", "Quit")
     ]
 
     selected_index = 0
 
     def start_menu():
         system('cls')
-        print(f"{splash}\n{line}\n{Fore.CYAN}Use ↑ and ↓ to navigate. Press Enter to select.{Style.RESET_ALL}\n")
+        print(f"{splash}\n{navigation}")
         for i, func in enumerate(funcs):
             if i == selected_index:
                 # Highlight current option
@@ -227,7 +227,7 @@ def Start(user) -> None:
         elif key == readchar.key.DOWN:
             selected_index = (selected_index + 1) % len(funcs)
         elif key == readchar.key.ENTER:
-            if funcs[selected_index][-1] == "exit":
+            if funcs[selected_index][-1] == "Quit":
                 exit()
             else:
                 do_action(user, mode = funcs[selected_index][-1])
@@ -344,7 +344,7 @@ def delete_pw(user, list_pw, index, mode) -> None:
 
     # Check if the user wants to delete the chosen pw
     statement = (f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the password for {Fore.YELLOW}{list_pw[index][2]}{Fore.WHITE} ?")
-    if yes_no( statement, user, mode ) == True:
+    if yes_no( statement, user, mode = "ConfirmDelete" ) == True:
         # Success statement needs to slice first letter off mode
         print(mode[:-1] + doing)
         # Delete data from SQLite table
@@ -362,16 +362,15 @@ def display_pw(user, list_pw, index, mode) -> None:
     # Before decrypting the password we need to save the returned Encryption Key for that record
     pw_key = list_pw[index][-2]
     pw = list_pw[index][-3]
-
-    print(mode + doing)
     decrypted_pw = decrypt_pw(pw_key, pw)
+    print(mode + doing)
     # Decrypt then return to Start Menu or repeat
     try_again((list_pw[index][0]), mode, (list_pw[index][2]), (done[0]), decrypted_pw)
 
 
 def display_table(list_pw, selected_index):
     system('cls')
-    print(f"{Fore.CYAN}Use ↑ and ↓ to navigate. Press Enter to select.{Style.RESET_ALL}\n")
+    print(navigation)
 
     # Create intermediary list to display data to Terminal with Tabulate
     list_table = []
@@ -380,10 +379,10 @@ def display_table(list_pw, selected_index):
         list_table.append([place, i[1], i[2], i[3], i[-3], i[-1]])
         place += 1
 
-    # Print the headers once
+    # Print the headers
     print(tabulate([list_table[0]], headers=["Index", "Category", "Account", "Username", "Password", "Last Modified"], tablefmt="plain"))
 
-    # Display the table rows starting from the first row (not skipping it)
+    # Display the table rows starting from the first row
     for i, row in enumerate(list_table):
         if i == selected_index:
             # Highlight the current row
@@ -483,7 +482,7 @@ def yes_no(statement, user, mode) -> None:
 
     selected_index = 0
     
-    if mode == "Delete":
+    if mode == "ConfirmDelete":
         options = ["Delete Password", "Choose Again", "Main Menu", "Quit"]   
     elif mode == 0:
         options = ["Main Menu", "Quit"]
@@ -492,7 +491,7 @@ def yes_no(statement, user, mode) -> None:
 
     def choice_menu():
         system('cls')
-        print(f"{logo}\n{statement}\n{Fore.CYAN}Use ↑ and ↓ to navigate. Press Enter to select.{Style.RESET_ALL}\n")
+        print(f"{logo}\n{statement}\n{navigation}")
         for i, option in enumerate(options):
             if i == selected_index:
                 # Highlight current option
