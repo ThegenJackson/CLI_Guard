@@ -19,7 +19,7 @@ def logging(message):
 
 
 # Connet to the CLI Guard Database
-sql_connection = sqlite3.connect('.\\SQL_DB\\CLI_Guard_DB.db')
+sql_connection = sqlite3.connect('.\\CLI_SQL\\CLI_Guard_DB.db')
 # Create a cursor - read more docs on this
 sql_cursor = sql_connection.cursor()
 

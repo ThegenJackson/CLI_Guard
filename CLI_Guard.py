@@ -1,5 +1,5 @@
-# Simple Password Manager SQL
-import  SQL_DB.CLI_Guard_SQL as sqlite
+# CLI Guard SQL
+import  CLI_SQL.CLI_Guard_SQL as sqlite
 
 # Tabulate is used to output list_pw and list_master data to Terminal in grid format
 from tabulate import tabulate
@@ -262,38 +262,31 @@ def do_action(user, mode) -> None:
 
                 # Check if list_pw is empty
                 if listNotEmpty(list_pw):
+
                     # Use Tabulate to print selected columns to terminal
                     display_passwords = display_all_pw(list_pw)
                     print(display_passwords)
 
+                    selected_index = 0  # Initialize the index for navigation
+
                     while True:
-                        # TRY/EXCEPT handles if input is not INT
-                        try:
-                            # User chooses record to perform action against
-                            user_input = input(line + select[0] + mode.lower() + select[1])
+                        # Display the table with navigation
+                        display_table(list_pw, selected_index)
 
-                            # Ensure input is a valid integer
-                            if not user_input.isdigit():
-                                print(f"{Fore.RED}Invalid input. Please enter a number.{Style.RESET_ALL}")
-                                continue
+                        # User input via keyboard
+                        key = readchar.readkey()
 
-                            index = int(user_input) - 1
-
-                            # Check if user input for index variable is within the range of list_pw
-                            if 0 <= index < len(list_pw):
-                                # Execute func (func == i[0]) with required args
-                                func[0](list_pw[index][0], list_pw, index, mode)
-                                break
-                            # This handles when the index variable is outside the range of list_pw
-                            else:
-                                print(f"{Fore.RED}Invalid choice. Please select a valid index.{Style.RESET_ALL}")
-                                go_home(user, index + 1)
-
-                        # Try/Except handles ValueErrors raised when user inputs anything other than an INT
-                        except ValueError:
-                            print(f"{Fore.RED}Invalid input. Please enter a number.{Style.RESET_ALL}")
-                            go_home(user, 0)
-
+                        if key == readchar.key.UP:
+                            selected_index = (selected_index - 1) % len(list_pw)
+                        elif key == readchar.key.DOWN:
+                            selected_index = (selected_index + 1) % len(list_pw)
+                        elif key == readchar.key.ENTER:
+                            # Execute func (func == i[0]) with required args
+                            func[0](list_pw[selected_index][0], list_pw, selected_index, mode)
+                            break
+                        elif key == readchar.key.ESC:
+                            Start()
+                            break
                 else:
                     empty(user, mode)
 
@@ -314,7 +307,7 @@ def add_pw(user, mode) -> None:
         sqlite.insert_data(user, new_category, new_acct, new_username, save_pw, session_pw_key.decode(), today)
 
         # Return to Start Menu or repeat
-        try_again(user, mode, new_acct, (done[0]))
+        try_again( user, mode, new_acct, (done[0]))
     else:
         print("All fields are required")
         add_pw(user)
@@ -350,20 +343,18 @@ def delete_pw(user, list_pw, index, mode) -> None:
     old_pw = str(list_pw[index][-3])
 
     # Check if the user wants to delete the chosen pw
-    sure = str(input(f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the password for {Fore.YELLOW}{list_pw[index][2]}{Fore.WHITE} ?"))
-    if sure.lower() == "y":
+    statement = (f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the password for {Fore.YELLOW}{list_pw[index][2]}{Fore.WHITE} ?")
+    if yes_no( statement, user, mode ) == True:
         # Success statement needs to slice first letter off mode
         print(mode[:-1] + doing)
         # Delete data from SQLite table
         sqlite.delete_data(user, acct, usr, old_pw)
-    elif sure.lower() == "n":
-        Start(user)
+        # Return to Start Menu or repeat
+        # Success statement needs to slice first letter off mode
+        # Other funcs incl edit, add, drecypted so deleteed is wrong
+        try_again(user, mode, (list_pw[index][2]), (done[0][1:]))
     else:
-        go_home(user, sure)
-    # Return to Start Menu or repeat
-    # Success statement needs to slice first letter off mode
-    # Other funcs incl edit, add, drecypted so deleteed is wrong
-    try_again(user, mode, (list_pw[index][2]), (done[0][1:]))
+        do_action(user, mode)
 
 
 # Display password
@@ -374,18 +365,42 @@ def display_pw(user, list_pw, index, mode) -> None:
 
     print(mode + doing)
     decrypted_pw = decrypt_pw(pw_key, pw)
-    print(f"\n{decrypted_pw}\n")
-
-    # Return to Start Menu or repeat
-    try_again((list_pw[index][0]), mode, (list_pw[index][2]), (done[0]))
+    # Decrypt then return to Start Menu or repeat
+    try_again((list_pw[index][0]), mode, (list_pw[index][2]), (done[0]), decrypted_pw)
 
 
+def display_table(list_pw, selected_index):
+    system('cls')
+    print(f"{Fore.CYAN}Use ↑ and ↓ to navigate. Press Enter to select.{Style.RESET_ALL}\n")
+
+    # Create intermediary list to display data to Terminal with Tabulate
+    list_table = []
+    place = 1
+    for i in list_pw:
+        list_table.append([place, i[1], i[2], i[3], i[-3], i[-1]])
+        place += 1
+
+    # Print the headers once
+    print(tabulate([list_table[0]], headers=["Index", "Category", "Account", "Username", "Password", "Last Modified"], tablefmt="plain"))
+
+    # Display the table rows starting from the first row (not skipping it)
+    for i, row in enumerate(list_table):
+        if i == selected_index:
+            # Highlight the current row
+            print(Back.WHITE + Fore.BLACK + tabulate([row], headers=[], tablefmt="plain") + Style.RESET_ALL)
+        else:
+            print(tabulate([row], headers=[], tablefmt="plain"))
+
+    # Dump intermediary list after use
+    list_table = []
+
+
+# Function to display all passwords
 def display_all_pw(list_pw) -> str:
     # Create intermediary list to display data to Terminal with Tabulate
     list_table = []
     place = 1
-    # Loop through the contents of list_pw to place in list_table since Tabulate won't allow to
-    # Omit certain fields, this allows us to use the returned data as vairables without displaying in output
+
     for i in list_pw:
         list_table.append([place, i[1], i[2], i[3], i[-3], i[-1]])
         place += 1
@@ -453,10 +468,13 @@ def empty(user, mode) -> None:
 
 # User chooses to perform the function again or return to Start
 # Ran into issues using the yes_no function because this calls the extra argument of func
-def try_again(user, mode, acct, fixed_done) -> None:
+def try_again( user, mode, acct, fixed_done, pw=None) -> None:
     #  Write to log file
     logging(message = f"{mode}{fixed_done} {acct}")
-    statement = ( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another )
+    if mode == "Decrypt":
+        statement = ( f"\n{pw}\n{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another )
+    else:
+        statement = ( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another )
     yes_no(statement, user, mode)
 
 
@@ -464,7 +482,13 @@ def try_again(user, mode, acct, fixed_done) -> None:
 def yes_no(statement, user, mode) -> None:
 
     selected_index = 0
-    options = ["Yes", "No"]
+    
+    if mode == "Delete":
+        options = ["Delete Password", "Choose Again", "Main Menu", "Quit"]   
+    elif mode == 0:
+        options = ["Main Menu", "Quit"]
+    else:
+        options = ["Yes", "Main Menu", "Quit"]
 
     def choice_menu():
         system('cls')
@@ -486,19 +510,19 @@ def yes_no(statement, user, mode) -> None:
             selected_index = (selected_index + 1) % len(options)
         elif key == readchar.key.ENTER:
             print(f"You selected: {options[selected_index]}")
-            if mode == 0:
-                if options[selected_index] == "Yes":
-                    Start(user)
-                elif options[selected_index] == "No":
-                    print("Exiting...")
-                    exit()
-            else:
-                if options[selected_index] == "Yes":
-                    # To try_again we need to pass func variable as an argument when calling func variable
-                    # Because each function expects a func argument so it can call try_again() if needed
-                    do_action(user, mode)
-                elif options[selected_index] == "No":
-                    Start(user)
+            if options[selected_index] == "Delete Password":
+                return True
+            elif options[selected_index] == "Choose Again":
+                return False
+            elif options[selected_index] == "Yes":
+                # To try_again we need to pass func variable as an argument when calling func variable
+                # Because each function expects a func argument so it can call try_again() if needed
+                do_action(user, mode)
+            elif options[selected_index] == "Main Menu":
+                Start(user)
+            elif options[selected_index] ==  "Quit":
+                print("Exiting...")
+                exit()
 
 
 # Encrypt
