@@ -49,7 +49,7 @@ To install CLI Guard, download this repository.
 - Web Application
 
 ### Process Flowchart
-![Flowchart](/SPM/flowchart.svg)
+![Flowchart](/CG/flowchart.svg)
 
 
 ### CLI Guard Password Generator
@@ -59,7 +59,7 @@ To install CLI Guard, download this repository.
 https://prod.d2px0taen1p9zb.amplifyapp.com/
 
 #### AWS Architecture
-![AWS-CGPG](/CGPG/AWS_CGPG.svg)
+![AWS-CGPG](CG/CGPG/AWS_CGPG.svg)
 
 ### Libraries and Packages used
 -	DateTime \
