@@ -4,11 +4,11 @@ import  SQL_DB.CLI_Guard_SQL as sqlite
 # Tabulate is used to output list_pw and list_master data to Terminal in grid format
 from tabulate import tabulate
 
-# Colour text and others
-from colorama import Fore, Back
-
 # OS is imported to send 'cls' to the Terminal between functions
 from os import system
+
+# Readchar is used for Terminal navigation
+import readchar
 
 # Import PyGetWindow to get current window size
 import pygetwindow as gw
@@ -20,10 +20,14 @@ today = date.today()
 todaysTime = datetime.now().strftime('%Y-%m-%d %H:%M')
 tomorrow = date.today() + timedelta(1)
 
+# Colour text and others
+from colorama import init, Fore, Back, Style
+
+# Initialize Colorama (autoreset restores default after print)
+init(autoreset=True)
+
 # Import Python Cryptography library and Fernet module according to documentation
 from cryptography.fernet import Fernet
-
-
 
 # Generate the Fernet Encryption Key
 # Required for encryption and decryption with Fernet as per documentation
@@ -36,8 +40,11 @@ key = Fernet.generate_key()
 fernet = Fernet(key)
 session_pw_key = key
 
+
+
 # Create empty list of encrypted passwords
 list_pw = []
+
 
 
 # Formatting Terminal output
@@ -97,8 +104,7 @@ logo = f"""
        {Fore.LIGHTCYAN_EX}╚═════╝ ╚══════╝ ╚═╝     ╚═════╝   ╚═════╝  ╚═╝  ╚═╝ ╚═╝  ╚═╝ ╚═════╝ {Fore.WHITE}                     
 """
 
-y_n = "Type Y for Yes or N for No\n(y/n)\n"
-another = f" another password?\n{y_n}"
+another = f" another password?\n"
 select = ["Select a password to ", " by typing the index of the account: "]
 doing = "ing password..."
 done = ["ed password for ", "...\n"]
@@ -200,45 +206,38 @@ def Start(user) -> None:
         ("Exit", "exit")
     ]
 
-    # Print CLI Splash for program Start
-    print( splash + line )
-    # List available functions by human-readable index
-    for func in funcs:
-        print(((funcs.index(func) + 1)), func[0])
+    selected_index = 0
 
-    # TRY/EXCEPT handles if input is not INT
-    try:
-        # User chooses function, later converted to INT for comparison
-        # Choice variable is not set as INT initially to avoid TRY/EXCEPT issues encounted
-        choice = input(f"Select an option by typing 1-{len(funcs)}:\n")
-        # Check choice is within range of funcs list or else raise error
-        if int(choice) <= len(funcs):
-            # Exit if users chooses exit, exit() does not take args that do_action takes
-            if int(choice) == len(funcs):
-                print("Exiting...")
+    def start_menu():
+        system('cls')
+        print(f"{splash}\n{line}\n{Fore.CYAN}Use ↑ and ↓ to navigate. Press Enter to select.{Style.RESET_ALL}\n")
+        for i, func in enumerate(funcs):
+            if i == selected_index:
+                # Highlight current option
+                print(f"{Back.WHITE}{Fore.BLACK}{func[0]}{Style.RESET_ALL}")
+            else:
+                print(func[0])
+
+    while True:
+        start_menu()
+        key = readchar.readkey()
+
+        if key == readchar.key.UP:
+            selected_index = (selected_index - 1) % len(funcs)
+        elif key == readchar.key.DOWN:
+            selected_index = (selected_index + 1) % len(funcs)
+        elif key == readchar.key.ENTER:
+            if funcs[selected_index][-1] == "exit":
                 exit()
             else:
-                # Loop through funcs list skipping where func != choice
-                for func in funcs:
-                    if int(choice) != ((funcs.index(func) + 1)):
-                        continue
-                # Execute chosen function
-                    else:
-                        # We need to pass func variable as an argument when calling func variable
-                        # Because each function expects a func argument so it can call try_again() if needed
-                        do_action(user, mode=func[-1])
-        # This handles when input is outside of list range
-        else:
-            go_home(user, choice)
-    # Try/Except handles Valueerrors raised when user inputs anything other than an INT
-    except ValueError:
-        go_home(user, choice)
+                do_action(user, mode = funcs[selected_index][-1])
 
 
 # Get func arg then perform action
 def do_action(user, mode) -> None:
     # Clear Terminal
     system("cls")
+
     # Define function index and function name
     funcs = [
         (update_pw, "Edit"),
@@ -256,36 +255,48 @@ def do_action(user, mode) -> None:
                 continue
             # Execute chosen function
             else:
-                print( logo + line )
+                print(logo + line)
+
                 # Query the passwords table and insert all into list_pw ordered by account name
-                list_pw = sqlite.query_data(table = "passwords")
+                list_pw = sqlite.query_data(table="passwords")
 
                 # Check if list_pw is empty
                 if listNotEmpty(list_pw):
-                    # Use Tabulate to print selected columns to ternimal
+                    # Use Tabulate to print selected columns to terminal
                     display_passwords = display_all_pw(list_pw)
                     print(display_passwords)
 
-                    # TRY/EXCEPT handles if input is not INT
-                    try:
-                        # User chooses record to perform action against
-                        index = int(int(input( line + select[0] + mode.lower() + select[1] )) - 1 )
+                    while True:
+                        # TRY/EXCEPT handles if input is not INT
+                        try:
+                            # User chooses record to perform action against
+                            user_input = input(line + select[0] + mode.lower() + select[1])
 
-                        # Check if user input for index veriable is within the range of list_pw
-                        if int(index) <= len(list_pw):
+                            # Ensure input is a valid integer
+                            if not user_input.isdigit():
+                                print(f"{Fore.RED}Invalid input. Please enter a number.{Style.RESET_ALL}")
+                                continue
 
-                            # Execute func (func == i[0]) with required args
-                            func[0]((list_pw[index][0]), list_pw, index, mode)
+                            index = int(user_input) - 1
 
-                        # This handles when the index variable is outside of the range of list_pw
-                        else:
-                            go_home((list_pw[index][0]), (int(index) + 1))
-                    # Try/Except handles Valueerrors raised when user inputs anything other than an INT
-                    # Reference index variable instead of (index + 1) since this handles when index is STRING
-                    except ValueError:
-                        go_home(user, index)
+                            # Check if user input for index variable is within the range of list_pw
+                            if 0 <= index < len(list_pw):
+                                # Execute func (func == i[0]) with required args
+                                func[0](list_pw[index][0], list_pw, index, mode)
+                                break
+                            # This handles when the index variable is outside the range of list_pw
+                            else:
+                                print(f"{Fore.RED}Invalid choice. Please select a valid index.{Style.RESET_ALL}")
+                                go_home(user, index + 1)
+
+                        # Try/Except handles ValueErrors raised when user inputs anything other than an INT
+                        except ValueError:
+                            print(f"{Fore.RED}Invalid input. Please enter a number.{Style.RESET_ALL}")
+                            go_home(user, 0)
+
                 else:
                     empty(user, mode)
+
 
 
 # Password is encrypted then added to the encrypted passwords SQLite table
@@ -339,7 +350,7 @@ def delete_pw(user, list_pw, index, mode) -> None:
     old_pw = str(list_pw[index][-3])
 
     # Check if the user wants to delete the chosen pw
-    sure = str(input(f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the password for {Fore.YELLOW}{list_pw[index][2]}{Fore.WHITE} ?\n{y_n}"))
+    sure = str(input(f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the password for {Fore.YELLOW}{list_pw[index][2]}{Fore.WHITE} ?"))
     if sure.lower() == "y":
         # Success statement needs to slice first letter off mode
         print(mode[:-1] + doing)
@@ -430,15 +441,14 @@ def go_home(user, wrong) -> None:
     # Clear Terminal and print Logo
     system("cls")
     print( logo + line )
-    print( f"{Fore.RED}{line}{Fore.WHITE}\nYou entered {Fore.RED}{wrong}{Fore.WHITE}, which is not a valid selection.")
-    home = str(input( go_back + y_n ))
-    yes_no(user, home, mode=0)
+    statement = ( f"{Fore.RED}{line}{Fore.WHITE}\nYou entered {Fore.RED}{wrong}{Fore.WHITE}, which is not a valid selection.\n{go_back}")
+    yes_no(statement, user, mode=0)
 
 
 # The list_pw list is empty - user chooses to return to Start or Exit
 def empty(user, mode) -> None:
-    home = str(input( empty_list[0] + mode.lower() + empty_list[1] + go_back + y_n ))
-    yes_no(user, home, mode=0)
+    statement =  ( empty_list[0] + mode.lower() + empty_list[1] + go_back )
+    yes_no(statement, user, mode=0)
 
 
 # User chooses to perform the function again or return to Start
@@ -446,29 +456,49 @@ def empty(user, mode) -> None:
 def try_again(user, mode, acct, fixed_done) -> None:
     #  Write to log file
     logging(message = f"{mode}{fixed_done} {acct}")
-    again = str(input( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another ))
-    yes_no(user, again, mode)
+    statement = ( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another )
+    yes_no(statement, user, mode)
 
 
 # Handles Yes No choices
-def yes_no(user, choice, mode) -> None:
-    if mode == 0:
-        if choice.lower() == "y":
-            Start(user)
-        elif choice.lower() == "n":
-            print("Exiting...")
-            exit()
-        else:
-            go_home(user, choice) 
-    else:
-        if choice.lower() == "y":
-            # To try_again we need to pass func variable as an argument when calling func variable
-            # Because each function expects a func argument so it can call try_again() if needed
-            do_action(user, mode)
-        elif choice.lower() == "n":
-            Start(user)
-        else:
-            go_home(user, choice)
+def yes_no(statement, user, mode) -> None:
+
+    selected_index = 0
+    options = ["Yes", "No"]
+
+    def choice_menu():
+        system('cls')
+        print(f"{logo}\n{statement}\n{Fore.CYAN}Use ↑ and ↓ to navigate. Press Enter to select.{Style.RESET_ALL}\n")
+        for i, option in enumerate(options):
+            if i == selected_index:
+                # Highlight current option
+                print(f"{Back.WHITE}{Fore.BLACK}{option}{Style.RESET_ALL}")
+            else:
+                print(option)
+
+    while True:
+        choice_menu()
+        key = readchar.readkey()
+
+        if key == readchar.key.UP:
+            selected_index = (selected_index - 1) % len(options)
+        elif key == readchar.key.DOWN:
+            selected_index = (selected_index + 1) % len(options)
+        elif key == readchar.key.ENTER:
+            print(f"You selected: {options[selected_index]}")
+            if mode == 0:
+                if options[selected_index] == "Yes":
+                    Start(user)
+                elif options[selected_index] == "No":
+                    print("Exiting...")
+                    exit()
+            else:
+                if options[selected_index] == "Yes":
+                    # To try_again we need to pass func variable as an argument when calling func variable
+                    # Because each function expects a func argument so it can call try_again() if needed
+                    do_action(user, mode)
+                elif options[selected_index] == "No":
+                    Start(user)
 
 
 # Encrypt
@@ -495,9 +525,9 @@ def decrypt_pw(key, pw) -> str:
 
 
 # Write to Log file
-def logging(error_message):
-    f = open(".\\Logs\Logs_Debugging.txt", "a")
-    f.write(f"[{todaysTime}] {error_message}\n")
+def logging(message):
+    f = open(".\\Logs.txt", "a")
+    f.write(f"[{todaysTime}] {message}\n")
     f.close()
 
 

@@ -12,9 +12,9 @@ todaysTime = datetime.now().strftime('%Y-%m-%d %H:%M')
 
 
 # Write to Debugging Log file
-def logging(error_message):
+def logging(message):
     with open(".\\Logs.txt", "a") as f:
-        f.write(f"[{todaysTime}] DATABASE {error_message}\n")
+        f.write(f"[{todaysTime}] DATABASE {message}\n")
 
 
 
@@ -35,10 +35,10 @@ def query_data(table) -> list:
         list_pw = sql_cursor.fetchall()
         return list_pw
     except sqlite3.Error as sql_error:
-        logging(error_message = f"ERROR: Failed to query data from {table} - {str(sql_error)}")
+        logging(message = f"ERROR: Failed to query data from {table} - {str(sql_error)}")
         return []
     except Exception as e:
-        logging(error_message = f"ERROR: {str(e)}")
+        logging(message = f"ERROR: {str(e)}")
         return []
 
 
@@ -55,11 +55,11 @@ def insert_master(user, pw, session_key, today) -> None:
                 '{today}');
             """)
         sql_connection.commit()
-        logging(error_message = f"SUCCESS: Inserted master user {user}")
+        logging(message = f"SUCCESS: Inserted master user {user}")
     except sqlite3.Error as sql_error:
-        logging(error_message = f"ERROR: Failed to insert master user {user} - {str(sql_error)}")
+        logging(message = f"ERROR: Failed to insert master user {user} - {str(sql_error)}")
     except Exception as e:
-        logging(error_message = f"ERROR: {str(e)}")
+        logging(message = f"ERROR: {str(e)}")
 
 
 # UPDATE records in the passwords SQLite table
@@ -71,11 +71,11 @@ def lock_master(user, today) -> None:
             WHERE user = '{user}';
             """)
         sql_connection.commit()
-        logging(error_message = f"SUCCESS: Locked user {user} until {today}")
+        logging(message = f"SUCCESS: Locked user {user} until {today}")
     except sqlite3.Error as sql_error:
-        logging(error_message = f"ERROR: Failed to lock user {user} - {str(sql_error)}")
+        logging(message = f"ERROR: Failed to lock user {user} - {str(sql_error)}")
     except Exception as e:
-        logging(error_message = f"ERROR: {str(e)}")
+        logging(message = f"ERROR: {str(e)}")
 
 
 # INSERT new records into passwords SQLite table
@@ -93,11 +93,11 @@ def insert_data(user, category, acct, username, pw, session_key, today) -> None:
                 '{today}');
             """)
         sql_connection.commit()
-        logging(error_message = f"SUCCESS: Inserted password for user {user} account {acct}")
+        logging(message = f"SUCCESS: Inserted password for user {user} account {acct}")
     except sqlite3.Error as sql_error:
-        logging(error_message = f"ERROR: Failed to insert password for user {user} account {acct} - {str(sql_error)}")
+        logging(message = f"ERROR: Failed to insert password for user {user} account {acct} - {str(sql_error)}")
     except Exception as e:
-        logging(error_message = f"ERROR: {str(e)}")
+        logging(message = f"ERROR: {str(e)}")
 
 
 # UPDATE records in the passwords SQLite table
@@ -111,11 +111,11 @@ def update_master_pw(user, pw, session_key, today) -> None:
             WHERE user = '{user}';
             """)
         sql_connection.commit()
-        logging(error_message = f"SUCCESS: Updated master password for user {user}")
+        logging(message = f"SUCCESS: Updated master password for user {user}")
     except sqlite3.Error as sql_error:
-        logging(error_message = f"ERROR: Failed to update master password for user {user} - {str(sql_error)}")
+        logging(message = f"ERROR: Failed to update master password for user {user} - {str(sql_error)}")
     except Exception as e:
-        logging(error_message = f"ERROR: {str(e)}")
+        logging(message = f"ERROR: {str(e)}")
 
 
 # UPDATE records in the passwords SQLite table
@@ -131,11 +131,11 @@ def update_data(pw, acct, usr, old_pw, session_key, today) -> None:
             AND password = '{old_pw}';
             """)
         sql_connection.commit()
-        logging(error_message = f"SUCCESS: Updated password for user {usr} account {acct}")
+        logging(message = f"SUCCESS: Updated password for user {usr} account {acct}")
     except sqlite3.Error as sql_error:
-        logging(error_message = f"ERROR: Failed to update password for user {usr} account {acct} - {str(sql_error)}")
+        logging(message = f"ERROR: Failed to update password for user {usr} account {acct} - {str(sql_error)}")
     except Exception as e:
-        logging(error_message = f"ERROR: {str(e)}")
+        logging(message = f"ERROR: {str(e)}")
 
 
 # DELETE records from the passwords SQLite table
@@ -149,8 +149,8 @@ def delete_data(user, acct, usr, pw) -> None:
             AND password = '{pw}';
             """)
         sql_connection.commit()
-        logging(error_message = f"SUCCESS: Deleted password for user {user} account {acct}")
+        logging(message = f"SUCCESS: Deleted password for user {user} account {acct}")
     except sqlite3.Error as sql_error:
-        logging(error_message = f"ERROR: Failed to delete password for user {user} account {acct} - {str(sql_error)}")
+        logging(message = f"ERROR: Failed to delete password for user {user} account {acct} - {str(sql_error)}")
     except Exception as e:
-        logging(error_message = f"ERROR: {str(e)}")
+        logging(message = f"ERROR: {str(e)}")

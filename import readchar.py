@@ -3,7 +3,7 @@ import os
 from colorama import init, Fore, Back, Style
 
 # Initialize Colorama (autoreset restores default after print)
-init(autoreset=True)  
+init(autoreset=True)
 
 options = ["Option 1", "Option 2", "Option 3", "Exit"]
 selected_index = 0
