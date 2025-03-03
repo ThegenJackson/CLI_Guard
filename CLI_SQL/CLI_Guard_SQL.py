@@ -26,7 +26,8 @@ sqlCursor = sqlConnection.cursor()
 
 
 # Query the passwords table and insert all into list_passwords ordered by account name or userID
-# ? Placeholder prevents SQL Injection
+# ? Placeholders in SQL Queries prevent SQL Injection as per the SQLite3 documentation
+# https://docs.python.org/3/library/sqlite3.html#sqlite3-placeholders
 def queryData(table, category=None, text=None, sort_by=None) -> list:
     try:
         if text is not None:
@@ -62,15 +63,16 @@ def queryData(table, category=None, text=None, sort_by=None) -> list:
 # INSERT new user into users SQLite table
 def insertMaster(user, password, session_key, today) -> None:
     try:
-        sqlCursor.execute(f"""
+        sql_query = (f"""
             INSERT INTO users
             (user, master_pw, master_key, master_last_modified) 
             VALUES(
-                '{user}',
+                ?,
                 '{password}',
                 '{session_key}',
                 '{today}');
             """)
+        sqlCursor.execute(sql_query, (user))
         sqlConnection.commit()
         logging(message = f"SUCCESS: Created master user {user}")
     except sqlite3.Error as sql_error:
@@ -82,11 +84,12 @@ def insertMaster(user, password, session_key, today) -> None:
 # UPDATE records in the passwords SQLite table
 def lockMaster(user, today, tomorrow) -> None:
     try:
-        sqlCursor.execute(f"""
+        sql_query = (f"""
             UPDATE users 
             SET last_locked = '{today}' 
-            WHERE user = '{user}';
+            WHERE user = ?;
             """)
+        sqlCursor.execute(sql_query, (user))
         sqlConnection.commit()
         logging(message = f"SUCCESS: Locked master user {user} until {tomorrow}")
     except sqlite3.Error as sql_error:
@@ -98,17 +101,18 @@ def lockMaster(user, today, tomorrow) -> None:
 # INSERT new records into passwords SQLite table
 def insertData(user, category, account, username, password, session_key, today) -> None:
     try:
-        sqlCursor.execute(f"""
+        sql_query = (f"""
             INSERT INTO passwords 
             VALUES(
-                '{user}',
-                '{category}',
-                '{account}',
-                '{username}',
+                ?,
+                ?,
+                ?,
+                ?,
                 '{password}',
                 '{session_key}',
                 '{today}');
             """)
+        sqlCursor.execute(sql_query, (user, category, account, username))
         sqlConnection.commit()
         logging(message = f"SUCCESS: Inserted password for user {user} account {account}")
     except sqlite3.Error as sql_error:
@@ -120,13 +124,14 @@ def insertData(user, category, account, username, password, session_key, today) 
 # UPDATE records in the passwords SQLite table
 def updateMasterPassword(user, password, session_key, today) -> None:
     try:
-        sqlCursor.execute(f"""
+        sql_query = (f"""
             UPDATE users 
             SET master_pw = '{password}', 
                 master_key = '{session_key}',
                 master_last_modified = '{today}'
-            WHERE user = '{user}';
+            WHERE user = ?;
             """)
+        sqlCursor.execute(sql_query, (user))
         sqlConnection.commit()
         logging(message = f"SUCCESS: Updated master password for user {user}")
     except sqlite3.Error as sql_error:
@@ -138,15 +143,16 @@ def updateMasterPassword(user, password, session_key, today) -> None:
 # UPDATE records in the passwords SQLite table
 def updateData(password, account, username, old_password, session_key, today) -> None:
     try:
-        sqlCursor.execute(f"""
+        sql_query = (f"""
             UPDATE passwords 
             SET password = '{password}', 
                 pw_key = '{session_key}',
                 last_modified = '{today}' 
-            WHERE account = '{account}' 
-            AND username = '{username}'
+            WHERE account = ? 
+            AND username = ?
             AND password = '{old_password}';
             """)
+        sqlCursor.execute(sql_query,(account,username))
         sqlConnection.commit()
         logging(message = f"SUCCESS: Updated password for user {username} account {account}")
     except sqlite3.Error as sql_error:
@@ -158,13 +164,14 @@ def updateData(password, account, username, old_password, session_key, today) ->
 # DELETE records from the passwords SQLite table
 def deleteData(user, account, username, password) -> None:
     try:
-        sqlCursor.execute(f"""
+        sql_query = (f"""
             DELETE FROM passwords 
-            WHERE user = '{user}'
-            AND account = '{account}' 
-            AND username = '{username}'
+            WHERE user = ?
+            AND account = ? 
+            AND username = ?
             AND password = '{password}';
             """)
+        sqlCursor.execute(sql_query, (user, account, username))
         sqlConnection.commit()
         logging(message = f"SUCCESS: Deleted password for user {user} account {account}")
     except sqlite3.Error as sql_error:
