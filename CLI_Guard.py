@@ -104,8 +104,6 @@ logo = f"""
        {Fore.LIGHTCYAN_EX}╚═════╝ ╚══════╝ ╚═╝     ╚═════╝   ╚═════╝  ╚═╝  ╚═╝ ╚═╝  ╚═╝ ╚═════╝ {Fore.WHITE}                     
 """
 
-another = f" another password?\n"
-select = ["Select a password to ", " by typing the index of the account: "]
 doing = "ing password..."
 done = ["ed password for ", "...\n"]
 empty_list = ["There are no passwords to ", "...\n"]
@@ -114,6 +112,9 @@ mode = ""
 line = f"\n###################################################################################\n"
 incorrect = "Incorrect password entered 3 times"
 navigation = f"{Fore.CYAN}Use ↑ and ↓ to navigate. Press Enter to select.{Style.RESET_ALL}\n"
+features = f"{Fore.CYAN}Search using CTRL + F or Sort using CTRL + S{Style.RESET_ALL}\n"
+# Initialise FeatureVariable as List to accept multiple arguments
+featureVariable = []
 
 
 # Maximize the terminal using pygetwindow
@@ -234,7 +235,9 @@ def Start(user) -> None:
 
 
 # Get func arg then perform action
-def do_action(user, mode) -> None:
+# Feature argument is used to determine SQL query can be Sort or Search
+# FeatureVariable argument provides the SQLquery with the user input
+def do_action(user, mode, featureVariable=None, feature=None) -> None:
     # Clear Terminal
     system("cls")
 
@@ -257,15 +260,16 @@ def do_action(user, mode) -> None:
             else:
                 print(logo + line)
 
-                # Query the passwords table and insert all into list_pw ordered by account name
-                list_pw = sqlite.query_data(table="passwords")
+                if feature == None:
+                    # Query the passwords table and insert all into list_pw ordered by account name
+                    list_pw = sqlite.query_data(table="passwords")
+                elif feature == "Search":
+                    list_pw = sqlite.query_data(table="passwords", category=featureVariable[0], text=featureVariable[1], sortby=None)
+                elif feature == "Sort":
+                    list_pw = sqlite.query_data(table="passwords", category=featureVariable[0], text=None, sortby=featureVariable[1])
 
                 # Check if list_pw is empty
                 if listNotEmpty(list_pw):
-
-                    # Use Tabulate to print selected columns to terminal
-                    display_passwords = display_all_pw(list_pw)
-                    print(display_passwords)
 
                     selected_index = 0  # Initialize the index for navigation
 
@@ -280,12 +284,16 @@ def do_action(user, mode) -> None:
                             selected_index = (selected_index - 1) % len(list_pw)
                         elif key == readchar.key.DOWN:
                             selected_index = (selected_index + 1) % len(list_pw)
+                        elif key == readchar.key.CTRL_F:
+                            search_pw(user, mode)
+                        elif key == readchar.key.CTRL_S:
+                            sort_pw(user, mode)
                         elif key == readchar.key.ENTER:
                             # Execute func (func == i[0]) with required args
                             func[0](list_pw[selected_index][0], list_pw, selected_index, mode)
                             break
                         elif key == readchar.key.ESC:
-                            Start()
+                            Start(user)
                             break
                 else:
                     empty(user, mode)
@@ -344,7 +352,7 @@ def delete_pw(user, list_pw, index, mode) -> None:
 
     # Check if the user wants to delete the chosen pw
     statement = (f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the password for {Fore.YELLOW}{list_pw[index][2]}{Fore.WHITE} ?")
-    if yes_no( statement, user, mode = "ConfirmDelete" ) == True:
+    if yes_no( statement, user, mode, confirmDelete=True ) == True:
         # Success statement needs to slice first letter off mode
         print(mode[:-1] + doing)
         # Delete data from SQLite table
@@ -370,7 +378,7 @@ def display_pw(user, list_pw, index, mode) -> None:
 
 def display_table(list_pw, selected_index):
     system('cls')
-    print(navigation)
+    print( logo + line + "\n" + navigation + features )
 
     # Create intermediary list to display data to Terminal with Tabulate
     list_table = []
@@ -380,7 +388,7 @@ def display_table(list_pw, selected_index):
         place += 1
 
     # Print the headers
-    print(tabulate([list_table[0]], headers=["Index", "Category", "Account", "Username", "Password", "Last Modified"], tablefmt="plain"))
+    print(tabulate([], headers=["Index", "Category", "Account", "Username", "Password", "Last Modified"], tablefmt="plain"))
 
     # Display the table rows starting from the first row
     for i, row in enumerate(list_table):
@@ -394,22 +402,133 @@ def display_table(list_pw, selected_index):
     list_table = []
 
 
-# Function to display all passwords
-def display_all_pw(list_pw) -> str:
-    # Create intermediary list to display data to Terminal with Tabulate
-    list_table = []
-    place = 1
+def search_pw(user, mode):
+    # Empty FeatureVariable incase it already has a value of somekind
+    featureVariable = []
 
-    for i in list_pw:
-        list_table.append([place, i[1], i[2], i[3], i[-3], i[-1]])
-        place += 1
+    data = [
+        "Category",
+        "Account",
+        "Username"
+        ]
 
-    data = (tabulate(list_table, headers=["Index", "Category", "Account", "Username", "Password", "Last Modified"], numalign="center"))
+    selected_index = 0
 
-    # Dump intermediary list after use
-    list_table = []
+    def display_options():
+        system('cls')
+        print( navigation )
 
-    return data
+        # Display the options with highlighted row
+        for i, row in enumerate(data):
+            if i == selected_index:
+                # Highlight the current row
+                print(Back.WHITE + Fore.BLACK + row + Style.RESET_ALL)
+            else:
+                print(row)
+
+    while True:
+        display_options()
+        key = readchar.readkey()
+
+        if key == readchar.key.UP:
+            selected_index = (selected_index - 1) % len(data)
+        elif key == readchar.key.DOWN:
+            selected_index = (selected_index + 1) % len(data)
+        elif key == readchar.key.ENTER:
+            # Add the selected Category to the FeatureVariable List
+            searchCategory = data[selected_index]
+            featureVariable.append(searchCategory.lower())
+            break
+        elif key == readchar.key.ESC:
+            do_action(user, mode)
+            break
+
+    # Add the user input text to the FeatureVariable List
+    searchText = input(f"\nSearch {searchCategory} for: ")
+    featureVariable.append(searchText.lower())
+
+    do_action(user, mode, featureVariable, feature="Search")
+
+
+def sort_pw(user, mode):
+    # Empty FeatureVariable incase it already has a value of somekind
+    featureVariable = []
+
+    data = [
+        "Category",
+        "Account",
+        "Username"
+        ]
+
+    selected_index = 0
+
+    def display_options():
+        system('cls')
+        print(f"{navigation}\n Sort By:\n")
+
+        # Display the options with highlighted row
+        for i, row in enumerate(data):
+            if i == selected_index:
+                # Highlight the current row
+                print(Back.WHITE + Fore.BLACK + row + Style.RESET_ALL)
+            else:
+                print(row)
+
+    while True:
+        display_options()
+        key = readchar.readkey()
+
+        if key == readchar.key.UP:
+            selected_index = (selected_index - 1) % len(data)
+        elif key == readchar.key.DOWN:
+            selected_index = (selected_index + 1) % len(data)
+        elif key == readchar.key.ENTER:
+            # Add the selected Category to the FeatureVariable List
+            sortCategory = data[selected_index]
+            featureVariable.append(sortCategory.lower())
+            break
+        elif key == readchar.key.ESC:
+            do_action(user, mode)
+            break
+
+    data = [
+        "Ascending",
+        "Descending"
+        ]
+
+    selected_index = 0
+
+    def display_options():
+        system('cls')
+        print(f"{navigation}\n Sort By {sortCategory}:\n")
+
+        # Display the options with highlighted row
+        for i, row in enumerate(data):
+            if i == selected_index:
+                # Highlight the current row
+                print(Back.WHITE + Fore.BLACK + row + Style.RESET_ALL)
+            else:
+                print(row)
+
+    while True:
+        display_options()
+        key = readchar.readkey()
+
+        if key == readchar.key.UP:
+            selected_index = (selected_index - 1) % len(data)
+        elif key == readchar.key.DOWN:
+            selected_index = (selected_index + 1) % len(data)
+        elif key == readchar.key.ENTER:
+            # Add the selected Category to the FeatureVariable List
+            sortBy = data[selected_index]
+            # Convert sortBy fromm Ascending to asc or Descending to desc
+            featureVariable.append(sortBy.upper()[:-6])
+            break
+        elif key == readchar.key.ESC:
+            do_action(user, mode)
+            break
+
+    do_action(user, mode, featureVariable, feature="Sort")
 
 
 # Create new master password
@@ -471,23 +590,35 @@ def try_again( user, mode, acct, fixed_done, pw=None) -> None:
     #  Write to log file
     logging(message = f"{mode}{fixed_done} {acct}")
     if mode == "Decrypt":
-        statement = ( f"\n{pw}\n{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another )
+        statement = ( f"\n{pw}\n{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] )
     else:
-        statement = ( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] + mode + another )
+        statement = ( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{acct}{Fore.WHITE}" + done[1] )
     yes_no(statement, user, mode)
 
 
 # Handles Yes No choices
-def yes_no(statement, user, mode) -> None:
+def yes_no(statement, user, mode, confirmDelete=None) -> None:
 
     selected_index = 0
     
-    if mode == "ConfirmDelete":
-        options = ["Delete Password", "Choose Again", "Main Menu", "Quit"]   
+    if confirmDelete:
+        options = [
+            f"{mode} Password",
+            "Choose Again",
+            "Main Menu",
+            "Quit"
+            ]   
     elif mode == 0:
-        options = ["Main Menu", "Quit"]
+        options = [
+            "Main Menu",
+            "Quit"
+            ]
     else:
-        options = ["Yes", "Main Menu", "Quit"]
+        options = [
+            f"{mode} Another Password",
+            "Main Menu",
+            "Quit"
+            ]
 
     def choice_menu():
         system('cls')
@@ -508,12 +639,11 @@ def yes_no(statement, user, mode) -> None:
         elif key == readchar.key.DOWN:
             selected_index = (selected_index + 1) % len(options)
         elif key == readchar.key.ENTER:
-            print(f"You selected: {options[selected_index]}")
-            if options[selected_index] == "Delete Password":
+            if options[selected_index] == f"{mode} Password":
                 return True
             elif options[selected_index] == "Choose Again":
                 return False
-            elif options[selected_index] == "Yes":
+            elif options[selected_index] == f"{mode} Another Password":
                 # To try_again we need to pass func variable as an argument when calling func variable
                 # Because each function expects a func argument so it can call try_again() if needed
                 do_action(user, mode)

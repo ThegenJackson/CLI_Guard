@@ -26,19 +26,36 @@ sql_cursor = sql_connection.cursor()
 
 
 # Query the passwords table and insert all into list_pw ordered by account name or userID
-def query_data(table) -> list:
+# ? Placeholder prevents SQL Injection
+def query_data(table, category=None, text=None, sortby=None) -> list:
     try:
-        sql_cursor.execute(f"""
-                        SELECT * 
-                        FROM vw_{table};
-                        """)
+        if text is not None:
+            sql_query = f"""
+                SELECT * 
+                FROM vw_{table}
+                WHERE {category} LIKE ?;
+            """
+            sql_cursor.execute(sql_query, (f"%{text}%",))
+        elif sortby is not None:
+            sql_cursor.execute(f"""
+                SELECT * 
+                FROM vw_{table}
+                ORDER BY {category} {sortby};
+            """)
+        else:
+            sql_cursor.execute(f"""
+                SELECT * 
+                FROM vw_{table};
+            """)
+
         list_pw = sql_cursor.fetchall()
         return list_pw
+
     except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to query data from {table} - {str(sql_error)}")
+        logging(message=f"ERROR: Failed to query data from {table} - {str(sql_error)}")
         return []
     except Exception as e:
-        logging(message = f"ERROR: {str(e)}")
+        logging(message=f"ERROR: {str(e)}")
         return []
 
 
