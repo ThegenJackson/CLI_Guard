@@ -217,7 +217,7 @@ def Start(user) -> None:
             ("Edit a password", "Edit"),
             ("Delete a password", "Delete"),
             ("Display a password", "Decrypt"),
-            ("Edit master password", "Master password"),
+            ("User Management", "User Management"),
             ("Quit", "Quit")
         ]
 
@@ -267,7 +267,7 @@ def performAction(user, mode, feature_variable=None, feature=None) -> None:
 
         if mode == "Add":
             addPassword(user, mode)
-        elif mode == "Master password":
+        elif mode == "User Management":
             updateMaster(user)
         else:
             for func in functions:
@@ -288,7 +288,7 @@ def performAction(user, mode, feature_variable=None, feature=None) -> None:
                     # Check if list_passwords is empty
                     if listNotEmpty(list_passwords):
 
-                        selected_index = 0  # Initialize the index for navigation
+                        selected_index = 0
 
                         while True:
                             # Display the table with navigation
@@ -376,7 +376,7 @@ def deletePassword(user, list_passwords, index, mode) -> None:
         old_password = str(list_passwords[index][-3])
 
         # Check if the user wants to delete the chosen password
-        statement = (f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the password for {Fore.YELLOW}{list_passwords[index][2]}{Fore.WHITE} ?")
+        statement = (f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the password for {Fore.YELLOW}{list_passwords[index][2]}{Fore.WHITE} ?\n")
         if choice( statement, user, mode, password=None, confirm_delete=True ) == True:
             # Success statement needs to slice first letter off mode
             print(mode[:-1] + doing)
@@ -440,7 +440,7 @@ def searchPassword(user, mode):
         # Empty feature_variable incase it already has a value of somekind
         feature_variable = []
 
-        data = [
+        options = [
             "Category",
             "Account",
             "Username"
@@ -448,29 +448,17 @@ def searchPassword(user, mode):
 
         selected_index = 0
 
-        def displayOptions():
-            system('cls')
-            print( navigation )
-
-            # Display the options with highlighted row
-            for i, row in enumerate(data):
-                if i == selected_index:
-                    # Highlight the current row
-                    print(Back.WHITE + Fore.BLACK + row + Style.RESET_ALL)
-                else:
-                    print(row)
-
         while True:
-            displayOptions()
+            displayOptions(options, selected_index, display_statement=f"{logo}\n{navigation}")
             key = readchar.readkey()
 
             if key == readchar.key.UP:
-                selected_index = (selected_index - 1) % len(data)
+                selected_index = (selected_index - 1) % len(options)
             elif key == readchar.key.DOWN:
-                selected_index = (selected_index + 1) % len(data)
+                selected_index = (selected_index + 1) % len(options)
             elif key == readchar.key.ENTER:
                 # Add the selected Category to the feature_variable List
-                search_category = data[selected_index]
+                search_category = options[selected_index]
                 feature_variable.append(search_category.lower())
                 break
             elif key == readchar.key.ESC:
@@ -491,7 +479,7 @@ def sortPassword(user, mode):
         # Empty feature_variable incase it already has a value of somekind
         feature_variable = []
 
-        data = [
+        options = [
             "Category",
             "Account",
             "Username"
@@ -499,65 +487,41 @@ def sortPassword(user, mode):
 
         selected_index = 0
 
-        def displayOptions():
-            system('cls')
-            print(f"{navigation}\n Sort By:\n")
-
-            # Display the options with highlighted row
-            for i, row in enumerate(data):
-                if i == selected_index:
-                    # Highlight the current row
-                    print(Back.WHITE + Fore.BLACK + row + Style.RESET_ALL)
-                else:
-                    print(row)
-
         while True:
-            displayOptions()
+            displayOptions(options, selected_index, display_statement=f"{logo}\n{navigation}\nSort By:\n")
             key = readchar.readkey()
 
             if key == readchar.key.UP:
-                selected_index = (selected_index - 1) % len(data)
+                selected_index = (selected_index - 1) % len(options)
             elif key == readchar.key.DOWN:
-                selected_index = (selected_index + 1) % len(data)
+                selected_index = (selected_index + 1) % len(options)
             elif key == readchar.key.ENTER:
                 # Add the selected Category to the feature_variable List
-                sort_category = data[selected_index]
+                sort_category = options[selected_index]
                 feature_variable.append(sort_category.lower())
                 break
             elif key == readchar.key.ESC:
                 performAction(user, mode)
                 break
 
-        data = [
+        options = [
             "Ascending",
             "Descending"
             ]
 
         selected_index = 0
 
-        def displayOptions():
-            system('cls')
-            print(f"{navigation}\n Sort By {sort_category}:\n")
-
-            # Display the options with highlighted row
-            for i, row in enumerate(data):
-                if i == selected_index:
-                    # Highlight the current row
-                    print(Back.WHITE + Fore.BLACK + row + Style.RESET_ALL)
-                else:
-                    print(row)
-
         while True:
-            displayOptions()
+            displayOptions(options, selected_index, display_statement=f"{logo}\n{navigation}\n Sort By {sort_category}:\n")
             key = readchar.readkey()
 
             if key == readchar.key.UP:
-                selected_index = (selected_index - 1) % len(data)
+                selected_index = (selected_index - 1) % len(options)
             elif key == readchar.key.DOWN:
-                selected_index = (selected_index + 1) % len(data)
+                selected_index = (selected_index + 1) % len(options)
             elif key == readchar.key.ENTER:
                 # Add the selected Category to the feature_variable List
-                sort_by = data[selected_index]
+                sort_by = options[selected_index]
                 # Convert sort_by fromm Ascending to asc or Descending to desc
                 feature_variable.append(sort_by.upper()[:-6])
                 break
@@ -613,7 +577,7 @@ def updateMaster(user) -> None:
 # The list_passwords list is empty - user chooses to return to Start or Exit
 def empty(user, mode) -> None:
     try:
-        statement =  ( empty_list[0] + mode.lower() + empty_list[1] + go_home )
+        statement = ( empty_list[0] + mode.lower() + empty_list[1] + go_home )
         choice(statement, user, mode=0)
     except Exception as error:
         logging(error)
@@ -664,18 +628,8 @@ def choice(statement, user, mode, password=None, confirm_delete=None) -> None:
                 "Quit"
                 ]
 
-        def displayOptions():
-            system('cls')
-            print(f"{logo}\n{statement}\n{navigation}")
-            for i, option in enumerate(options):
-                if i == selected_index:
-                    # Highlight current option
-                    print(f"{Back.WHITE}{Fore.BLACK}{option}{Style.RESET_ALL}")
-                else:
-                    print(option)
-
         while True:
-            displayOptions()
+            displayOptions(options, selected_index, display_statement=f"{logo}\n{statement}\n{navigation}")
             key = readchar.readkey()
 
             if key == readchar.key.UP:
@@ -702,6 +656,20 @@ def choice(statement, user, mode, password=None, confirm_delete=None) -> None:
                     exit()
     except Exception as error:
         logging(error)
+
+
+def displayOptions(options, selected_index, display_statement):
+    system('cls')
+    print(display_statement)
+
+    # Display the options with highlighted row
+    for i, row in enumerate(options):
+        if i == selected_index:
+            # Highlight the current row
+            print(Back.WHITE + Fore.BLACK + row + Style.RESET_ALL)
+        else:
+            print(row)
+    return selected_index
 
 
 # Encrypt

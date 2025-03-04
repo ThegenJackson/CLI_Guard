@@ -76,9 +76,9 @@ def insertMaster(user, password, session_key, today) -> None:
             """)
         sqlCursor.execute(sql_query, (user,))
         sqlConnection.commit()
-        logging(message = f"SUCCESS: Created master user {user}")
+        logging(message = f"SUCCESS: Created master {user}")
     except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to insert master user {user} - {str(sql_error)}")
+        logging(message = f"ERROR: Failed to insert master {user} - {str(sql_error)}")
     except Exception as e:
         logging(message = f"ERROR: insertMaster Function - {str(e)}")
 
@@ -93,9 +93,9 @@ def lockMaster(user, today, tomorrow) -> None:
             """)
         sqlCursor.execute(sql_query, (user,))
         sqlConnection.commit()
-        logging(message = f"SUCCESS: Locked master user {user} until {tomorrow}")
+        logging(message = f"SUCCESS: Locked {user} until {tomorrow}")
     except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to lock master user {user} - {str(sql_error)}")
+        logging(message = f"ERROR: Failed to lock master {user} - {str(sql_error)}")
     except Exception as e:
         logging(message = f"ERROR: lockMaster Function - {str(e)}")
 
@@ -116,9 +116,9 @@ def insertData(user, category, account, username, password, session_key, today) 
             """)
         sqlCursor.execute(sql_query, (user, category, account, username,))
         sqlConnection.commit()
-        logging(message = f"SUCCESS: Inserted password for user {user} account {account}")
+        logging(message = f"SUCCESS: Inserted password for {username}")
     except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to insert password for user {user} account {account} - {str(sql_error)}")
+        logging(message = f"ERROR: Failed to insert password for {username} - {str(sql_error)}")
     except Exception as e:
         logging(message = f"ERROR: insertData Function - {str(e)}")
 
@@ -135,9 +135,9 @@ def updateMasterPassword(user, password, session_key, today) -> None:
             """)
         sqlCursor.execute(sql_query, (user,))
         sqlConnection.commit()
-        logging(message = f"SUCCESS: Updated master password for user {user}")
+        logging(message = f"SUCCESS: Updated master password for {user}")
     except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to update master password for user {user} - {str(sql_error)}")
+        logging(message = f"ERROR: Failed to update master password for {user} - {str(sql_error)}")
     except Exception as e:
         logging(message = f"ERROR: updateMasterPassword - {str(e)}")
 
@@ -156,9 +156,9 @@ def updateData(password, account, username, old_password, session_key, today) ->
             """)
         sqlCursor.execute(sql_query,(account,username,))
         sqlConnection.commit()
-        logging(message = f"SUCCESS: Updated password for user {username} account {account}")
+        logging(message = f"SUCCESS: Updated password for {username}")
     except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to update password for user {username} account {account} - {str(sql_error)}")
+        logging(message = f"ERROR: Failed to update password for {username} - {str(sql_error)}")
     except Exception as e:
         logging(message = f"ERROR: updateDataFunction - {str(e)}")
 
@@ -175,8 +175,8 @@ def deleteData(user, account, username, password) -> None:
             """)
         sqlCursor.execute(sql_query, (user, account, username,))
         sqlConnection.commit()
-        logging(message = f"SUCCESS: Deleted password for user {user} account {account}")
+        logging(message = f"SUCCESS: Deleted password for {username}")
     except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to delete password for user {user} account {account} - {str(sql_error)}")
+        logging(message = f"ERROR: Failed to delete password for {username} - {str(sql_error)}")
     except Exception as e:
         logging(message = f"ERROR: deleteData - {str(e)}")
