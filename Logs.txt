@@ -8,3 +8,7 @@
 [2025-03-04 13:18] DATABASE SUCCESS: Inserted password for user test account t
 [2025-03-04 13:18] DATABASE SUCCESS: Inserted password for user test account g
 [2025-03-04 13:18] DATABASE SUCCESS: Inserted password for user test account v
+[2025-03-04 16:58] DATABASE SUCCESS: Updated master password for test
+[2025-03-04 16:58] DATABASE ERROR: Failed to insert master test - UNIQUE constraint failed: users.user
+[2025-03-04 16:58] DATABASE SUCCESS: Updated master password for test
+[2025-03-04 17:00] DATABASE SUCCESS: Updated master password for test

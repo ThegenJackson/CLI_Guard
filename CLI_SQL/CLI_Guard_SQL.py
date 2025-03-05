@@ -84,6 +84,42 @@ def insertMaster(user, password, session_key, today) -> None:
 
 
 # UPDATE records in the passwords SQLite table
+def updateMasterPassword(user, password, session_key, today) -> None:
+    try:
+        sql_query = (f"""
+            UPDATE users 
+            SET master_pw = '{password}', 
+                master_key = '{session_key}',
+                master_last_modified = '{today}'
+            WHERE user = ?;
+            """)
+        sqlCursor.execute(sql_query, (user,))
+        sqlConnection.commit()
+        logging(message = f"SUCCESS: Updated master password for {user}")
+    except sqlite3.Error as sql_error:
+        logging(message = f"ERROR: Failed to update master password for {user} - {str(sql_error)}")
+    except Exception as e:
+        logging(message = f"ERROR: updateMasterPassword - {str(e)}")
+
+
+# DELETE records from the users SQLite table
+def deleteMaster(user, password) -> None:
+    try:
+        sql_query = (f"""
+            DELETE FROM users 
+            WHERE user = ?
+            AND password = '{password}';
+            """)
+        sqlCursor.execute(sql_query, (user,))
+        sqlConnection.commit()
+        logging(message = f"SUCCESS: Deleted master user {user}")
+    except sqlite3.Error as sql_error:
+        logging(message = f"ERROR: Failed to delete master user {user} - {str(sql_error)}")
+    except Exception as e:
+        logging(message = f"ERROR: deleteMaster - {str(e)}")
+
+
+# UPDATE records in the passwords SQLite table
 def lockMaster(user, today, tomorrow) -> None:
     try:
         sql_query = (f"""
@@ -121,25 +157,6 @@ def insertData(user, category, account, username, password, session_key, today) 
         logging(message = f"ERROR: Failed to insert password for {username} - {str(sql_error)}")
     except Exception as e:
         logging(message = f"ERROR: insertData Function - {str(e)}")
-
-
-# UPDATE records in the passwords SQLite table
-def updateMasterPassword(user, password, session_key, today) -> None:
-    try:
-        sql_query = (f"""
-            UPDATE users 
-            SET master_pw = '{password}', 
-                master_key = '{session_key}',
-                master_last_modified = '{today}'
-            WHERE user = ?;
-            """)
-        sqlCursor.execute(sql_query, (user,))
-        sqlConnection.commit()
-        logging(message = f"SUCCESS: Updated master password for {user}")
-    except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to update master password for {user} - {str(sql_error)}")
-    except Exception as e:
-        logging(message = f"ERROR: updateMasterPassword - {str(e)}")
 
 
 # UPDATE records in the passwords SQLite table

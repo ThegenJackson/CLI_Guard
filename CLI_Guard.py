@@ -29,6 +29,11 @@ from colorama import init, Fore, Back, Style
 # Initialize Colorama (autoreset restores default after print)
 init(autoreset=True)
 
+# Import Sys, Time and Threading for the Splash screen dots animation
+import time
+import sys
+import threading
+
 # Import Python Cryptography library and Fernet module according to documentation
 from cryptography.fernet import Fernet
 
@@ -115,11 +120,24 @@ go_home = "Return to Start Menu?\n"
 mode = ""
 line = f"\n###################################################################################\n"
 incorrect = "Incorrect password entered 3 times"
-navigation = f"{Fore.CYAN}Use ↑ and ↓ to navigate\nPress Enter to select{Style.RESET_ALL}\n"
+navigation_text = f"{Fore.CYAN}Use ↑ and ↓ to navigate\nPress Enter to select{Style.RESET_ALL}\n"
 features = f"{Fore.CYAN}Return to Main Menu using ESC\nSearch using CTRL + F\nSort using CTRL + S{Style.RESET_ALL}\n"
+splash_continue = "Press Enter to continue..."
 # Initialise feature_variable as List to accept multiple arguments
 feature_variable = []
 
+
+
+def accountLocked(list) -> bool:
+    return str(list[0][-1]) == str(today)
+
+
+def listNotEmpty(list) -> bool:
+    return list != []
+
+
+def fieldNotEmpty(*field) -> bool:
+    return field != ''
 
 
 # Maximize the terminal using pygetwindow
@@ -137,65 +155,92 @@ def maximizeTerminal():
 
 
 # Attempt Log In if user exists
-def TerminalLogIn() -> None:
+def splashScreen() -> None:
     try:
         # Maximize terminal window
         maximizeTerminal()
         # Clear Terminal then SPLASH
         system("cls")
         # Print CLI Guard Splash
-        print(splash)
-        # Query the users table and insert all into list_master
-        list_master = sqlite.queryData(table = "users")
-        # Check if list_master is empty
-        if listNotEmpty(list_master):
-            # Check if account is locked before logging in
-            if accountLocked(list_master):
-                print(f"Account locked until {tomorrow}\nExiting...")
-                exit()
-            else:
-                # Proceed to Log In screen from Attempt Log In screen
-                # Before decrypting the password we need to save the returned Encryption Key for that record
-                # Make number of attempted passwords 0 from Attempt Log In screen
-                logIn(user = list_master[0][0], attempt = 0, master_key = list_master[0][2], master_password = list_master[0][1])
-        else:
-            # Create a new master password if doesn't exist
-            newMaster()
+        print(f"{splash}\nPress Enter to continue", end="", flush=True)
+
+        # Hide cursor
+        # Enable ANSI escape codes on Windows
+        system("")
+        # ANSI code to hide cursor
+        sys.stdout.write("\033[?25l")
+        sys.stdout.flush()
+
+        # Shared flag to control the animation
+        stop_animation = threading.Event()
+
+        def dotAnimation():
+            while not stop_animation.is_set():
+                for dots in range(4):
+                    if stop_animation.is_set():
+                        break
+                    # Print dots in sequence on loop
+                    sys.stdout.write("\rPress Enter to continue" + "." * dots + "   ")
+                    sys.stdout.flush()
+                    time.sleep(0.4)
+
+        # Start dot animation in a separate thread
+        animation_thread = threading.Thread(target=dotAnimation, daemon=True)
+        animation_thread.start()
+
+        while True:
+                key = readchar.readkey()
+                if key == readchar.key.ENTER:
+                    # Signal the animation thread to stop
+                    stop_animation.set()
+                    # Ensure the animation thread is finished before proceeding
+                    animation_thread.join()
+                    login()
+
     except Exception as error:
         logging(error)
 
 
-def accountLocked(list) -> bool:
-    return str(list[0][-1]) == str(today)
-
-
-def listNotEmpty(list) -> bool:
-    return list != []
-
-
-def fieldNotEmpty(*field) -> bool:
-    return field != ''
+def login():
+    system("cls")
+    print(logo)
+    # Query the users table and insert all into list_master
+    list_master = sqlite.queryData(table = "users")
+    # Check if list_master is empty
+    if listNotEmpty(list_master):
+        # Check if account is locked before logging in
+        if accountLocked(list_master):
+            print(f"Account locked until {tomorrow}\nExiting...")
+            exit()
+        else:
+            # Proceed to Log In screen from Attempt Log In screen
+            # Before decrypting the password we need to save the returned Encryption Key for that record
+            # Make number of attempted passwords 0 from Attempt Log In screen
+            attemptLogin(user = list_master[0][0], attempt = 0, master_key = list_master[0][2], master_password = list_master[0][1])
+    else:
+        # Create a new master password if doesn't exist
+        newMaster()
 
 
 # Log In screen to avoid splash everytime
-def logIn(user, attempt, master_key, master_password) -> None:
+def attemptLogin(user, attempt, master_key, master_password) -> None:
     try:
         # 3 attempts to Log In before logging to log file and locking account for 1 day
         if attempt < 3:
             # Decrypt user password to compare with password entered
             decrypted_master_password = decryptPassword(master_key, master_password)
-            attempted_password = str(input("Master password: "))
+            attempted_password = str(input("\nMaster password: "))
             if attempted_password == decrypted_master_password:
                 # Need to fix this to check is user password = password saved to db for userID
                 Start(user)
             else:
-                # Clear Terminal and print Splash
+                # Clear Terminal and print Logo
                 system("cls")
-                print(splash)
+                print(logo)
                 # Add attempt to attempts before returning to Log In screen
                 attempt += 1
-                print(f"{Fore.RED}{line}{Fore.WHITE}Incorrect password attempted")
-                logIn(user, attempt, master_key, master_password)
+                print(f"{Fore.RED}Incorrect password attempted{Fore.WHITE}")
+                attemptLogin(user, attempt, master_key, master_password)
         else:
             # Set last_locked to today on the users table
             sqlite.lockMaster(user, today)
@@ -225,7 +270,7 @@ def Start(user) -> None:
 
         def startMenu():
             system('cls')
-            print(f"{splash}\n{navigation}")
+            print(f"{logo}\n{navigation_text}")
             for i, func in enumerate(functions):
                 if i == selected_index:
                     # Highlight current option
@@ -268,7 +313,7 @@ def performAction(user, mode, feature_variable=None, feature=None) -> None:
         if mode == "Add":
             addPassword(user, mode)
         elif mode == "User Management":
-            updateMaster(user)
+            userManagement(user)
         else:
             for func in functions:
                 if func[-1] != mode:
@@ -314,6 +359,85 @@ def performAction(user, mode, feature_variable=None, feature=None) -> None:
                                 break
                     else:
                         empty(user, mode)
+    except Exception as error:
+        logging(error)
+
+
+# Create new master password
+def newMaster() -> None:
+    try:
+        new_master_user = str(input("\nCreate new master user: "))
+        new_master_password = str(input("\nCreate new master password: "))
+
+        # Check all fields are populated before proceeding
+        if fieldNotEmpty(new_master_user, new_master_password):
+            print("Adding new master password...")
+            save_password = encryptPassword(new_master_password)
+            sqlite.insertMaster(new_master_user, save_password, session_password_key.decode(), today)
+            # Return to Log In screen
+            splashScreen()
+        else:
+            print("1 or more required fields is missing!")
+            newMaster()
+    except Exception as error:
+        logging(error)
+
+
+# Create new master password
+def updateMaster(user) -> None:
+    try:
+        new_master_password = str(input("\nEnter new master password: "))
+
+        # Check all fields are populated before proceeding
+        if fieldNotEmpty(new_master_password):
+            print("Editing master password...")
+            save_password = encryptPassword(new_master_password)
+            sqlite.updateMasterPassword(user, save_password, session_password_key.decode(), today)
+            # Return to Log In screen
+            splashScreen()
+        else:
+            print("No password was entered!")
+            updateMaster(user)
+    except Exception as error:
+        logging(error)
+
+
+def removeMaster() -> None:
+    print("Change this")
+
+
+def userManagement(user) -> None:
+    try:
+        options = [
+        "Edit Master Password",
+        "Create New Master User",
+        "Delete Master User",
+        "Main Menu",
+        "Quit"
+        ]
+
+        selected_index = 0
+
+        while True:
+            displayOptions(options, selected_index, display_statement=f"{logo}\n{navigation_text}")
+            key = readchar.readkey()
+
+            if key == readchar.key.UP:
+                selected_index = (selected_index - 1) % len(options)
+            elif key == readchar.key.DOWN:
+                selected_index = (selected_index + 1) % len(options)
+            elif key == readchar.key.ENTER:
+                if options[selected_index] == "Edit Master Password":
+                    updateMaster(user)
+                elif options[selected_index] == "Create New Master User":
+                    newMaster()
+                elif options[selected_index] == "Delete Master User":
+                    removeMaster()
+                elif options[selected_index] == "Main Menu":
+                    Start(user)
+                elif options[selected_index] == "Quit":
+                    print("Exiting...")
+                    exit()
     except Exception as error:
         logging(error)
 
@@ -409,7 +533,7 @@ def displayPassword(user, list_passwords, index, mode) -> None:
 def displayTable(list_passwords, selected_index):
     try:
         system('cls')
-        print( logo + line + "\n" + navigation + features )
+        print( logo + line + "\n" + navigation_text + features )
 
         # Create intermediary list to display data to Terminal with Tabulate
         password_table = []
@@ -449,7 +573,7 @@ def searchPassword(user, mode):
         selected_index = 0
 
         while True:
-            displayOptions(options, selected_index, display_statement=f"{logo}\n{navigation}")
+            displayOptions(options, selected_index, display_statement=f"{logo}\n{navigation_text}")
             key = readchar.readkey()
 
             if key == readchar.key.UP:
@@ -488,7 +612,7 @@ def sortPassword(user, mode):
         selected_index = 0
 
         while True:
-            displayOptions(options, selected_index, display_statement=f"{logo}\n{navigation}\nSort By:\n")
+            displayOptions(options, selected_index, display_statement=f"{logo}\n{navigation_text}\nSort By:\n")
             key = readchar.readkey()
 
             if key == readchar.key.UP:
@@ -512,7 +636,7 @@ def sortPassword(user, mode):
         selected_index = 0
 
         while True:
-            displayOptions(options, selected_index, display_statement=f"{logo}\n{navigation}\n Sort By {sort_category}:\n")
+            displayOptions(options, selected_index, display_statement=f"{logo}\n{navigation_text}\n Sort By {sort_category}:\n")
             key = readchar.readkey()
 
             if key == readchar.key.UP:
@@ -530,46 +654,6 @@ def sortPassword(user, mode):
                 break
 
         performAction(user, mode, feature_variable, feature="Sort")
-    except Exception as error:
-        logging(error)
-
-
-# Create new master password
-def newMaster() -> None:
-    try:
-        new_master_user = str(input("Create new master user: "))
-        new_master_password = str(input("Create new master password: "))
-
-        # Check all fields are populated before proceeding
-        if fieldNotEmpty(new_master_user, new_master_password):
-            print("Adding new master password...")
-            save_password = encryptPassword(new_master_password)
-            sqlite.insertMaster(new_master_user, save_password, session_password_key.decode(), today)
-            # Return to Log In screen
-            TerminalLogIn()
-        else:
-            print("1 or more required fields is missing!")
-            newMaster()
-    except Exception as error:
-        logging(error)
-
-
-# Create new master password
-def updateMaster(user) -> None:
-    try:
-        print( logo + line )
-        new_master_password = str(input("Enter new master password: "))
-
-        # Check all fields are populated before proceeding
-        if fieldNotEmpty(new_master_password):
-            print("Editing master password...")
-            save_password = encryptPassword(new_master_password)
-            sqlite.updateMasterPassword(user, save_password, session_password_key.decode(), today)
-            # Return to Log In screen
-            TerminalLogIn()
-        else:
-            print("No password was entered!")
-            updateMaster(user)
     except Exception as error:
         logging(error)
 
@@ -629,7 +713,7 @@ def choice(statement, user, mode, password=None, confirm_delete=None) -> None:
                 ]
 
         while True:
-            displayOptions(options, selected_index, display_statement=f"{logo}\n{statement}\n{navigation}")
+            displayOptions(options, selected_index, display_statement=f"{logo}\n{statement}\n{navigation_text}")
             key = readchar.readkey()
 
             if key == readchar.key.UP:
@@ -710,4 +794,4 @@ def logging(message):
 
 # Start CLI Guard in Terminal
 if __name__ == "__main__":
-    TerminalLogIn()
+    splashScreen()
