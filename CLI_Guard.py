@@ -230,20 +230,27 @@ def login():
                 selected_index = 0
 
                 while True:
+                    # Append "Create New Master User" option to the table to 
+                    # allow user to create a new Master User directly from login screen
+                    extended_list = list_master_users + [("Create New Master User", "", "")]
+
                     # Display the table with navigation
-                    displayTable(list_master_users, selected_index, table="users")
+                    displayTable(extended_list, selected_index, table="users")
 
                     # User input via keyboard
                     key = readchar.readkey()
 
                     if key == readchar.key.UP:
-                        selected_index = (selected_index - 1) % len(list_master_users)
+                        selected_index = (selected_index - 1) % len(extended_list)
                     elif key == readchar.key.DOWN:
-                        selected_index = (selected_index + 1) % len(list_master_users)
+                        selected_index = (selected_index + 1) % len(extended_list)
                     elif key == readchar.key.ENTER:
-                        # Before decrypting the password we need to save the returned Encryption Key for that record
-                        # Make number of attempted passwords 0 from Attempt Log In screen
-                        attemptLogin(user = list_master_users[selected_index][0], attempt = 0, master_key = list_master_users[selected_index][2], master_password = list_master_users[selected_index][1])
+                        if selected_index == (len(extended_list)-1):
+                            newMaster()
+                        else:
+                            # Before decrypting the password we need to save the returned Encryption Key for that record
+                            # Make number of attempted passwords 0 from Attempt Log In screen
+                            attemptLogin(user=extended_list[selected_index][0], attempt=0, master_key=extended_list[selected_index][2], master_password=extended_list[selected_index][1])
         else:
             # Create a new master password if doesn't exist
             print("No Master Users exist yet!\n")
@@ -262,7 +269,7 @@ def attemptLogin(user, attempt, master_key, master_password) -> None:
             decrypted_master_password = decryptPassword(master_key, master_password)
             if attempted_password == decrypted_master_password:
                 # Need to fix this to check is user password = password saved to db for userID
-                Start(user)
+                start(user)
             else:
                 # Clear Terminal and print Logo
                 system("cls")
@@ -273,7 +280,7 @@ def attemptLogin(user, attempt, master_key, master_password) -> None:
                 attemptLogin(user, attempt, master_key, master_password)
         else:
             # Set last_locked to today on the users table
-            sqlite.lockMaster(user, today)
+            sqlite.lockMaster(user, today, tomorrow)
             # Print exiting to screen
             print(f"{incorrect}\nExiting...")
             exit()
@@ -282,7 +289,7 @@ def attemptLogin(user, attempt, master_key, master_password) -> None:
 
 
 # Display Splash and Start Menu to CLI - User chooses function
-def Start(user) -> None:
+def start(user) -> None:
     try:
         # Clear Terminal
         system("cls")
@@ -390,7 +397,7 @@ def performAction(user, mode, feature_variable=None, feature=None) -> None:
                                 func[0](list_passwords[selected_index][0], list_passwords, selected_index, mode)
                                 break
                             elif key == readchar.key.ESC:
-                                Start(user)
+                                start(user)
                                 break
                     else:
                         empty(user, mode)
@@ -399,33 +406,32 @@ def performAction(user, mode, feature_variable=None, feature=None) -> None:
 
 
 # Create new master password
-def newMaster() -> None:
+def newMaster(user=None) -> None:
     try:
         # First query the Users table to ensure the inputted user does not already exist
         list_master_users = sqlite.queryData(user=None, table="users")
-        # Create empty list of just Master Users names
-        list_masters = []
-
         # Loop through SQL query and insert first field into intemediary list
-        for i in range(len(list_master_users)):
-            list_masters.append(list_master_users[i][0])
+        list_masters = [user[0] for user in list_master_users]
 
-        new_master_user = str(input("\nCreate new master user: "))
+        while True:
+            new_master_user = str(input("\nCreate new master user: "))
+            if new_master_user in list_masters:
+                print("A Master User already exists with this name")
+            else:
+                # Exit loop once a unique name is provided
+                break
+
         new_master_password = str(input("Create new master password: "))
 
-        # Check all fields are populated before proceeding
-        if new_master_user not in list_masters:
-            print("Adding new master password...")
+        # Check if the password is provided
+        if new_master_password:
             save_password = encryptPassword(new_master_password)
             sqlite.insertMaster(new_master_user, save_password, session_password_key.decode(), today)
-            # Return to Log In screen
-            splashScreen()
+            # Return to the login screen after saving the master password
+            start(user)
         else:
-            print("A Master User already exists with this name")
-            newMaster()
-        
-        # Dump intemediary list
-        list_masters = []
+            print("Password cannot be empty.")
+            newMaster(user) 
 
     except Exception as error:
         logging(error, function="newMaster")
@@ -478,7 +484,7 @@ def removeMaster(user) -> None:
                     if user == list_master_users[selected_index][0]:
                         splashScreen()
                     else:
-                        Start(user)
+                        start(user)
             elif key == readchar.key.ESC:
                 userManagement(user)
     except Exception as error:
@@ -490,8 +496,8 @@ def userManagement(user) -> None:
         ("Edit Master Password", updateMaster),
         ("Create New Master User", newMaster),
         ("Delete Master User", removeMaster),
-        ("Main Menu", Start),
-        ("Quit", exit)
+        ("Main Menu", start),
+        ("Quit")
         ]
 
         # Extract the option labels for display
@@ -508,9 +514,10 @@ def userManagement(user) -> None:
             elif key == readchar.key.DOWN:
                 selected_index = (selected_index + 1) % len(options)
             elif key == readchar.key.ENTER:
-                # New Master and Exit do not take any arguments and cannot be passed the user variable
-                if functions[selected_index][1] in [newMaster, exit]:
-                    functions[selected_index][1]()
+                # Exit does not take any arguments and cannot be passed the user variable
+                # so needs to be called directly
+                if selected_index == (len(functions)-1):
+                    exit()
                 else:
                     functions[selected_index][1](user)
     except Exception as error:
@@ -770,32 +777,77 @@ def tryAgain( user, mode, account, fixed_done, password=None) -> None:
 def choice(statement, user, mode=None, password=None, confirm_delete=None, type=None) -> None:
     try:
         selected_index = 0
-        
+
+        # Below functions defined here for actions that need arguments
+        def copy():
+            try:
+                pyperclip.copy(password)
+                updated_statement = (f"\n{password}\n{Fore.GREEN}{line}{Fore.WHITE}"
+                                    + "Password copied to clipboard" + done[1])
+                choice(updated_statement, user, mode, password)
+            except Exception as error:
+                logging(error, function="copy")
+
+        def performAnother():
+            try:
+                performAction(user, mode)
+            except Exception as error:
+                logging(error, function="performAnother")
+
+        def mainMenu():
+            try:
+                start(user)
+            except Exception as error:
+                logging(error, function="mainMenu")
+
+        def chooseAgain():
+            try:
+                return False
+            except Exception as error:
+                logging(error, function="chooseAgain")
+
+        def confirm():
+            try:
+                return True
+            except Exception as error:
+                logging(error, function="confirm")
+
+        def exitApp():
+            try:
+                print("Exiting...")
+                exit()
+            except Exception as error:
+                logging(error, function="exitApp")
+
+        # Define actions as (label, function)
         if confirm_delete:
-            options = [
-                f"{mode} {type}",
-                "Choose Again",
-                "Main Menu",
-                "Quit"
-                ]   
+            actions = [
+                (f"{mode} {type}", confirm),
+                ("Choose Again", chooseAgain),
+                ("Main Menu", mainMenu),
+                ("Quit", exitApp)
+            ]
         elif mode == 0:
-            options = [
-                "Main Menu",
-                "Quit"
-                ]
+            actions = [
+                ("Main Menu", mainMenu),
+                ("Quit", exitApp)
+            ]
         elif mode == "Decrypt":
-            options = [
-                "Copy to Clipboard",
-                f"{mode} Another Password",
-                "Main Menu",
-                "Quit"
-                ]
+            actions = [
+                ("Copy to Clipboard", copy),
+                (f"{mode} Another Password", performAnother),
+                ("Main Menu", mainMenu),
+                ("Quit", exitApp)
+            ]
         else:
-            options = [
-                f"{mode} Another Password",
-                "Main Menu",
-                "Quit"
-                ]
+            actions = [
+                (f"{mode} Another Password", performAnother),
+                ("Main Menu", mainMenu),
+                ("Quit", exitApp)
+            ]
+
+        # Extract option labels for display
+        options = [item[0] for item in actions]
 
         while True:
             displayOptions(options, selected_index, display_statement=f"{logo}\n{statement}\n{navigation_text}")
@@ -806,23 +858,8 @@ def choice(statement, user, mode=None, password=None, confirm_delete=None, type=
             elif key == readchar.key.DOWN:
                 selected_index = (selected_index + 1) % len(options)
             elif key == readchar.key.ENTER:
-                if options[selected_index] == f"{mode} {type}":
-                    return True
-                elif options[selected_index] == "Choose Again":
-                    return False
-                elif options[selected_index] == "Copy to Clipboard":
-                    pyperclip.copy(password)
-                    statement = ( f"\n{password}\n{Fore.GREEN}{line}{Fore.WHITE}" + "Password copied to clipboard" + done[1] )
-                    choice(statement, user, mode, password)
-                elif options[selected_index] == f"{mode} Another Password":
-                    # To tryAgain we need to pass func variable as an argument when calling func variable
-                    # Because each function expects a func argument so it can call tryAgain() if needed
-                    performAction(user, mode)
-                elif options[selected_index] == "Main Menu":
-                    Start(user)
-                elif options[selected_index] ==  "Quit":
-                    print("Exiting...")
-                    exit()
+                # Call the corresponding function
+                return actions[selected_index][1]()
     except Exception as error:
         logging(error, function="choice")
 
