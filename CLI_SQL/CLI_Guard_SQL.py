@@ -25,35 +25,48 @@ sqlCursor = sqlConnection.cursor()
 
 
 
-# Query the passwords table and insert all into list_passwords ordered by account name or userID
+# Query the passwords table and insert all into list_table ordered by account name or userID
 # ? Placeholders in SQL Queries prevent SQL Injection as per the SQLite3 documentation
 # The trailing comma when passing Placeholder Bindings avoids the "Incorrect number of bindings supplied" error
 # by ensuring the argument is treated as a tuple, which is what execute() expects
 # https://docs.python.org/3/library/sqlite3.html#sqlite3-placeholders
-def queryData(table, category=None, text=None, sort_by=None) -> list:
+def queryData(user, table, category=None, text=None, sort_by=None) -> list:
     try:
-        if text is not None:
-            sql_query = f"""
-                SELECT * 
-                FROM vw_{table}
-                WHERE {category} LIKE ?;
-            """
-            sqlCursor.execute(sql_query, (f"%{text}%",))
-        elif sort_by is not None:
-            sqlCursor.execute(f"""
-                SELECT * 
-                FROM vw_{table}
-                ORDER BY {category} {sort_by};
-            """)
+        if user is not None:
+            if text is not None:
+                sql_query = f"""
+                    SELECT * 
+                    FROM vw_{table}
+                    WHERE user = ?
+                    AND {category} LIKE ?;
+                """
+                sqlCursor.execute(sql_query, (user, f"%{text}%",))
+            elif sort_by is not None:
+                sql_query = (f"""
+                    SELECT * 
+                    FROM vw_{table}
+                    WHERE user = ?
+                    ORDER BY {category} {sort_by};
+                """)
+                sqlCursor.execute(sql_query, (user,))
+            else:
+                sql_query = (f"""
+                    SELECT * 
+                    FROM vw_{table}
+                    WHERE user = ?;
+                """)
+                sqlCursor.execute(sql_query, (user,))
+
+            list_table = sqlCursor.fetchall()
+            return list_table
         else:
             sqlCursor.execute(f"""
                 SELECT * 
                 FROM vw_{table};
             """)
 
-        list_passwords = sqlCursor.fetchall()
-        return list_passwords
-
+            list_table = sqlCursor.fetchall()
+            return list_table
     except sqlite3.Error as sql_error:
         logging(message=f"ERROR: Failed to query data from {table} - {str(sql_error)}")
         return []
@@ -102,16 +115,22 @@ def updateMasterPassword(user, password, session_key, today) -> None:
         logging(message = f"ERROR: updateMasterPassword - {str(e)}")
 
 
-# DELETE records from the users SQLite table
-def deleteMaster(user, password) -> None:
+# DELETE records from the users SQLite table as well as their passwords
+def deleteMaster(user) -> None:
     try:
         sql_query = (f"""
             DELETE FROM users 
-            WHERE user = ?
-            AND password = '{password}';
+            WHERE user = ?;
             """)
         sqlCursor.execute(sql_query, (user,))
         sqlConnection.commit()
+        
+        sql_query = (f"""
+            DELETE FROM passwords 
+            WHERE user = ?;
+            """)
+        sqlCursor.execute(sql_query, (user,))
+        sqlConnection.commit()       
         logging(message = f"SUCCESS: Deleted master user {user}")
     except sqlite3.Error as sql_error:
         logging(message = f"ERROR: Failed to delete master user {user} - {str(sql_error)}")

@@ -1,10 +1,10 @@
 # CLI Guard SQL
 import  CLI_SQL.CLI_Guard_SQL as sqlite
 
-# Tabulate is used to output list_passwords and list_master data to Terminal in grid format
+# Tabulate is used to output list_passwords and list_master_users data to Terminal in grid format
 from tabulate import tabulate
 
-# OS is imported to send 'cls' to the Terminal between functions
+# OS is imported to interact with the Terminal
 from os import system
 
 # PyperClip used to Copy to Clipboard
@@ -20,7 +20,7 @@ import pygetwindow as gw
 from datetime import date, datetime, timedelta
 
 today = date.today()
-todays_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+todays_time = datetime.now().strftime("%Y-%m-%d %H:%M")
 tomorrow = date.today() + timedelta(1)
 
 # Colour text and others
@@ -50,8 +50,9 @@ session_password_key = encryption_key
 
 
 
-# Create empty list of encrypted passwords
+# Create empty list of users and encrypted passwords
 list_passwords = []
+list_master_users = []
 
 
 
@@ -129,15 +130,24 @@ feature_variable = []
 
 
 def accountLocked(list) -> bool:
-    return str(list[0][-1]) == str(today)
+    try:
+        return str(list[0][-1]) == str(today)
+    except Exception as error:
+        logging(error, function="accountLocked")
 
 
 def listNotEmpty(list) -> bool:
-    return list != []
+    try:
+        return list != []
+    except Exception as error:
+        logging(error, function="listNotEmpty")
 
 
 def fieldNotEmpty(*field) -> bool:
-    return field != ''
+    try:
+        return field != ""
+    except Exception as error:
+        logging(error, function="fieldNotEmpty")
 
 
 # Maximize the terminal using pygetwindow
@@ -147,11 +157,11 @@ def maximizeTerminal():
         windows = gw.getAllWindows()
         
         for window in windows:
-            # Check if the title is either 'Command Prompt' or contains '\cmd'
+            # Check if the title is either "Command Prompt" or contains "\cmd"
             if "Command Prompt" in window.title or "\\cmd" in window.title:
                 window.maximize()
     except Exception as error:
-        logging(error)
+        logging(error, function="maximizeTerminal")
 
 
 # Attempt Log In if user exists
@@ -175,14 +185,17 @@ def splashScreen() -> None:
         stop_animation = threading.Event()
 
         def dotAnimation():
-            while not stop_animation.is_set():
-                for dots in range(4):
-                    if stop_animation.is_set():
-                        break
-                    # Print dots in sequence on loop
-                    sys.stdout.write("\rPress Enter to continue" + "." * dots + "   ")
-                    sys.stdout.flush()
-                    time.sleep(0.4)
+            try:
+                while not stop_animation.is_set():
+                    for dots in range(4):
+                        if stop_animation.is_set():
+                            break
+                        # Print dots in sequence on loop
+                        sys.stdout.write("\rPress Enter to continue" + "." * dots + "   ")
+                        sys.stdout.flush()
+                        time.sleep(0.4)
+            except Exception as error:
+                logging(error, function="dotAnimation")
 
         # Start dot animation in a separate thread
         animation_thread = threading.Thread(target=dotAnimation, daemon=True)
@@ -198,28 +211,45 @@ def splashScreen() -> None:
                     login()
 
     except Exception as error:
-        logging(error)
+        logging(error, function="splashScreen")
 
 
 def login():
-    system("cls")
-    print(logo)
-    # Query the users table and insert all into list_master
-    list_master = sqlite.queryData(table = "users")
-    # Check if list_master is empty
-    if listNotEmpty(list_master):
-        # Check if account is locked before logging in
-        if accountLocked(list_master):
-            print(f"Account locked until {tomorrow}\nExiting...")
-            exit()
+    try:
+        system("cls")
+        print(logo)
+        # Query the users table and insert all into list_master_users
+        list_master_users = sqlite.queryData(user=None, table="users")
+        # Check if list_master_users is empty
+        if listNotEmpty(list_master_users):
+            # Check if account is locked before logging in
+            if accountLocked(list_master_users):
+                print(f"Account locked until {tomorrow}\nExiting...")
+                exit()
+            else:
+                selected_index = 0
+
+                while True:
+                    # Display the table with navigation
+                    displayTable(list_master_users, selected_index, table="users")
+
+                    # User input via keyboard
+                    key = readchar.readkey()
+
+                    if key == readchar.key.UP:
+                        selected_index = (selected_index - 1) % len(list_master_users)
+                    elif key == readchar.key.DOWN:
+                        selected_index = (selected_index + 1) % len(list_master_users)
+                    elif key == readchar.key.ENTER:
+                        # Before decrypting the password we need to save the returned Encryption Key for that record
+                        # Make number of attempted passwords 0 from Attempt Log In screen
+                        attemptLogin(user = list_master_users[selected_index][0], attempt = 0, master_key = list_master_users[selected_index][2], master_password = list_master_users[selected_index][1])
         else:
-            # Proceed to Log In screen from Attempt Log In screen
-            # Before decrypting the password we need to save the returned Encryption Key for that record
-            # Make number of attempted passwords 0 from Attempt Log In screen
-            attemptLogin(user = list_master[0][0], attempt = 0, master_key = list_master[0][2], master_password = list_master[0][1])
-    else:
-        # Create a new master password if doesn't exist
-        newMaster()
+            # Create a new master password if doesn't exist
+            print("No Master Users exist yet!\n")
+            newMaster()
+    except Exception as error:
+        logging(error, function="login")
 
 
 # Log In screen to avoid splash everytime
@@ -227,9 +257,9 @@ def attemptLogin(user, attempt, master_key, master_password) -> None:
     try:
         # 3 attempts to Log In before logging to log file and locking account for 1 day
         if attempt < 3:
+            attempted_password = str(input("\nMaster password: "))
             # Decrypt user password to compare with password entered
             decrypted_master_password = decryptPassword(master_key, master_password)
-            attempted_password = str(input("\nMaster password: "))
             if attempted_password == decrypted_master_password:
                 # Need to fix this to check is user password = password saved to db for userID
                 Start(user)
@@ -248,7 +278,7 @@ def attemptLogin(user, attempt, master_key, master_password) -> None:
             print(f"{incorrect}\nExiting...")
             exit()
     except Exception as error:
-        logging(error)
+        logging(error, function="attemptLogin")
 
 
 # Display Splash and Start Menu to CLI - User chooses function
@@ -269,14 +299,17 @@ def Start(user) -> None:
         selected_index = 0
 
         def startMenu():
-            system('cls')
-            print(f"{logo}\n{navigation_text}")
-            for i, func in enumerate(functions):
-                if i == selected_index:
-                    # Highlight current option
-                    print(f"{Back.WHITE}{Fore.BLACK}{func[0]}{Style.RESET_ALL}")
-                else:
-                    print(func[0])
+            try:
+                system("cls")
+                print(f"{logo}\n{navigation_text}")
+                for i, func in enumerate(functions):
+                    if i == selected_index:
+                        # Highlight current option
+                        print(f"{Back.WHITE}{Fore.BLACK}{func[0]}{Style.RESET_ALL}")
+                    else:
+                        print(func[0])
+            except Exception as error:
+                logging(error, function="startMenu")
 
         while True:
             startMenu()
@@ -290,9 +323,9 @@ def Start(user) -> None:
                 if functions[selected_index][-1] == "Quit":
                     exit()
                 else:
-                    performAction(user, mode = functions[selected_index][-1])
+                    performAction(user, mode=functions[selected_index][-1])
     except Exception as error:
-        logging(error)
+        logging(error, function="Start")
 
 
 # Get func arg then perform action
@@ -310,6 +343,8 @@ def performAction(user, mode, feature_variable=None, feature=None) -> None:
             (displayPassword, "Decrypt")
         ]
 
+        # Add Password User and User Management are treated separately since they do not require
+        # the passwords to be listed like Edit, Delete or Decrypt Password
         if mode == "Add":
             addPassword(user, mode)
         elif mode == "User Management":
@@ -324,11 +359,11 @@ def performAction(user, mode, feature_variable=None, feature=None) -> None:
 
                     if feature == None:
                         # Query the passwords table and insert all into list_passwords ordered by account name
-                        list_passwords = sqlite.queryData(table="passwords")
+                        list_passwords = sqlite.queryData(user, table="passwords")
                     elif feature == "Search":
-                        list_passwords = sqlite.queryData(table="passwords", category=feature_variable[0], text=feature_variable[1], sort_by=None)
+                        list_passwords = sqlite.queryData(user, table="passwords", category=feature_variable[0], text=feature_variable[1], sort_by=None)
                     elif feature == "Sort":
-                        list_passwords = sqlite.queryData(table="passwords", category=feature_variable[0], text=None, sort_by=feature_variable[1])
+                        list_passwords = sqlite.queryData(user, table="passwords", category=feature_variable[0], text=None, sort_by=feature_variable[1])
 
                     # Check if list_passwords is empty
                     if listNotEmpty(list_passwords):
@@ -337,7 +372,7 @@ def performAction(user, mode, feature_variable=None, feature=None) -> None:
 
                         while True:
                             # Display the table with navigation
-                            displayTable(list_passwords, selected_index)
+                            displayTable(list_passwords, selected_index, table="passwords")
 
                             # User input via keyboard
                             key = readchar.readkey()
@@ -360,27 +395,40 @@ def performAction(user, mode, feature_variable=None, feature=None) -> None:
                     else:
                         empty(user, mode)
     except Exception as error:
-        logging(error)
+        logging(error, function="performAction")
 
 
 # Create new master password
 def newMaster() -> None:
     try:
+        # First query the Users table to ensure the inputted user does not already exist
+        list_master_users = sqlite.queryData(user=None, table="users")
+        # Create empty list of just Master Users names
+        list_masters = []
+
+        # Loop through SQL query and insert first field into intemediary list
+        for i in range(len(list_master_users)):
+            list_masters.append(list_master_users[i][0])
+
         new_master_user = str(input("\nCreate new master user: "))
-        new_master_password = str(input("\nCreate new master password: "))
+        new_master_password = str(input("Create new master password: "))
 
         # Check all fields are populated before proceeding
-        if fieldNotEmpty(new_master_user, new_master_password):
+        if new_master_user not in list_masters:
             print("Adding new master password...")
             save_password = encryptPassword(new_master_password)
             sqlite.insertMaster(new_master_user, save_password, session_password_key.decode(), today)
             # Return to Log In screen
             splashScreen()
         else:
-            print("1 or more required fields is missing!")
+            print("A Master User already exists with this name")
             newMaster()
+        
+        # Dump intemediary list
+        list_masters = []
+
     except Exception as error:
-        logging(error)
+        logging(error, function="newMaster")
 
 
 # Create new master password
@@ -399,22 +447,55 @@ def updateMaster(user) -> None:
             print("No password was entered!")
             updateMaster(user)
     except Exception as error:
-        logging(error)
+        logging(error, function="updateMaster")
 
 
-def removeMaster() -> None:
-    print("Change this")
+def removeMaster(user) -> None:
+    try:
+        system("cls")
+        print(logo)
+        # Query the users table and insert all into list_master_users
+        list_master_users = sqlite.queryData(user=None, table="users")
 
+        selected_index = 0
+
+        while True:
+            # Display the table with navigation
+            displayTable(list_master_users, selected_index, table="users")
+
+            # User input via keyboard
+            key = readchar.readkey()
+
+            if key == readchar.key.UP:
+                selected_index = (selected_index - 1) % len(list_master_users)
+            elif key == readchar.key.DOWN:
+                selected_index = (selected_index + 1) % len(list_master_users)
+            elif key == readchar.key.ENTER:
+                # Check if the user wants to delete the chosen Master User
+                statement = (f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the Master User {Fore.YELLOW}{list_master_users[selected_index][0]}{Fore.WHITE} ?\n")
+                if choice( statement, user, mode="Delete", password=None, confirm_delete=True, type="Master User" ) == True:
+                    sqlite.deleteMaster(user=list_master_users[selected_index][0])
+                    if user == list_master_users[selected_index][0]:
+                        splashScreen()
+                    else:
+                        Start(user)
+            elif key == readchar.key.ESC:
+                userManagement(user)
+    except Exception as error:
+        logging(error, function="removeMaster")
 
 def userManagement(user) -> None:
     try:
-        options = [
-        "Edit Master Password",
-        "Create New Master User",
-        "Delete Master User",
-        "Main Menu",
-        "Quit"
+        functions = [
+        ("Edit Master Password", updateMaster),
+        ("Create New Master User", newMaster),
+        ("Delete Master User", removeMaster),
+        ("Main Menu", Start),
+        ("Quit", exit)
         ]
+
+        # Extract the option labels for display
+        options = [item[0] for item in functions]
 
         selected_index = 0
 
@@ -427,19 +508,13 @@ def userManagement(user) -> None:
             elif key == readchar.key.DOWN:
                 selected_index = (selected_index + 1) % len(options)
             elif key == readchar.key.ENTER:
-                if options[selected_index] == "Edit Master Password":
-                    updateMaster(user)
-                elif options[selected_index] == "Create New Master User":
-                    newMaster()
-                elif options[selected_index] == "Delete Master User":
-                    removeMaster()
-                elif options[selected_index] == "Main Menu":
-                    Start(user)
-                elif options[selected_index] == "Quit":
-                    print("Exiting...")
-                    exit()
+                # New Master and Exit do not take any arguments and cannot be passed the user variable
+                if functions[selected_index][1] in [newMaster, exit]:
+                    functions[selected_index][1]()
+                else:
+                    functions[selected_index][1](user)
     except Exception as error:
-        logging(error)
+        logging(error, function="userManagement")
 
 
 # Password is encrypted then added to the encrypted passwords SQLite table
@@ -463,7 +538,7 @@ def addPassword(user, mode) -> None:
             print("All fields are required")
             addPassword(user)
     except Exception as error:
-        logging(error)
+        logging(error, function="addPassword")
 
 
 # Update password
@@ -488,7 +563,7 @@ def updatePassword(user, list_passwords, index, mode) -> None:
             # Return to Start Menu or repeat
             tryAgain(user, mode, (list_passwords[index][2]), (done[0]))
     except Exception as error:
-        logging(error)
+        logging(error, function="updatePassword")
 
 
 # Delete password
@@ -501,7 +576,7 @@ def deletePassword(user, list_passwords, index, mode) -> None:
 
         # Check if the user wants to delete the chosen password
         statement = (f"{Fore.YELLOW}{line}{Fore.WHITE}Are you sure you want to delete the password for {Fore.YELLOW}{list_passwords[index][2]}{Fore.WHITE} ?\n")
-        if choice( statement, user, mode, password=None, confirm_delete=True ) == True:
+        if choice( statement, user, mode, password=None, confirm_delete=True, type="Password" ) == True:
             # Success statement needs to slice first letter off mode
             print(mode[:-1] + doing)
             # Delete data from SQLite table
@@ -513,7 +588,7 @@ def deletePassword(user, list_passwords, index, mode) -> None:
         else:
             performAction(user, mode)
     except Exception as error:
-        logging(error)
+        logging(error, function="deletePassword")
 
 
 # Display password
@@ -527,26 +602,36 @@ def displayPassword(user, list_passwords, index, mode) -> None:
         # Decrypt then return to Start Menu or repeat
         tryAgain((list_passwords[index][0]), mode, (list_passwords[index][2]), (done[0]), decrypted_password)
     except Exception as error:
-        logging(error)
+        logging(error, function="displayPassword")
 
 
-def displayTable(list_passwords, selected_index):
+def displayTable(list_table, selected_index, table):
     try:
-        system('cls')
-        print( logo + line + "\n" + navigation_text + features )
+        system("cls")
+        if table == "passwords":
+            print( logo + "\n" + navigation_text + features )
+        elif table == "users":
+            print( logo + "\n" + navigation_text )
 
         # Create intermediary list to display data to Terminal with Tabulate
-        password_table = []
+        tabulate_table = []
         place = 1
-        for i in list_passwords:
-            password_table.append([place, i[1], i[2], i[3], i[-3], i[-1]])
-            place += 1
-
-        # Print the headers
-        print(tabulate([], headers=["Index", "Category", "Account", "Username", "Password", "Last Modified"], tablefmt="plain"))
-
+        
+        if table == "passwords":
+            for i in list_table:
+                tabulate_table.append([place, i[1], i[2], i[3], i[-3], i[-1]])
+                place += 1
+            # Print the headers
+            print(tabulate([], headers=["Index", "Category", "Account", "Username", "Password", "Last Modified"], tablefmt="plain"))
+        elif table == "users":
+            for i in list_table:
+                tabulate_table.append([i[0]])
+                place += 1
+            # Print the headers
+            print(tabulate([], headers=["Select User"], tablefmt="plain")) 
+        
         # Display the table rows starting from the first row
-        for i, row in enumerate(password_table):
+        for i, row in enumerate(tabulate_table):
             if i == selected_index:
                 # Highlight the current row
                 print(Back.WHITE + Fore.BLACK + tabulate([row], headers=[], tablefmt="plain") + Style.RESET_ALL)
@@ -554,9 +639,9 @@ def displayTable(list_passwords, selected_index):
                 print(tabulate([row], headers=[], tablefmt="plain"))
 
         # Dump intermediary list after use
-        password_table = []
+        tabulate_table = []
     except Exception as error:
-        logging(error)
+        logging(error, function="displayTable")
 
 
 def searchPassword(user, mode):
@@ -595,7 +680,7 @@ def searchPassword(user, mode):
 
         performAction(user, mode, feature_variable, feature="Search")
     except Exception as error:
-        logging(error)
+        logging(error, function="searchPassword")
 
 
 def sortPassword(user, mode):
@@ -655,7 +740,7 @@ def sortPassword(user, mode):
 
         performAction(user, mode, feature_variable, feature="Sort")
     except Exception as error:
-        logging(error)
+        logging(error, function="sortPassword")
 
 
 # The list_passwords list is empty - user chooses to return to Start or Exit
@@ -664,7 +749,7 @@ def empty(user, mode) -> None:
         statement = ( empty_list[0] + mode.lower() + empty_list[1] + go_home )
         choice(statement, user, mode=0)
     except Exception as error:
-        logging(error)
+        logging(error, function="empty")
 
 
 # User chooses to perform the function again or return to Start
@@ -678,17 +763,17 @@ def tryAgain( user, mode, account, fixed_done, password=None) -> None:
             statement = ( f"{Fore.GREEN}{line}{Fore.WHITE}" + mode + fixed_done + f"{Fore.GREEN}{account}{Fore.WHITE}" + done[1] )
             choice(statement, user, mode)
     except Exception as error:
-        logging(error)
+        logging(error, function="tryAgain")
 
 
 # Handles Yes No choices
-def choice(statement, user, mode, password=None, confirm_delete=None) -> None:
+def choice(statement, user, mode=None, password=None, confirm_delete=None, type=None) -> None:
     try:
         selected_index = 0
         
         if confirm_delete:
             options = [
-                f"{mode} Password",
+                f"{mode} {type}",
                 "Choose Again",
                 "Main Menu",
                 "Quit"
@@ -721,7 +806,7 @@ def choice(statement, user, mode, password=None, confirm_delete=None) -> None:
             elif key == readchar.key.DOWN:
                 selected_index = (selected_index + 1) % len(options)
             elif key == readchar.key.ENTER:
-                if options[selected_index] == f"{mode} Password":
+                if options[selected_index] == f"{mode} {type}":
                     return True
                 elif options[selected_index] == "Choose Again":
                     return False
@@ -739,22 +824,24 @@ def choice(statement, user, mode, password=None, confirm_delete=None) -> None:
                     print("Exiting...")
                     exit()
     except Exception as error:
-        logging(error)
+        logging(error, function="choice")
 
 
 def displayOptions(options, selected_index, display_statement):
-    system('cls')
-    print(display_statement)
+    try:
+        system("cls")
+        print(display_statement)
 
-    # Display the options with highlighted row
-    for i, row in enumerate(options):
-        if i == selected_index:
-            # Highlight the current row
-            print(Back.WHITE + Fore.BLACK + row + Style.RESET_ALL)
-        else:
-            print(row)
-    return selected_index
-
+        # Display the options with highlighted row
+        for i, row in enumerate(options):
+            if i == selected_index:
+                # Highlight the current row
+                print(Back.WHITE + Fore.BLACK + row + Style.RESET_ALL)
+            else:
+                print(row)
+        return selected_index
+    except Exception as error:
+        logging(error, function="displayOptions")
 
 # Encrypt
 def encryptPassword(password) -> str:
@@ -768,7 +855,7 @@ def encryptPassword(password) -> str:
         # The encoded password is BITS datatype once encrypted and needs it's own variable
         return encrypted_password.decode()
     except Exception as error:
-        logging(error)
+        logging(error, function="encryptPassword")
 
 
 # Decrypt
@@ -779,16 +866,16 @@ def decryptPassword(encryption_key, password) -> str:
         # Decrypt with the relevant records Encryption Key
         decrypted_password = Fernet(encryption_key).decrypt(password)
         # Remember to DECODE the new variable to convert from BITS datatype to STRING
-        # This removes the leading b value changing b'variable' to 'variable'
+        # This removes the leading b value changing b'variable' to 'variable"
         return decrypted_password.decode()
     except Exception as error:
-        logging(error)
+        logging(error, function="decryptPassword")
 
 
 # Write to Log file
-def logging(message):
+def logging(message, function):
     f = open(".\\Logs.txt", "a")
-    f.write(f"[{todays_time}] {message}\n")
+    f.write(f"[{todays_time}]ERROR in Function: {function} - {message}\n")
     f.close()
 
 
