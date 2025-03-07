@@ -130,7 +130,7 @@ mode = ""
 
 
 # Write to Log file
-def logging(message=None):
+def logging(message=None) -> None:
     with open(os.path.join(".", "Logs.txt"), "a") as file:
         #  Handles Traceback since no message argument is passed
         if message is None:
@@ -161,7 +161,7 @@ def listNotEmpty(list) -> bool:
 # Avoids multiple lines of code each time a screen clear and logo print are required
 # Not all calls to logoScreen require a statement
 # and when a statement is not provided "None" is printed to screen
-def logoScreen(logo_statement=None):
+def logoScreen(logo_statement=None) -> None:
     try:
         os.system("cls")
         if logo_statement is None:
@@ -175,7 +175,7 @@ def logoScreen(logo_statement=None):
 # User input via keyboard to continue
 # this avoids the print statement clearing before user reads it
 # enterContinue() needs to be called as an if statement since pressing Enter returns True
-def enterContinue(enter_continue_statement):
+def enterContinue(enter_continue_statement) -> bool:
     try:
         # split(' ', 2)[1] matches enter_continue_statement on second word instead of full text
         # to capture password_list is empty as well as Database Migration functions
@@ -226,7 +226,7 @@ def decryptPassword(encryption_key, password) -> str:
 
 
 # Maximize the terminal using pygetwindow
-def maximizeTerminal():
+def maximizeTerminal() -> None:
     try:
         # Rename title for Windows
         if os.name == 'nt':
@@ -268,7 +268,7 @@ def splashScreen() -> None:
         # Shared flag to control the animation
         stop_animation = threading.Event()
 
-        def dotAnimation():
+        def dotAnimation() -> None:
             try:
                 while not stop_animation.is_set():
                     for dots in range(4):
@@ -298,7 +298,7 @@ def splashScreen() -> None:
         logging()
 
 
-def login():
+def login() -> None:
     try:
         # Clear Terminal and print Logo
         logoScreen()
@@ -394,7 +394,7 @@ def start(user) -> None:
 
         selected_index = 0
 
-        def startMenu():
+        def startMenu() -> None:
             try:
                 # Clear Terminal and print Logo and navigation_text
                 logoScreen(logo_statement=navigation_text)
@@ -589,7 +589,7 @@ def displayPassword(user, passwords_list, index, mode) -> None:
         logging()
 
 
-def searchPassword(user, mode):
+def searchPassword(user, mode) -> None:
     try:
         # Empty feature_variable incase it already has a value of somekind
         feature_variable = []
@@ -628,7 +628,7 @@ def searchPassword(user, mode):
         logging()
 
 
-def sortPassword(user, mode):
+def sortPassword(user, mode) -> None:
     try:
         # Empty feature_variable incase it already has a value of somekind
         feature_variable = []
@@ -756,7 +756,7 @@ def newMaster(user=None) -> None:
             # Go to Start screen after creating new Master User
             # Handles issue where user variable is not passed to later functions
             if user is None:
-                start(user=new_master_password)
+                start(user=new_master_user)
             else:
                 start(user)
         else:
@@ -856,7 +856,7 @@ def migrateDatabase(user) -> None:
 
 
 # Exporting Database mostly uses CLI_Guard_SQL but requires text provided to the user
-def exportDB(user):
+def exportDB(user) -> None:
     try:
         export_path = os.path.join(os.getcwd(), f"CLI_Guard_DB_Export_{today}.db")
         # Call SQLite3 function to export the database as {os.getcwd()}\CLI_Guard_DB_Export_{today}.db
@@ -871,7 +871,7 @@ def exportDB(user):
     except Exception:
         logging()
 
-def importDB(user):
+def importDB(user) -> None:
     try:
         # Initialise empty list of available_databases
         available_databases  = []
@@ -913,7 +913,7 @@ def importDB(user):
                     else:
                         # Pass selected database and current directory to SQLite importDatabase function
                         import_path = os.path.join(os.getcwd(), f"{available_databases[selected_index][0]}.db")
-                        sqlite.importDatabase(import_path)
+                        importData(import_path)
         else:
             # Change this to allow user to enter file path manually
             statement = f"There are no databases in the current directory to import\n\nMove a database file to {os.getcwd()} and try again or enter the File Path manually\n"
@@ -922,7 +922,7 @@ def importDB(user):
         logging()
 
 # Import a database manually
-def importManually(user):
+def importManually(user) -> None:
     try:
         # Clear Terminal and print Logo
         logoScreen()
@@ -930,7 +930,7 @@ def importManually(user):
 
         if os.path.exists(import_path):
             if import_path.endswith(".db"):
-                sqlite.importDatabase(import_path)
+                importData(import_path)
             else:
                 if enterContinue(enter_continue_statement="File Path entered is not a database file") is True:
                     importDB(user)
@@ -941,7 +941,95 @@ def importManually(user):
         logging()
 
 
-def displayTable(list_table, selected_index, table):
+# Logic to perform Database Import functions
+def importData(import_path) -> None:
+    # Query the Users table to compare against imported users
+    existing_users = sqlite.queryData(user=None, table="users")
+    # Create an empty list of existing Master Users
+    existing_users_list =[]
+    # Loop through SQL query and insert first field into
+    # an intemediary list to compare against imported users
+    for i, existing_user in enumerate(existing_users):
+        existing_users_list.append(existing_user[0])
+
+    # Query the imported Users table and insert all values of the imported users table into a list 
+    imported_users_list = sqlite.importDatabase(import_path, table="users")
+    # Create a empty list of decrypted Master Users
+    decrypted_imported_users = []
+    # Loop through the imported_users_list and add all values into a list
+    # with the original password decrypted using the original encryption_key
+    for i, imported_user in enumerate(imported_users_list):
+        decrypted_imported_users.append(
+            [
+                imported_users_list[i][0],
+                decryptPassword(encryption_key=imported_user[2],
+                                password=imported_user[1])
+            ]
+        )
+    
+    # Check if each imported Master User is unique and insert to Users table
+    # with the original password encrypted using the current session_password_key
+    # Master Users are handled differently here since only the user field is checked
+    # for uniqueness while users passwords are checked for uniqueness across all fields
+    for i, decrypted_user in enumerate(decrypted_imported_users):
+        if decrypted_user[0] not in existing_users_list:
+            sqlite.insertMaster(
+                user=decrypted_user[0],
+                password=encryptPassword(decrypted_user[1]),
+                session_key=session_password_key.decode()
+            )
+
+
+    # Query the Passwords table to compare against imported passwords
+    existing_passwords = sqlite.queryData(user=None, table="passwords")
+    # Create an empty list of existing passwords
+    existing_passwords_list = []
+    # Loop through the imported_passwords_list and add all values into a list
+    # with the original password decrypted using the original encryption_key
+    for i, existing_password in enumerate(existing_passwords):
+        existing_passwords_list.append(
+            [
+                existing_password[0],
+                existing_password[1],
+                existing_password[2],
+                existing_password[3],
+                decryptPassword(encryption_key=existing_password[5],
+                                password=existing_password[4])
+            ]
+        )
+
+    # Insert all values of the imported users table into a list 
+    imported_passwords_list = sqlite.importDatabase(import_path, table="passwords")
+    # Create a empty list of decrypted Master Users
+    decrypted_imported_passwords = []
+    # Loop through the queried data and append all values into the decrypted_imported_passwords list
+    for i, imported_password in enumerate(imported_passwords_list):
+        decrypted_imported_passwords.append(
+            [
+                imported_password[0],
+                imported_password[1],
+                imported_password[2],
+                imported_password[3],
+                decryptPassword(encryption_key=imported_password[5],
+                                password=imported_password[4])
+            ]
+        )
+
+    # Check if each imported password is unique and insert to Passwords table
+    # with the original password encrypted using the current session_password_key
+    for i, decrypted_password in enumerate(decrypted_imported_passwords):
+        if i not in existing_passwords_list:
+            sqlite.insertData(
+                user=decrypted_password[0],
+                category=decrypted_password[1],
+                account=decrypted_password[2],
+                username=decrypted_password[3],
+                password=encryptPassword(decrypted_password[4]),
+                session_key=session_password_key.decode()
+            )
+
+
+def displayTable(list_table, selected_index, table) -> None:
     try:
         if table == "passwords":
             # Clear Terminal and print Logo with navigation_text and Search/Sort features
@@ -987,7 +1075,7 @@ def displayTable(list_table, selected_index, table):
         logging()
 
 
-def displayOptions(options, selected_index, display_statement):
+def displayOptions(options, selected_index, display_statement) -> None:
     try:
         # Clear Terminal and print Logo with display_statement
         logoScreen(logo_statement=display_statement)
@@ -1023,7 +1111,7 @@ def choice(statement, user, mode=None, password=None, confirm_delete=None, type=
         selected_index = 0
 
         # Below functions defined here for actions that need arguments
-        def copy():
+        def copy() -> None:
             try:
                 pyperclip.copy(password)
                 updated_statement = (f"\n{password}\n\n"
@@ -1032,19 +1120,24 @@ def choice(statement, user, mode=None, password=None, confirm_delete=None, type=
             except Exception:
                 logging()
 
-        def performAnother():
+        def performAnother() -> None:
             try:
-                performAction(user, mode)
+                if mode == "Create":
+                    # Create Another Password cannot be passed to performAction()
+                    # since it does not require the passwords_list to be displayed
+                    addPassword(user, mode)
+                else:
+                    performAction(user, mode)
             except Exception:
                 logging()
 
-        def chooseAgain():
+        def chooseAgain() -> bool:
             try:
                 return False
             except Exception:
                 logging()
 
-        def confirm():
+        def confirm() -> bool:
             try:
                 return True
             except Exception:

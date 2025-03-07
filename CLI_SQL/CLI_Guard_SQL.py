@@ -71,16 +71,18 @@ def queryData(user, table, category=None, text=None, sort_by=None) -> list:
                     WHERE user = ?;
                 """)
                 sqlCursor.execute(sql_query, (user,))
-
+            # Insert query data to a list
             list_table = sqlCursor.fetchall()
+            # Return the list of values
             return list_table
         else:
             sqlCursor.execute(f"""
                 SELECT * 
                 FROM vw_{table};
             """)
-
+            # Insert query data to a list
             list_table = sqlCursor.fetchall()
+            # Return the list of values
             return list_table
     except sqlite3.IntegrityError as integrity_error:
         logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
@@ -263,8 +265,8 @@ def deleteData(user, account, username, password) -> None:
         logging()
 
 
-# Export Database
-def exportDatabase(export_path):
+# Export Database using SQLite.backup function
+def exportDatabase(export_path) -> bool:
     try:
         # Create a new connection for the export file
         with sqlite3.connect(export_path) as target_conn:
@@ -284,6 +286,31 @@ def exportDatabase(export_path):
         logging()
 
 
-# Import Database
-def importDatabase(import_path):
-    logging(message=f"importDatabase was called, provided file path is {import_path}")
+# Query Imported Database and return contents of Users or Passwords table
+def importDatabase(import_path, table) -> list:
+    try:
+        # Connect to the Imported Database
+        importConnection = sqlite3.connect(import_path)
+        # Create a cursor - read more docs on this
+        importCursor = importConnection.cursor()
+
+        importCursor.execute(f"""
+            SELECT * 
+            FROM vw_{table};
+        """)
+        # Insert query data to a list
+        list_table = importCursor.fetchall()
+
+        # Close the connection to the Imported Database after use
+        importConnection.close()
+
+        # Return the list of values
+        return list_table
+    except sqlite3.IntegrityError as integrity_error:
+        logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
+    except sqlite3.OperationalError as op_error:
+        logging(message=f"ERROR: SQLite3 operational failure - {str(op_error)}")
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to failed to query data from {table} - {str(sql_error)}")
+    except Exception:
+        logging()
