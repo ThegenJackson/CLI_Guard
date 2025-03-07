@@ -4,24 +4,42 @@ import sqlite3
 # Import OS library
 import os
 
-# DateTime used for Logging
-from datetime import datetime
+# Import Traceback for logging
+import traceback
 
-todays_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+# DateTime used for Logging
+from datetime import date, datetime, timedelta
+
+today = date.today()
+todays_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+tomorrow = date.today() + timedelta(1)
 
 
 
 # Write to Debugging Log file
-def logging(message):
-    with open(".\\Logs.txt", "a") as f:
-        f.write(f"[{todays_time}] DATABASE {message}\n")
+def logging(message=None):
+    with open(".\\Logs.txt", "a") as file:
+        #  Handles Traceback since no message argument is passed
+        if message is None:
+            # traceback.format_exc() function works without explicitly passing an error
+            # because it captures the most recent exception from the current context
+            file.write(f"[{todays_time}] Traceback: {traceback.format_exc()}\n")
+        else:
+            # Handles Logging when a message argument is passed
+            file.write(f"[{todays_time}] DATABASE {message}\n")
 
 
-
-# Connet to the CLI Guard Database
-sqlConnection = sqlite3.connect('.\\CLI_SQL\\CLI_Guard_DB.db')
-# Create a cursor - read more docs on this
-sqlCursor = sqlConnection.cursor()
+# Define default database path
+database_path = '.\\CLI_SQL'
+database_name = 'CLI_Guard_DB.db'
+# Check if database exists
+if os.path.exists(f"{database_path}\\{database_name}"):
+    # Connect to the CLI Guard Database
+    sqlConnection = sqlite3.connect(f"{database_path}\\{database_name}")
+    # Create a cursor - read more docs on this
+    sqlCursor = sqlConnection.cursor()
+else:
+    logging(message="ERROR: Could not connect to CLI Guard Database - Default database does not exist or cannot be found")
 
 
 
@@ -67,16 +85,18 @@ def queryData(user, table, category=None, text=None, sort_by=None) -> list:
 
             list_table = sqlCursor.fetchall()
             return list_table
+    except sqlite3.IntegrityError as integrity_error:
+        logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
+    except sqlite3.OperationalError as op_error:
+        logging(message=f"ERROR: SQLite3 operational failure - {str(op_error)}")
     except sqlite3.Error as sql_error:
-        logging(message=f"ERROR: Failed to query data from {table} - {str(sql_error)}")
-        return []
-    except Exception as e:
-        logging(message=f"ERROR: queryData Function - {str(e)}")
-        return []
+        logging(message=f"ERROR: SQLite3 failed to failed to query data from {table} - {str(sql_error)}")
+    except Exception:
+        logging()
 
 
 # INSERT new user into users SQLite table
-def insertMaster(user, password, session_key, today) -> None:
+def insertMaster(user, password, session_key) -> None:
     try:
         sql_query = (f"""
             INSERT INTO users
@@ -89,15 +109,19 @@ def insertMaster(user, password, session_key, today) -> None:
             """)
         sqlCursor.execute(sql_query, (user,))
         sqlConnection.commit()
-        logging(message = f"SUCCESS: Created master {user}")
+        logging(message=f"SUCCESS: Created master {user}")
+    except sqlite3.IntegrityError as integrity_error:
+        logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
+    except sqlite3.OperationalError as op_error:
+        logging(message=f"ERROR: SQLite3 operational failure - {str(op_error)}")
     except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to insert master {user} - {str(sql_error)}")
-    except Exception as e:
-        logging(message = f"ERROR: insertMaster Function - {str(e)}")
+        logging(message=f"ERROR: SQLite3 failed to failed to insert Master User {user} - {str(sql_error)}")
+    except Exception:
+        logging()
 
 
 # UPDATE records in the passwords SQLite table
-def updateMasterPassword(user, password, session_key, today) -> None:
+def updateMasterPassword(user, password, session_key) -> None:
     try:
         sql_query = (f"""
             UPDATE users 
@@ -108,11 +132,15 @@ def updateMasterPassword(user, password, session_key, today) -> None:
             """)
         sqlCursor.execute(sql_query, (user,))
         sqlConnection.commit()
-        logging(message = f"SUCCESS: Updated master password for {user}")
+        logging(message=f"SUCCESS: Updated master password for {user}")
+    except sqlite3.IntegrityError as integrity_error:
+        logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
+    except sqlite3.OperationalError as op_error:
+        logging(message=f"ERROR: SQLite3 operational failure - {str(op_error)}")
     except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to update master password for {user} - {str(sql_error)}")
-    except Exception as e:
-        logging(message = f"ERROR: updateMasterPassword - {str(e)}")
+        logging(message=f"ERROR: SQLite3 failed to failed to update Master User {user} - {str(sql_error)}")
+    except Exception:
+        logging()
 
 
 # DELETE records from the users SQLite table as well as their passwords
@@ -131,15 +159,19 @@ def deleteMaster(user) -> None:
             """)
         sqlCursor.execute(sql_query, (user,))
         sqlConnection.commit()       
-        logging(message = f"SUCCESS: Deleted master user {user}")
+        logging(message=f"SUCCESS: Deleted master user {user}")
+    except sqlite3.IntegrityError as integrity_error:
+        logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
+    except sqlite3.OperationalError as op_error:
+        logging(message=f"ERROR: SQLite3 operational failure - {str(op_error)}")
     except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to delete master user {user} - {str(sql_error)}")
-    except Exception as e:
-        logging(message = f"ERROR: deleteMaster - {str(e)}")
+        logging(message=f"ERROR: SQLite3 failed to failed to delete Master User {user} - {str(sql_error)}")
+    except Exception:
+        logging()
 
 
 # UPDATE records in the passwords SQLite table
-def lockMaster(user, today, tomorrow) -> None:
+def lockMaster(user) -> None:
     try:
         sql_query = (f"""
             UPDATE users 
@@ -148,15 +180,19 @@ def lockMaster(user, today, tomorrow) -> None:
             """)
         sqlCursor.execute(sql_query, (user,))
         sqlConnection.commit()
-        logging(message = f"SUCCESS: Locked {user} until {tomorrow}")
+        logging(message=f"SUCCESS: Locked {user} until {tomorrow}")
+    except sqlite3.IntegrityError as integrity_error:
+        logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
+    except sqlite3.OperationalError as op_error:
+        logging(message=f"ERROR: SQLite3 operational failure - {str(op_error)}")
     except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to lock master {user} - {str(sql_error)}")
-    except Exception as e:
-        logging(message = f"ERROR: lockMaster Function - {str(e)}")
+        logging(message=f"ERROR: SQLite3 failed to failed to lock Master User {user} - {str(sql_error)}")
+    except Exception:
+        logging()
 
 
 # INSERT new records into passwords SQLite table
-def insertData(user, category, account, username, password, session_key, today) -> None:
+def insertData(user, category, account, username, password, session_key) -> None:
     try:
         sql_query = (f"""
             INSERT INTO passwords 
@@ -171,15 +207,19 @@ def insertData(user, category, account, username, password, session_key, today) 
             """)
         sqlCursor.execute(sql_query, (user, category, account, username,))
         sqlConnection.commit()
-        logging(message = f"SUCCESS: Inserted password for {username}")
+        logging(message=f"SUCCESS: Inserted password for {username}")
+    except sqlite3.IntegrityError as integrity_error:
+        logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
+    except sqlite3.OperationalError as op_error:
+        logging(message=f"ERROR: SQLite3 operational failure - {str(op_error)}")
     except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to insert password for {username} - {str(sql_error)}")
-    except Exception as e:
-        logging(message = f"ERROR: insertData Function - {str(e)}")
+        logging(message=f"ERROR: SQLite3 failed to insert password for {username} - {str(sql_error)}")
+    except Exception:
+        logging()
 
 
 # UPDATE records in the passwords SQLite table
-def updateData(password, account, username, old_password, session_key, today) -> None:
+def updateData(password, account, username, old_password, session_key) -> None:
     try:
         sql_query = (f"""
             UPDATE passwords 
@@ -192,11 +232,15 @@ def updateData(password, account, username, old_password, session_key, today) ->
             """)
         sqlCursor.execute(sql_query,(account,username,))
         sqlConnection.commit()
-        logging(message = f"SUCCESS: Updated password for {username}")
+        logging(message=f"SUCCESS: Updated password for {username}")
+    except sqlite3.IntegrityError as integrity_error:
+        logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
+    except sqlite3.OperationalError as op_error:
+        logging(message=f"ERROR: SQLite3 operational failure - {str(op_error)}")
     except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to update password for {username} - {str(sql_error)}")
-    except Exception as e:
-        logging(message = f"ERROR: updateDataFunction - {str(e)}")
+        logging(message=f"ERROR: SQLite3 failed to update password for {username} - {str(sql_error)}")
+    except Exception:
+        logging()
 
 
 # DELETE records from the passwords SQLite table
@@ -211,8 +255,36 @@ def deleteData(user, account, username, password) -> None:
             """)
         sqlCursor.execute(sql_query, (user, account, username,))
         sqlConnection.commit()
-        logging(message = f"SUCCESS: Deleted password for {username}")
+        logging(message=f"SUCCESS: Deleted password for {username}")
+    except sqlite3.IntegrityError as integrity_error:
+        logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
+    except sqlite3.OperationalError as op_error:
+        logging(message=f"ERROR: SQLite3 operational failure - {str(op_error)}")
     except sqlite3.Error as sql_error:
-        logging(message = f"ERROR: Failed to delete password for {username} - {str(sql_error)}")
-    except Exception as e:
-        logging(message = f"ERROR: deleteData - {str(e)}")
+        logging(message=f"ERROR: SQLite3 failed to delete password for {username} - {str(sql_error)}")
+    except Exception:
+        logging()
+
+
+# Export Database
+def exportDatabase(export_path):
+    try:
+        # Create a new connection for the export file
+        with sqlite3.connect(export_path) as target_conn:
+            # Use the backup method to copy data from the active connection
+            sqlConnection.backup(target_conn)
+
+        logging(message=f"Database successfully exported as {export_path}")
+    except sqlite3.IntegrityError as integrity_error:
+        logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
+    except sqlite3.OperationalError as op_error:
+        logging(message=f"ERROR: SQLite3 operational failure - {str(op_error)}")
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to export database - {str(sql_error)}")
+    except Exception:
+        logging()
+
+
+# Import Database
+def importDatabase():
+    logging(message="importDatabase was called")
