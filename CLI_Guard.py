@@ -315,7 +315,7 @@ def login():
             while True:
                 # Append "Create New Master User" option to the table to 
                 # allow user to create a new Master User directly from login screen
-                extended_list = master_users_list + [("Create New Master User", "", ""), ("Quit", "", "")]
+                extended_list = master_users_list + [("Create New Master User", "", newMaster), ("Quit", "", exit)]
 
                 # Display the table with navigation
                 displayTable(extended_list, selected_index, table="users")
@@ -328,10 +328,11 @@ def login():
                 elif key == readchar.key.DOWN:
                     selected_index = (selected_index + 1) % len(extended_list)
                 elif key == readchar.key.ENTER:
-                    if selected_index == (len(extended_list)-2):
-                        newMaster()
-                    elif selected_index == (len(extended_list)-1):
-                        exit()
+                    # newMaster and Quit do not require any arguments to be passed so are called separately
+                    # Check if selected index is within the last 2 items of
+                    # extended_list then execute last item in the selected tuple
+                    if selected_index >= len(extended_list) - 2:
+                        extended_list[selected_index][-1]()
                     else:
                         # Check if selected account is locked before attempting to login
                         if accountLocked(master_users_list, selected_index) is True:
@@ -386,14 +387,14 @@ def start(user) -> None:
     try:
         # Define function index, human-readable text, function name
         functions = [
-            ("Create new password", "Add"),
+            ("Create new password", addPassword),
             ("Edit a password", "Edit"),
             ("Delete a password", "Delete"),
             ("Display a password", "Decrypt"),
-            ("User Management", "Users"),
-            ("Migrate Database", "Migrate"),
-            ("Sign Out", "Sign Out"),
-            ("Quit", "Quit")
+            ("User Management", userManagement),
+            ("Migrate Database", migrateDatabase),
+            ("Sign Out", login),
+            ("Quit", exit)
         ]
 
         selected_index = 0
@@ -420,12 +421,25 @@ def start(user) -> None:
             elif key == readchar.key.DOWN:
                 selected_index = (selected_index + 1) % len(functions)
             elif key == readchar.key.ENTER:
+                # Add Password is treated separately since it requires the mode variable to be passed
+                # but does not get passed to performAction() because it does not need
+                # the password_list to be displayed
+                # The mode variable needs to be explicitly defined here since later functions expect "Add"
+                if functions[selected_index][0].split(' ', 1)[0] == "Create":
+                    functions[selected_index][-1](user, mode="Add")
+                # User Management and Migrate Database are also not passed to performAction() since
+                # they do not require the passwords to be listed like Edit, Delete or Decrypt Password
+                # .split(' ', 1)[0] extracts the first word of functions[selected_index][0] to compare against
+                # These functions also do not need the mode variable to be passed
+                elif functions[selected_index][0].split(' ', 1)[0] in ["User", "Migrate"]:
+                    functions[selected_index][-1](user)
                 # Sign Out and Quit do not require any arguments to be passed so are called separately
-                if selected_index == (len(functions) -2):
-                    login()
-                elif selected_index == (len(functions) -1):
-                    exit()
+                # Check if selected index is within the last 2 items of
+                # extended_list then execute last item in the selected tuple
+                elif selected_index >= len(functions) - 2:
+                    functions[selected_index][-1]()
                 else:
+                    # These items pass the mode argument to performAction() to display the password_list
                     performAction(user, mode=functions[selected_index][-1])
     except Exception:
         logging()
@@ -443,61 +457,52 @@ def performAction(user, mode, feature_variable=None, feature=None) -> None:
             (displayPassword, "Decrypt")
         ]
 
-        # Add Password, User Management and Migrate Database are treated separately since they do not require
-        # the passwords to be listed like Edit, Delete or Decrypt Password but they still require an argument to be passed
-        # so they are not called from Start screen
-        if mode == "Add":
-            addPassword(user, mode)
-        elif mode == "Users":
-            userManagement(user)
-        elif mode == "Migrate":
-            migrateDatabase(user)
-        else:
-            for func in functions:
-                if func[-1] != mode:
-                    continue
-                # Execute chosen function
+        for func in functions:
+            # Skip logic where func[-1] does not equal the current mode
+            if func[-1] != mode:
+                continue
+            # Execute chosen function
+            else:
+                # Clear Terminal and print Logo
+                printLogo()
+
+                if feature == None:
+                    # Query the passwords table and insert all into passwords_list ordered by account name
+                    passwords_list = sqlite.queryData(user, table="passwords")
+                elif feature == "Search":
+                    passwords_list = sqlite.queryData(user, table="passwords", category=feature_variable[0], text=feature_variable[1], sort_by=None)
+                elif feature == "Sort":
+                    passwords_list = sqlite.queryData(user, table="passwords", category=feature_variable[0], text=None, sort_by=feature_variable[1])
+
+                # Check if passwords_list is empty
+                if listNotEmpty(passwords_list):
+
+                    selected_index = 0
+
+                    while True:
+                        # Display the table with navigation
+                        displayTable(passwords_list, selected_index, table="passwords")
+
+                        # User input via keyboard
+                        key = readchar.readkey()
+
+                        if key == readchar.key.UP:
+                            selected_index = (selected_index - 1) % len(passwords_list)
+                        elif key == readchar.key.DOWN:
+                            selected_index = (selected_index + 1) % len(passwords_list)
+                        elif key == readchar.key.CTRL_F:
+                            searchPassword(user, mode)
+                        elif key == readchar.key.CTRL_S:
+                            sortPassword(user, mode)
+                        elif key == readchar.key.ENTER:
+                            # Execute func (func == i[0]) with required args
+                            func[0](passwords_list[selected_index][0], passwords_list, selected_index, mode)
+                            break
+                        elif key == readchar.key.ESC:
+                            start(user)
+                            break
                 else:
-                    # Clear Terminal and print Logo
-                    printLogo()
-
-                    if feature == None:
-                        # Query the passwords table and insert all into passwords_list ordered by account name
-                        passwords_list = sqlite.queryData(user, table="passwords")
-                    elif feature == "Search":
-                        passwords_list = sqlite.queryData(user, table="passwords", category=feature_variable[0], text=feature_variable[1], sort_by=None)
-                    elif feature == "Sort":
-                        passwords_list = sqlite.queryData(user, table="passwords", category=feature_variable[0], text=None, sort_by=feature_variable[1])
-
-                    # Check if passwords_list is empty
-                    if listNotEmpty(passwords_list):
-
-                        selected_index = 0
-
-                        while True:
-                            # Display the table with navigation
-                            displayTable(passwords_list, selected_index, table="passwords")
-
-                            # User input via keyboard
-                            key = readchar.readkey()
-
-                            if key == readchar.key.UP:
-                                selected_index = (selected_index - 1) % len(passwords_list)
-                            elif key == readchar.key.DOWN:
-                                selected_index = (selected_index + 1) % len(passwords_list)
-                            elif key == readchar.key.CTRL_F:
-                                searchPassword(user, mode)
-                            elif key == readchar.key.CTRL_S:
-                                sortPassword(user, mode)
-                            elif key == readchar.key.ENTER:
-                                # Execute func (func == i[0]) with required args
-                                func[0](passwords_list[selected_index][0], passwords_list, selected_index, mode)
-                                break
-                            elif key == readchar.key.ESC:
-                                start(user)
-                                break
-                    else:
-                        empty(user, mode)
+                    empty(user, mode)
     except Exception:
         logging()
 
@@ -527,7 +532,7 @@ def userManagement(user) -> None:
             elif key == readchar.key.DOWN:
                 selected_index = (selected_index + 1) % len(options)
             elif key == readchar.key.ENTER:
-                # Exit does not take any arguments and cannot be passed the user variable
+                # Quit does not take any arguments and cannot be passed the user variable
                 # so needs to be called directly
                 if selected_index == (len(functions)-1):
                     functions[selected_index][1]()
@@ -665,7 +670,7 @@ def addPassword(user, mode) -> None:
 def updatePassword(user, passwords_list, index, mode) -> None:
     try:
         # Before updating the password we need to save the returned account and username for the update statement
-        # Ran into errors when using passwords_list[index][1 or 0] directly in the SQLite update statement
+        # Ran into errors when passing str(passwords_list[index][number]) directly in the SQLite update statement
         account = str(passwords_list[index][2])
         username = str(passwords_list[index][3])
         old_password = str(passwords_list[index][-3])
@@ -724,7 +729,7 @@ def displayPassword(user, passwords_list, index, mode) -> None:
 def displayTable(list_table, selected_index, table):
     try:
         if table == "passwords":
-            # Clear Terminal and print Logo with navigation_text and features
+            # Clear Terminal and print Logo with navigation_text and Search/Sort features
             printLogo(logo_statement=(navigation_text + features))
         elif table == "users":
             # Clear Terminal and print Logo with navigation_text
@@ -878,7 +883,6 @@ def sortPassword(user, mode):
 
 
 # User chooses to perform the function again or return to Start
-# Ran into issues using the choice function because this calls the extra argument of func
 def tryAgain(user, mode, account, fixed_done, password=None) -> None:
     try:
         if mode == "Decrypt":
@@ -938,7 +942,7 @@ def choice(statement, user, mode=None, password=None, confirm_delete=None, type=
                 logging()
 
         # Define actions as (label, function)
-        if confirm_delete:
+        if confirm_delete is True:
             actions = [
                 (f"{mode} {type}", confirm),
                 ("Choose Again", chooseAgain),
@@ -1006,7 +1010,7 @@ def migrateDatabase(user) -> None:
             elif key == readchar.key.DOWN:
                 selected_index = (selected_index + 1) % len(options)
             elif key == readchar.key.ENTER:
-                # Returning to Start screen required user argument and needs to be called separately
+                # Returning to Start screen requires user argument and needs to be called separately
                 if selected_index == (len(functions)-2):
                     functions[selected_index][1](user)
                 else:
