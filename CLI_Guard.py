@@ -114,8 +114,6 @@ logo = f"""
 # Not all message-pieces should be kept in a list
 # Overuse of lists for message-pieces makes creating messages confusing
 done = ["ed password for ", "...\n"]
-empty_list = ["There are no passwords to ", "...\n"]
-go_home = "Return to Start Menu?\n"
 navigation_text = f"{Fore.CYAN}\nUse ↑ and ↓ to navigate\nPress Enter to select\n{Style.RESET_ALL}"
 features = f"{Fore.CYAN}Return to Main Menu using ESC\nSearch using CTRL + F\nSort using CTRL + S\n{Style.RESET_ALL}"
 splash_continue = f"Press Enter to continue..."
@@ -133,12 +131,12 @@ mode = ""
 
 # Write to Log file
 def logging(message=None):
-    with open(".\\Logs.txt", "a") as file:
+    with open(os.path.join(".", "Logs.txt"), "a") as file:
         #  Handles Traceback since no message argument is passed
         if message is None:
             # traceback.format_exc() function works without explicitly passing an error
             # because it captures the most recent exception from the current context
-            file.write(f"[{todays_time}] Traceback: {traceback.format_exc()}\n")
+            file.write(f"[{todays_time}] {traceback.format_exc()}\n")
         else:
             # Handles Logging when a message argument is passed
             file.write(f"[{todays_time}] {message}\n")
@@ -159,20 +157,11 @@ def listNotEmpty(list) -> bool:
         logging()
 
 
-# The passwords_list is empty - user chooses to return to Start or Exit
-def empty(user, mode) -> None:
-    try:
-        statement = (empty_list[0] + mode.lower() + empty_list[1] + go_home)
-        choice(statement, user, mode=0)
-    except Exception:
-        logging()
-
-
 # Clear Terminal and print Logo
 # Avoids multiple lines of code each time a screen clear and logo print are required
-# Not all calls to printLogo require a statement
+# Not all calls to logoScreen require a statement
 # and when a statement is not provided "None" is printed to screen
-def printLogo(logo_statement=None):
+def logoScreen(logo_statement=None):
     try:
         os.system("cls")
         if logo_statement is None:
@@ -185,23 +174,21 @@ def printLogo(logo_statement=None):
 
 # User input via keyboard to continue
 # this avoids the print statement clearing before user reads it
+# enterContinue() needs to be called as an if statement since pressing Enter returns True
 def enterContinue(enter_continue_statement):
     try:
-        # Don't print Try Again message if creating Master User for first time
-        # Match enter_continue_statement on second word instead of full text
-        if enter_continue_statement.split(' ', 2)[1] == "Master":
+        # split(' ', 2)[1] matches enter_continue_statement on second word instead of full text
+        # to capture password_list is empty as well as Database Migration functions
+        if enter_continue_statement.split(' ', 2)[1] in ["are", "exported"]:
+            continue_action = "return to Start Menu"
+        # Don't print return to Start Menu or Try Again message if creating Master User for first time
+        # split(' ', 2)[1] matches enter_continue_statement on second word instead of full text
+        elif enter_continue_statement.split(' ', 2)[1] == "Master":
             continue_action = "create new Mater User"
-        # Don't print Try Again or Create New Mater
-        # if calling enterContinue() from a Database Migration function
-        # Match enter_continue_statement on second word instead of full text
-        elif enter_continue_statement.split(' ', 2)[1] == "exported":
-            # String "Return to Start Menu?" is predefined
-            # but needs first character lowercase and last character removed
-            continue_action = (go_home[0].lower() + go_home[1:])[:-2]
         else:
             continue_action = "try again"
 
-        printLogo(logo_statement=f"\n{enter_continue_statement}\n\nPress Enter to {continue_action}")
+        logoScreen(logo_statement=f"\n{enter_continue_statement}\n\nPress Enter to {continue_action}")
         key = readchar.readkey()
         if key == readchar.key.ENTER:
             return True
@@ -241,13 +228,22 @@ def decryptPassword(encryption_key, password) -> str:
 # Maximize the terminal using pygetwindow
 def maximizeTerminal():
     try:
+        # Rename title for Windows
+        if os.name == 'nt':
+            os.system(f"title CLI Guard")
+        # Rename title for macOS/Linux
+        else:
+            sys.stdout.write(f"\033]0;CLI Guard\007")
+            sys.stdout.flush()
+        
         # Get all windows and filter by titles that match the criteria
         windows = gw.getAllWindows()
         
         for window in windows:
             # Check if the title is either "Command Prompt" or contains "\cmd"
-            if "Command Prompt" in window.title or "\\cmd" in window.title:
+            if "CLI Guard" in window.title:
                 window.maximize()
+                break
     except Exception:
         logging()
 
@@ -305,7 +301,7 @@ def splashScreen() -> None:
 def login():
     try:
         # Clear Terminal and print Logo
-        printLogo()
+        logoScreen()
         # Query the users table and insert all into master_users_list
         master_users_list = sqlite.queryData(user=None, table="users")
         # Check if master_users_list is empty
@@ -313,8 +309,7 @@ def login():
             selected_index = 0
 
             while True:
-                # Append "Create New Master User" option to the table to 
-                # allow user to create a new Master User directly from login screen
+                # Append more options to the table to allow user to create a new Master User directly from login screen
                 extended_list = master_users_list + [("Create New Master User", "", newMaster), ("Quit", "", exit)]
 
                 # Display the table with navigation
@@ -362,7 +357,7 @@ def attemptLogin(user, attempt, master_key, master_password) -> None:
                     start(user)
                 else:
                     # Clear Terminal and print Logo
-                    printLogo()
+                    logoScreen()
                     # Add attempt to attempts before returning to Log In screen
                     attempt += 1
                     print(f"{Fore.RED}Incorrect password attempted{Style.RESET_ALL}")
@@ -402,7 +397,7 @@ def start(user) -> None:
         def startMenu():
             try:
                 # Clear Terminal and print Logo and navigation_text
-                printLogo(logo_statement=navigation_text)
+                logoScreen(logo_statement=navigation_text)
                 for i, func in enumerate(functions):
                     if i == selected_index:
                         # Highlight current option
@@ -422,11 +417,10 @@ def start(user) -> None:
                 selected_index = (selected_index + 1) % len(functions)
             elif key == readchar.key.ENTER:
                 # Add Password is treated separately since it requires the mode variable to be passed
-                # but does not get passed to performAction() because it does not need
-                # the password_list to be displayed
-                # The mode variable needs to be explicitly defined here since later functions expect "Add"
+                # but does not get passed to performAction() because it does not need the password_list to be displayed
+                # The mode variable needs to be explicitly defined here since later functions expect "Create"
                 if functions[selected_index][0].split(' ', 1)[0] == "Create":
-                    functions[selected_index][-1](user, mode="Add")
+                    functions[selected_index][-1](user, mode="Create")
                 # User Management and Migrate Database are also not passed to performAction() since
                 # they do not require the passwords to be listed like Edit, Delete or Decrypt Password
                 # .split(' ', 1)[0] extracts the first word of functions[selected_index][0] to compare against
@@ -435,7 +429,7 @@ def start(user) -> None:
                     functions[selected_index][-1](user)
                 # Sign Out and Quit do not require any arguments to be passed so are called separately
                 # Check if selected index is within the last 2 items of
-                # extended_list then execute last item in the selected tuple
+                # functions then execute last item in the selected tuple
                 elif selected_index >= len(functions) - 2:
                     functions[selected_index][-1]()
                 else:
@@ -464,7 +458,7 @@ def performAction(user, mode, feature_variable=None, feature=None) -> None:
             # Execute chosen function
             else:
                 # Clear Terminal and print Logo
-                printLogo()
+                logoScreen()
 
                 if feature == None:
                     # Query the passwords table and insert all into passwords_list ordered by account name
@@ -502,141 +496,8 @@ def performAction(user, mode, feature_variable=None, feature=None) -> None:
                             start(user)
                             break
                 else:
-                    empty(user, mode)
-    except Exception:
-        logging()
-
-
-def userManagement(user) -> None:
-    try:
-        # Define actions as (label, function)
-        functions = [
-        ("Edit Master Password", updateMaster),
-        ("Create New Master User", newMaster),
-        ("Delete Master User", removeMaster),
-        ("Main Menu", start),
-        ("Quit", exit)
-        ]
-
-        # Extract the option labels for display
-        options = [item[0] for item in functions]
-
-        selected_index = 0
-
-        while True:
-            displayOptions(options, selected_index, display_statement=navigation_text)
-            key = readchar.readkey()
-
-            if key == readchar.key.UP:
-                selected_index = (selected_index - 1) % len(options)
-            elif key == readchar.key.DOWN:
-                selected_index = (selected_index + 1) % len(options)
-            elif key == readchar.key.ENTER:
-                # Quit does not take any arguments and cannot be passed the user variable
-                # so needs to be called directly
-                if selected_index == (len(functions)-1):
-                    functions[selected_index][1]()
-                else:
-                    functions[selected_index][1](user)
-    except Exception:
-        logging()
-
-
-# Create new master password
-def newMaster(user=None) -> None:
-    try:
-        # First query the Users table to ensure the inputted user does not already exist
-        master_users_list = sqlite.queryData(user=None, table="users")
-        # Loop through SQL query and insert first field into intemediary list
-        # to compare against provided new_master_user
-        # SQLite3 Database has UNIQUE constraint on this feild but error will not be
-        # obvious to the user until Logs are reviewed
-        list_masters = [user[0] for user in master_users_list]
-
-        # Clear Terminal and print Logo
-        printLogo()
-
-        new_master_user = str(input("\nCreate new master user: "))
-        # Returns True if new_master_user was entered
-        if new_master_user:
-            # Checks if new_master_user entered is not unique
-            if new_master_user in list_masters:
-                if enterContinue(enter_continue_statement="A Master User already exists with this name") is True:
-                    newMaster()
-        else:
-            if enterContinue(enter_continue_statement="Master User cannot be empty.") is True:
-                newMaster()
-
-        new_master_password = str(input("Create new master password: "))
-        # Check if the password is provided
-        if new_master_password:
-            save_password = encryptPassword(new_master_password)
-            sqlite.insertMaster(new_master_user, save_password, session_password_key.decode())
-            # Go to Start screen after creating new Master User
-            # Handles issue where user variable is not passed to later functions
-            if user is None:
-                start(user=new_master_password)
-            else:
-                start(user)
-        else:
-            if enterContinue(enter_continue_statement="Password cannot be empty.") is True:
-                newMaster(user) 
-    except Exception:
-        logging()
-
-
-# Create new master password
-def updateMaster(user) -> None:
-    try:
-        printLogo()
-        new_master_password = str(input(f"\nEnter new master password for {user}: "))
-
-        # Check if new_master_password was provided before proceeding
-        # Returns True if new_master_password was entered
-        if new_master_password:
-            save_password = encryptPassword(new_master_password)
-            sqlite.updateMasterPassword(user, save_password, session_password_key.decode())
-            # Return to Log In screen
-            splashScreen()
-        else:
-            if enterContinue(enter_continue_statement="No password was entered!") is True:
-                updateMaster(user)
-    except Exception:
-        logging()
-
-
-def removeMaster(user) -> None:
-    try:
-        # Clear Terminal and print Logo
-        printLogo()
-
-        # Query the users table and insert all into master_users_list
-        master_users_list = sqlite.queryData(user=None, table="users")
-
-        selected_index = 0
-
-        while True:
-            # Display the table with navigation
-            displayTable(master_users_list, selected_index, table="users")
-
-            # User input via keyboard
-            key = readchar.readkey()
-
-            if key == readchar.key.UP:
-                selected_index = (selected_index - 1) % len(master_users_list)
-            elif key == readchar.key.DOWN:
-                selected_index = (selected_index + 1) % len(master_users_list)
-            elif key == readchar.key.ENTER:
-                # Check if the user wants to delete the chosen Master User
-                statement = (f"Are you sure you want to delete the Master User {Fore.YELLOW}{master_users_list[selected_index][0]}{Style.RESET_ALL} ?\n")
-                if choice(statement, user, mode="Delete", password=None, confirm_delete=True, type="Master User") == True:
-                    sqlite.deleteMaster(user=master_users_list[selected_index][0])
-                    if user == master_users_list[selected_index][0]:
-                        splashScreen()
-                    else:
+                    if enterContinue(enter_continue_statement=f"There are no passwords to {mode.lower()}") is True:
                         start(user)
-            elif key == readchar.key.ESC:
-                userManagement(user)
     except Exception:
         logging()
 
@@ -645,7 +506,7 @@ def removeMaster(user) -> None:
 def addPassword(user, mode) -> None:
     try:
         # Clear Terminal and print Logo
-        printLogo()
+        logoScreen()
         new_category = str(input("Category: "))
         new_account = str(input("Account: "))
         new_username = str(input("Username: "))
@@ -658,7 +519,9 @@ def addPassword(user, mode) -> None:
             sqlite.insertData(user, new_category, new_account, new_username, save_password, session_password_key.decode())
 
             # Return to Start Menu or repeat
-            tryAgain(user, mode, new_account, (done[0]))
+            # Success statement needs to slice first letter off done statement
+            # Other functions incl edit and drecypt so deleteed is wrong
+            tryAgain(user, mode, new_account, (done[0][1:]))
         else:
             if enterContinue(enter_continue_statement="Username and Password fields are required") is True:
                 addPassword(user, mode)
@@ -704,8 +567,8 @@ def deletePassword(user, passwords_list, index, mode) -> None:
             # Delete data from SQLite table
             sqlite.deleteData(user, account, username, old_password)
             # Return to Start Menu or repeat
-            # Success statement needs to slice first letter off mode
-            # Other functions incl edit, add, drecypted so deleteed is wrong
+            # Success statement needs to slice first letter off done statement
+            # Other functions incl edit and drecypt so deleteed is wrong
             tryAgain(user, mode, (passwords_list[index][2]), (done[0][1:]))
         else:
             performAction(user, mode)
@@ -722,63 +585,6 @@ def displayPassword(user, passwords_list, index, mode) -> None:
         decrypted_password = decryptPassword(password_key, password)
         # Decrypt then return to Start Menu or repeat
         tryAgain((passwords_list[index][0]), mode, (passwords_list[index][2]), (done[0]), decrypted_password)
-    except Exception:
-        logging()
-
-
-def displayTable(list_table, selected_index, table):
-    try:
-        if table == "passwords":
-            # Clear Terminal and print Logo with navigation_text and Search/Sort features
-            printLogo(logo_statement=(navigation_text + features))
-        elif table == "users":
-            # Clear Terminal and print Logo with navigation_text
-            printLogo(logo_statement=navigation_text)
-
-        # Create intermediary list to display data to Terminal with Tabulate
-        tabulate_table = []
-        place = 1
-        
-        if table == "passwords":
-            for i in list_table:
-                tabulate_table.append([place, i[1], i[2], i[3], i[-3], i[-1]])
-                place += 1
-            # Print the headers
-            print(tabulate([], headers=["Index", "Category", "Account", "Username", "Password", "Last Modified"], tablefmt="plain"))
-        elif table == "users":
-            for i in list_table:
-                tabulate_table.append([i[0]])
-                place += 1
-            # Print the headers
-            print(tabulate([], headers=["Select User"], tablefmt="plain")) 
-        
-        # Display the table rows starting from the first row
-        for i, row in enumerate(tabulate_table):
-            if i == selected_index:
-                # Highlight the current row
-                print(Back.WHITE + Fore.BLACK + tabulate([row], headers=[], tablefmt="plain") + Style.RESET_ALL)
-            else:
-                print(tabulate([row], headers=[], tablefmt="plain"))
-
-        # Dump intermediary list after use
-        tabulate_table = []
-    except Exception:
-        logging()
-
-
-def displayOptions(options, selected_index, display_statement):
-    try:
-        # Clear Terminal and print Logo with display_statement
-        printLogo(logo_statement=display_statement)
-
-        # Display the options with highlighted row
-        for i, row in enumerate(options):
-            if i == selected_index:
-                # Highlight the current row
-                print(Back.WHITE + Fore.BLACK + row + Style.RESET_ALL)
-            else:
-                print(row)
-        return selected_index
     except Exception:
         logging()
 
@@ -882,6 +688,322 @@ def sortPassword(user, mode):
         logging()
 
 
+def userManagement(user) -> None:
+    try:
+        # Define actions as (label, function)
+        functions = [
+        ("Edit Master Password", updateMaster),
+        ("Create New Master User", newMaster),
+        ("Delete Master User", removeMaster),
+        ("Main Menu", start),
+        ("Quit", exit)
+        ]
+
+        # Extract the option labels for display
+        options = [item[0] for item in functions]
+
+        selected_index = 0
+
+        while True:
+            displayOptions(options, selected_index, display_statement=navigation_text)
+            key = readchar.readkey()
+
+            if key == readchar.key.UP:
+                selected_index = (selected_index - 1) % len(options)
+            elif key == readchar.key.DOWN:
+                selected_index = (selected_index + 1) % len(options)
+            elif key == readchar.key.ENTER:
+                # Quit does not take any arguments and cannot be passed the user variable
+                # so needs to be called directly
+                if selected_index == (len(functions)-1):
+                    functions[selected_index][1]()
+                else:
+                    functions[selected_index][1](user)
+    except Exception:
+        logging()
+
+
+# Create new master password
+def newMaster(user=None) -> None:
+    try:
+        # First query the Users table to ensure the inputted user does not already exist
+        master_users_list = sqlite.queryData(user=None, table="users")
+        # Loop through SQL query and insert first field into intemediary list
+        # to compare against provided new_master_user
+        # SQLite3 Database has UNIQUE constraint on this feild but error will not be
+        # obvious to the user until Logs are reviewed
+        list_masters = [user[0] for user in master_users_list]
+
+        # Clear Terminal and print Logo
+        logoScreen()
+
+        new_master_user = str(input("\nCreate new master user: "))
+        # Returns True if new_master_user was entered
+        if new_master_user:
+            # Checks if new_master_user entered is not unique
+            if new_master_user in list_masters:
+                if enterContinue(enter_continue_statement="A Master User already exists with this name") is True:
+                    newMaster()
+        else:
+            if enterContinue(enter_continue_statement="Master User cannot be empty.") is True:
+                newMaster()
+
+        new_master_password = str(input("Create new master password: "))
+        # Check if the password is provided
+        if new_master_password:
+            save_password = encryptPassword(new_master_password)
+            sqlite.insertMaster(new_master_user, save_password, session_password_key.decode())
+            # Go to Start screen after creating new Master User
+            # Handles issue where user variable is not passed to later functions
+            if user is None:
+                start(user=new_master_password)
+            else:
+                start(user)
+        else:
+            if enterContinue(enter_continue_statement="Password cannot be empty.") is True:
+                newMaster(user) 
+    except Exception:
+        logging()
+
+
+# Create new master password
+def updateMaster(user) -> None:
+    try:
+        logoScreen()
+        new_master_password = str(input(f"\nEnter new master password for {user}: "))
+
+        # Check if new_master_password was provided before proceeding
+        # Returns True if new_master_password was entered
+        if new_master_password:
+            save_password = encryptPassword(new_master_password)
+            sqlite.updateMasterPassword(user, save_password, session_password_key.decode())
+            # Return to Log In screen
+            splashScreen()
+        else:
+            if enterContinue(enter_continue_statement="No password was entered!") is True:
+                updateMaster(user)
+    except Exception:
+        logging()
+
+
+def removeMaster(user) -> None:
+    try:
+        # Clear Terminal and print Logo
+        logoScreen()
+
+        # Query the users table and insert all into master_users_list
+        master_users_list = sqlite.queryData(user=None, table="users")
+
+        selected_index = 0
+
+        while True:
+            # Display the table with navigation
+            displayTable(master_users_list, selected_index, table="users")
+
+            # User input via keyboard
+            key = readchar.readkey()
+
+            if key == readchar.key.UP:
+                selected_index = (selected_index - 1) % len(master_users_list)
+            elif key == readchar.key.DOWN:
+                selected_index = (selected_index + 1) % len(master_users_list)
+            elif key == readchar.key.ENTER:
+                # Check if the user wants to delete the chosen Master User
+                statement = (f"Are you sure you want to delete the Master User {Fore.YELLOW}{master_users_list[selected_index][0]}{Style.RESET_ALL} ?\n")
+                if choice(statement, user, mode="Delete", password=None, confirm_delete=True, type="Master User") == True:
+                    sqlite.deleteMaster(user=master_users_list[selected_index][0])
+                    if user == master_users_list[selected_index][0]:
+                        splashScreen()
+                    else:
+                        start(user)
+            elif key == readchar.key.ESC:
+                userManagement(user)
+    except Exception:
+        logging()
+
+
+def migrateDatabase(user) -> None:
+    try:
+        # Define actions as (label, function)
+        functions = [
+        ("Export Database", exportDB),
+        ("Import Database", importDB),
+        ("Main Menu", start),
+        ("Quit", exit)
+        ]
+
+        # Extract the option labels for display
+        options = [item[0] for item in functions]
+
+        selected_index = 0
+
+        while True:
+            displayOptions(options, selected_index, display_statement=navigation_text)
+            key = readchar.readkey()
+
+            if key == readchar.key.UP:
+                selected_index = (selected_index - 1) % len(options)
+            elif key == readchar.key.DOWN:
+                selected_index = (selected_index + 1) % len(options)
+            elif key == readchar.key.ENTER:
+                # Quit does not require user argument to be passed and needs to be called separately
+                if selected_index == (len(functions)-1):
+                    functions[selected_index][1]()
+                else:
+                    functions[selected_index][1](user)
+    except Exception:
+        logging()
+
+
+# Exporting Database mostly uses CLI_Guard_SQL but requires text provided to the user
+def exportDB(user):
+    try:
+        export_path = os.path.join(os.getcwd(), f"CLI_Guard_DB_Export_{today}.db")
+        # Call SQLite3 function to export the database as {os.getcwd()}\CLI_Guard_DB_Export_{today}.db
+        # Check if operation succeeded
+        if sqlite.exportDatabase(export_path) is True:
+            # Display File Path to Exported Database and allow user to return to Start Menu
+            if enterContinue(enter_continue_statement=f"Database exported as {export_path}") is True:
+                start(user)
+        else:
+            if enterContinue(enter_continue_statement="Database export failed") is True:
+                migrateDatabase(user)
+    except Exception:
+        logging()
+
+def importDB(user):
+    try:
+        # Initialise empty list of available_databases
+        available_databases  = []
+
+        # Loop through the files in the current directory
+        for file in os.listdir(os.getcwd()):
+            # If the file type is .db, append it to the available_databases list
+            if file.endswith(".db"):
+                # Remove file type and append as tuple to account for extended_list
+                available_databases.append((file[:-3], ""))
+        
+        if listNotEmpty(available_databases):
+            selected_index = 0
+
+            while True:
+                # Append more options to the table to allow user to enter file path manually
+                extended_list = available_databases + [("Enter File Path Manually", importManually), ("Main Menu", start), ("Quit", exit)]
+
+                # Display the table with navigation
+                displayTable(extended_list, selected_index, table="databases")
+
+                # User input via keyboard
+                key = readchar.readkey()
+
+                if key == readchar.key.UP:
+                    selected_index = (selected_index - 1) % len(extended_list)
+                elif key == readchar.key.DOWN:
+                    selected_index = (selected_index + 1) % len(extended_list)
+                elif key == readchar.key.ENTER:
+                    # First check if selected_index is the last item in extended_list
+                    # since Quit does not require any arguments to be passed and needs to be called separately
+                    # This will be evaluated first before the next check of last 3 items
+                    if selected_index >= len(extended_list) - 1:
+                        extended_list[selected_index][-1]()
+                    # Check if selected index is within the last 3 items of
+                    # extended_list then execute last item in the selected tuple and pass user argument
+                    elif selected_index >= len(extended_list) - 3:
+                        extended_list[selected_index][-1](user)
+                    else:
+                        # Pass selected database and current directory to SQLite importDatabase function
+                        import_path = os.path.join(os.getcwd(), f"{available_databases[selected_index][0]}.db")
+                        sqlite.importDatabase(import_path)
+        else:
+            # Change this to allow user to enter file path manually
+            statement = f"There are no databases in the current directory to import\n\nMove a database file to {os.getcwd()} and try again or enter the File Path manually\n"
+            choice(statement, user, mode="Import")
+    except Exception:
+        logging()
+
+# Import a database manually
+def importManually(user):
+    try:
+        # Clear Terminal and print Logo
+        logoScreen()
+        import_path = str(input("\nEnter the full File Path including File Name of the database to be imported\n\nFile Path: "))
+
+        if os.path.exists(import_path):
+            if import_path.endswith(".db"):
+                sqlite.importDatabase(import_path)
+            else:
+                if enterContinue(enter_continue_statement="File Path entered is not a database file") is True:
+                    importDB(user)
+        else:
+            if enterContinue(enter_continue_statement=f"Could not find File Path entered\n{import_path} does not exist") is True:
+                importDB(user)
+    except Exception:
+        logging()
+
+
+def displayTable(list_table, selected_index, table):
+    try:
+        if table == "passwords":
+            # Clear Terminal and print Logo with navigation_text and Search/Sort features
+            logoScreen(logo_statement=(navigation_text + features))
+        else:
+            # Clear Terminal and print Logo with navigation_text
+            logoScreen(logo_statement=navigation_text)
+
+        # Create intermediary list to display data to Terminal with Tabulate
+        tabulate_table = []
+        place = 1
+        
+        if table == "passwords":
+            for i in list_table:
+                tabulate_table.append([place, i[1], i[2], i[3], i[-3], i[-1]])
+                place += 1
+            # Print the headers
+            print(tabulate([], headers=["Index", "Category", "Account", "Username", "Password", "Last Modified"], tablefmt="plain"))
+        elif table == "users":
+            for i in list_table:
+                tabulate_table.append([i[0]])
+                place += 1
+            # Print the headers
+            print(tabulate([], headers=["Select User"], tablefmt="plain")) 
+        elif table == "databases":
+            for i in list_table:
+                tabulate_table.append([i[0]])
+                place += 1
+            # Print the headers
+            print(tabulate([], headers=["Select Database to Import"], tablefmt="plain")) 
+        
+        # Display the table rows starting from the first row
+        for i, row in enumerate(tabulate_table):
+            if i == selected_index:
+                # Highlight the current row
+                print(Back.WHITE + Fore.BLACK + tabulate([row], headers=[], tablefmt="plain") + Style.RESET_ALL)
+            else:
+                print(tabulate([row], headers=[], tablefmt="plain"))
+
+        # Dump intermediary list after use
+        tabulate_table = []
+    except Exception:
+        logging()
+
+
+def displayOptions(options, selected_index, display_statement):
+    try:
+        # Clear Terminal and print Logo with display_statement
+        logoScreen(logo_statement=display_statement)
+
+        # Display the options with highlighted row
+        for i, row in enumerate(options):
+            if i == selected_index:
+                # Highlight the current row
+                print(Back.WHITE + Fore.BLACK + row + Style.RESET_ALL)
+            else:
+                print(row)
+        return selected_index
+    except Exception:
+        logging()
+
+
 # User chooses to perform the function again or return to Start
 def tryAgain(user, mode, account, fixed_done, password=None) -> None:
     try:
@@ -916,12 +1038,6 @@ def choice(statement, user, mode=None, password=None, confirm_delete=None, type=
             except Exception:
                 logging()
 
-        def mainMenu():
-            try:
-                start(user)
-            except Exception:
-                logging()
-
         def chooseAgain():
             try:
                 return False
@@ -934,39 +1050,24 @@ def choice(statement, user, mode=None, password=None, confirm_delete=None, type=
             except Exception:
                 logging()
 
-        def exitApp():
-            try:
-                print("Exiting...")
-                exit()
-            except Exception:
-                logging()
+        # Initialise list of available actions
+        actions = []
 
         # Define actions as (label, function)
+        # Extend the empty list of available actions with mode specific actions
+        # list.extend is used to avoid issues where list.append expects a single argument
+        # list.append would add the provided tuples as a single item
         if confirm_delete is True:
-            actions = [
-                (f"{mode} {type}", confirm),
-                ("Choose Again", chooseAgain),
-                ("Main Menu", mainMenu),
-                ("Quit", exitApp)
-            ]
-        elif mode == 0:
-            actions = [
-                ("Main Menu", mainMenu),
-                ("Quit", exitApp)
-            ]
+            actions.extend([(f"{mode} {type}", confirm), ("Choose Again", chooseAgain)])
         elif mode == "Decrypt":
-            actions = [
-                ("Copy to Clipboard", copy),
-                (f"{mode} Another Password", performAnother),
-                ("Main Menu", mainMenu),
-                ("Quit", exitApp)
-            ]
-        else:
-            actions = [
-                (f"{mode} Another Password", performAnother),
-                ("Main Menu", mainMenu),
-                ("Quit", exitApp)
-            ]
+            actions.extend([("Copy to Clipboard", copy), (f"{mode} Another Password", performAnother)])
+        elif mode in ["Create", "Edit", "Delete"]:
+            actions.extend([(f"{mode} Another Password", performAnother)])
+        elif mode == "Import":
+            actions.extend([("Enter File Path Manually", importManually)])
+        
+        # Main Menu and Quit are consistently the last 2 available actions for all cases
+        actions.extend([("Main Menu", start), ("Quit", exit)])
 
         # Extract option labels for display
         options = [item[0] for item in actions]
@@ -980,55 +1081,20 @@ def choice(statement, user, mode=None, password=None, confirm_delete=None, type=
             elif key == readchar.key.DOWN:
                 selected_index = (selected_index + 1) % len(options)
             elif key == readchar.key.ENTER:
-                # Call the corresponding function
-                return actions[selected_index][1]()
-    except Exception:
-        logging()
-
-
-def migrateDatabase(user) -> None:
-    try:
-        # Define actions as (label, function)
-        functions = [
-        ("Export Database", exportDB),
-        ("Import Database", sqlite.importDatabase),
-        ("Main Menu", start),
-        ("Quit", exit)
-        ]
-
-        # Extract the option labels for display
-        options = [item[0] for item in functions]
-
-        selected_index = 0
-
-        while True:
-            displayOptions(options, selected_index, display_statement=navigation_text)
-            key = readchar.readkey()
-
-            if key == readchar.key.UP:
-                selected_index = (selected_index - 1) % len(options)
-            elif key == readchar.key.DOWN:
-                selected_index = (selected_index + 1) % len(options)
-            elif key == readchar.key.ENTER:
-                # Returning to Start screen requires user argument and needs to be called separately
-                if selected_index == (len(functions)-2):
-                    functions[selected_index][1](user)
+                #  Start() and importManually() require the user argument to be passed
+                if actions[selected_index][-1] in [start, importManually]:
+                    actions[selected_index][-1](user)
+                # confirm() and chooseAgain() were not being called correctly
+                # and needed to be called separately to return the boolean
+                elif actions[selected_index][-1] in [confirm, chooseAgain]:
+                    returned_boolean = actions[selected_index][-1]()
+                    return returned_boolean
                 else:
-                    functions[selected_index][1]()
+                    # Call the corresponding function
+                    actions[selected_index][-1]()
     except Exception:
         logging()
 
-
-# Exporting Database mostly uses CLI_Guard_SQL but requires text provided to the user
-def exportDB():
-    try:
-        export_path = f"{os.getcwd()}\\CLI_Guard_DB_Export_{today}.db"
-        # Call SQLite3 function to export the database as {os.getcwd()}\CLI_Guard_DB_Export_{today}.db
-        sqlite.exportDatabase(export_path)
-        # Display File Path to Exported Database and allow user to return to Start Menu
-        enterContinue(enter_continue_statement=f"Database exported as {export_path}")
-    except Exception:
-        logging()
 
 
 # Start CLI Guard in Terminal

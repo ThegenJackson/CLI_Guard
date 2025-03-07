@@ -18,24 +18,21 @@ tomorrow = date.today() + timedelta(1)
 
 # Write to Debugging Log file
 def logging(message=None):
-    with open(".\\Logs.txt", "a") as file:
+    with open(os.path.join(".", "Logs.txt"), "a") as file:
         #  Handles Traceback since no message argument is passed
         if message is None:
             # traceback.format_exc() function works without explicitly passing an error
             # because it captures the most recent exception from the current context
-            file.write(f"[{todays_time}] Traceback: {traceback.format_exc()}\n")
+            file.write(f"[{todays_time}] {traceback.format_exc()}\n")
         else:
             # Handles Logging when a message argument is passed
             file.write(f"[{todays_time}] DATABASE {message}\n")
 
 
-# Define default database path
-database_path = '.\\CLI_SQL'
-database_name = 'CLI_Guard_DB.db'
 # Check if database exists
-if os.path.exists(f"{database_path}\\{database_name}"):
+if os.path.exists(os.path.join(os.getcwd(), "CLI_SQL", "CLI_Guard_DB.db")):
     # Connect to the CLI Guard Database
-    sqlConnection = sqlite3.connect(f"{database_path}\\{database_name}")
+    sqlConnection = sqlite3.connect(os.path.join(os.getcwd(), "CLI_SQL", "CLI_Guard_DB.db"))
     # Create a cursor - read more docs on this
     sqlCursor = sqlConnection.cursor()
 else:
@@ -275,6 +272,8 @@ def exportDatabase(export_path):
             sqlConnection.backup(target_conn)
 
         logging(message=f"Database successfully exported as {export_path}")
+        # Return True to signify operation was successfuls
+        return True
     except sqlite3.IntegrityError as integrity_error:
         logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
     except sqlite3.OperationalError as op_error:
@@ -286,5 +285,5 @@ def exportDatabase(export_path):
 
 
 # Import Database
-def importDatabase():
-    logging(message="importDatabase was called")
+def importDatabase(import_path):
+    logging(message=f"importDatabase was called, provided file path is {import_path}")
