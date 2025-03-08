@@ -181,10 +181,18 @@ def enterContinue(enter_continue_statement) -> bool:
         # to capture password_list is empty as well as Database Migration functions
         if enter_continue_statement.split(' ', 2)[1] in [ "are", "exported", "imported"]:
             continue_action = "return to Start Menu"
-        # Don't print return to Start Menu or Try Again message if creating Master User for first time
-        # split(' ', 2)[1] matches enter_continue_statement on second word instead of full text
-        elif enter_continue_statement.split(' ', 2)[1] == "Master":
+        # Don't print return to Start Menu message if creating Master User for first time
+        # Needs to skip case where enter_continue_statement == "A Master User already exists with this name"
+        # since the above case needs to print Try Again message
+        # ' '.join(enter_continue_statement(' ', 2)[:2]) matches enter_continue_statement
+        # on first 2 words instead of full text to capture 1 case
+        elif ' '.join(enter_continue_statement(' ', 2)[:2]) == "No Master":
             continue_action = "create new Mater User"
+        # This is handled separately from the catch all else statement since case "Master User cannot be empty"
+        # is captured incorrectly unless evaulated before the next elif statement but needs to print Try Again message
+        # split(' ', 3)[2] matches enter_continue_statement on third word instead of full text
+        elif enter_continue_statement.split(' ', 3)[2] == "cannot":
+            continue_action = "try again"
         # Handles current user switch when creating new Master Users
         # Handles when updating password for current Master User
         elif enter_continue_statement.split(' ', 2)[1] == "User":
