@@ -186,7 +186,7 @@ def enterContinue(enter_continue_statement) -> bool:
         # since the above case needs to print Try Again message
         # ' '.join(enter_continue_statement(' ', 2)[:2]) matches enter_continue_statement
         # on first 2 words instead of full text to capture 1 case
-        elif ' '.join(enter_continue_statement(' ', 2)[:2]) == "No Master":
+        elif ' '.join(enter_continue_statement.split(' ', 2)[:2]) == "No Master":
             continue_action = "create new Mater User"
         # This is handled separately from the catch all else statement since case "Master User cannot be empty"
         # is captured incorrectly unless evaulated before the next elif statement but needs to print Try Again message
@@ -1077,10 +1077,10 @@ def displayTable(list_table, selected_index,table) -> None:
         
         if table == "passwords":
             for i in list_table:
-                tabulate_table.append([place, i[1], i[2], i[3], i[-3], i[-1]])
+                tabulate_table.append([place, i[1], i[2], i[3], i[-1]])
                 place += 1
             # Print the headers
-            print(tabulate([], headers=["Index", "Category", "Account", "Username", "Password", "Last Modified"], tablefmt="plain"))
+            print(tabulate([], headers=["Index", "Category", "Account", "Username", "Last Modified"], tablefmt="plain"))
         elif table == "users":
             for i in list_table:
                 tabulate_table.append([i[0]])
@@ -1098,9 +1098,9 @@ def displayTable(list_table, selected_index,table) -> None:
         for i, row in enumerate(tabulate_table):
             if i == selected_index:
                 # Highlight the current row
-                print(Back.WHITE + Fore.BLACK + tabulate([row], headers=[], tablefmt="plain") + Style.RESET_ALL)
+                print(Back.WHITE + Fore.BLACK + tabulate([row], headers=[], tablefmt="plain", maxcolwidths=[30, 50]) + Style.RESET_ALL)
             else:
-                print(tabulate([row], headers=[], tablefmt="plain"))
+                print(tabulate([row], headers=[], tablefmt="plain", maxcolwidths=[30, 50]))
 
         # Dump intermediary list after use
         tabulate_table = []
