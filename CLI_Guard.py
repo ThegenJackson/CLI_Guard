@@ -107,7 +107,7 @@ logo = f"""
       {Fore.LIGHTBLUE_EX}██║      ██║      ██║    ██║  ███╗ ██║   ██║ ███████║ ██████╔╝ ██║  ██║{Style.RESET_ALL}
       {Fore.LIGHTBLUE_EX}██║      ██║      ██║    ██║   ██║ ██║   ██║ ██╔══██║ ██╔══██╗ ██║  ██║{Style.RESET_ALL}
       {Fore.CYAN}╚██████╗ ███████╗ ██║    ╚██████╔╝ ╚██████╔╝ ██║  ██║ ██║  ██║ ██████╔╝{Style.RESET_ALL}
-       {Fore.LIGHTCYAN_EX}╚═════╝ ╚══════╝ ╚═╝     ╚═════╝   ╚═════╝  ╚═╝  ╚═╝ ╚═╝  ╚═╝ ╚═════╝ {Style.RESET_ALL}                     
+       {Fore.LIGHTCYAN_EX}╚═════╝ ╚══════╝ ╚═╝     ╚═════╝   ╚═════╝  ╚═╝  ╚═╝ ╚═╝  ╚═╝ ╚═════╝ {Style.RESET_ALL}                  
 """
 
 
@@ -179,12 +179,17 @@ def enterContinue(enter_continue_statement) -> bool:
     try:
         # split(' ', 2)[1] matches enter_continue_statement on second word instead of full text
         # to capture password_list is empty as well as Database Migration functions
-        if enter_continue_statement.split(' ', 2)[1] in ["are", "exported"]:
+        if enter_continue_statement.split(' ', 2)[1] in [ "are", "exported", "imported"]:
             continue_action = "return to Start Menu"
         # Don't print return to Start Menu or Try Again message if creating Master User for first time
         # split(' ', 2)[1] matches enter_continue_statement on second word instead of full text
         elif enter_continue_statement.split(' ', 2)[1] == "Master":
             continue_action = "create new Mater User"
+        # Handles current user switch when creating new Master Users
+        # Handles when updating password for current Master User
+        elif enter_continue_statement.split(' ', 2)[1] == "User":
+            continue_action = "Sign In"
+        # Handles all other scenarios
         else:
             continue_action = "try again"
 
@@ -369,7 +374,7 @@ def attemptLogin(user, attempt, master_key, master_password) -> None:
             # Set last_locked to today on the users table
             sqlite.lockMaster(user)
             # Write to Log file
-            logging(message=f"Incorrect password entered 3 times for Master User {user}\nAccount {user} locked until {tomorrow}")
+            logging(message=f"Incorrect password entered 3 times for Master User {user} - Account {user} locked until {tomorrow}")
             # Print Account Locked notice to screen and return to Login
             if enterContinue(enter_continue_statement=f"Incorrect password entered 3 times\nAccount {user} locked until {tomorrow}") is True:
                 login()
@@ -728,11 +733,14 @@ def newMaster(user=None) -> None:
     try:
         # First query the Users table to ensure the inputted user does not already exist
         master_users_list = sqlite.queryData(user=None, table="users")
+        # Create an empty list of Master Users
+        list_masters = []
         # Loop through SQL query and insert first field into intemediary list
         # to compare against provided new_master_user
         # SQLite3 Database has UNIQUE constraint on this feild but error will not be
         # obvious to the user until Logs are reviewed
-        list_masters = [user[0] for user in master_users_list]
+        for i, master_user in enumerate(master_users_list):
+            list_masters.append(master_user[0])
 
         # Clear Terminal and print Logo
         logoScreen()
@@ -743,24 +751,34 @@ def newMaster(user=None) -> None:
             # Checks if new_master_user entered is not unique
             if new_master_user in list_masters:
                 if enterContinue(enter_continue_statement="A Master User already exists with this name") is True:
-                    newMaster()
+                    # Try again and pass current user argument
+                    # User is None if this is called when creating first Master User
+                    newMaster(user)
         else:
-            if enterContinue(enter_continue_statement="Master User cannot be empty.") is True:
-                newMaster()
+            if enterContinue(enter_continue_statement="Master User cannot be empty.") is True: # FIX THIS - Accidentally catches wrong enter_continue_statement
+                # Try again and pass current user argument
+                # User is None if this is called when creating first Master User
+                newMaster(user)
 
         new_master_password = str(input("Create new master password: "))
         # Check if the password is provided
         if new_master_password:
             save_password = encryptPassword(new_master_password)
             sqlite.insertMaster(new_master_user, save_password, session_password_key.decode())
-            # Go to Start screen after creating new Master User
-            # Handles issue where user variable is not passed to later functions
+            # Go to Login screen after creating new Master User
+            # Sign Out of current user and allow user to Sign In with new Master User or other
             if user is None:
-                start(user=new_master_user)
+                # enter_continue_statement is amended if user argument is None since this case
+                # covers creating the first Master User
+                enter_continue_statement=f"Master User {Fore.GREEN}{new_master_user}{Style.RESET_ALL} has been created"
             else:
-                start(user)
+                enter_continue_statement=f"Master User {Fore.GREEN}{new_master_user}{Style.RESET_ALL} has been created\n\nYou have been Signed Out of {user}"
+            if enterContinue(enter_continue_statement) is True:
+                splashScreen()
         else:
             if enterContinue(enter_continue_statement="Password cannot be empty.") is True:
+                # Try again and pass current user argument
+                # User is None if this is called when creating first Master User
                 newMaster(user) 
     except Exception:
         logging()
@@ -777,8 +795,9 @@ def updateMaster(user) -> None:
         if new_master_password:
             save_password = encryptPassword(new_master_password)
             sqlite.updateMasterPassword(user, save_password, session_password_key.decode())
-            # Return to Log In screen
-            splashScreen()
+            if enterContinue(enter_continue_statement=f"Password updated for Master User {user}") is True:
+                # Return to Log In screen
+                splashScreen()
         else:
             if enterContinue(enter_continue_statement="No password was entered!") is True:
                 updateMaster(user)
@@ -788,9 +807,6 @@ def updateMaster(user) -> None:
 
 def removeMaster(user) -> None:
     try:
-        # Clear Terminal and print Logo
-        logoScreen()
-
         # Query the users table and insert all into master_users_list
         master_users_list = sqlite.queryData(user=None, table="users")
 
@@ -813,7 +829,8 @@ def removeMaster(user) -> None:
                 if choice(statement, user, mode="Delete", password=None, confirm_delete=True, type="Master User") == True:
                     sqlite.deleteMaster(user=master_users_list[selected_index][0])
                     if user == master_users_list[selected_index][0]:
-                        splashScreen()
+                        if enterContinue(enter_continue_statement=f"Current User {Fore.YELLOW}{user}{Style.RESET_ALL} has been deleted") is True:
+                            splashScreen()
                     else:
                         start(user)
             elif key == readchar.key.ESC:
@@ -930,7 +947,7 @@ def importManually(user) -> None:
 
         if os.path.exists(import_path):
             if import_path.endswith(".db"):
-                importData(import_path)
+                importData(user, import_path)
             else:
                 if enterContinue(enter_continue_statement="File Path entered is not a database file") is True:
                     importDB(user)
@@ -942,94 +959,102 @@ def importManually(user) -> None:
 
 
 # Logic to perform Database Import functions
-def importData(import_path) -> None:
-    # Query the Users table to compare against imported users
-    existing_users = sqlite.queryData(user=None, table="users")
-    # Create an empty list of existing Master Users
-    existing_users_list =[]
-    # Loop through SQL query and insert first field into
-    # an intemediary list to compare against imported users
-    for i, existing_user in enumerate(existing_users):
-        existing_users_list.append(existing_user[0])
+def importData(user, import_path) -> None:
+    try:
+        # Query the Users table to compare against imported users
+        existing_users = sqlite.queryData(user=None, table="users")
+        # Create an empty list of existing Master Users
+        existing_users_list =[]
+        # Loop through SQL query and insert first field into
+        # an intemediary list to compare against imported users
+        for i, existing_user in enumerate(existing_users):
+            existing_users_list.append(existing_user[0])
 
-    # Query the imported Users table and insert all values of the imported users table into a list 
-    imported_users_list = sqlite.importDatabase(import_path, table="users")
-    # Create a empty list of decrypted Master Users
-    decrypted_imported_users = []
-    # Loop through the imported_users_list and add all values into a list
-    # with the original password decrypted using the original encryption_key
-    for i, imported_user in enumerate(imported_users_list):
-        decrypted_imported_users.append(
-            [
-                imported_users_list[i][0],
-                decryptPassword(encryption_key=imported_user[2],
-                                password=imported_user[1])
-            ]
-        )
-    
-    # Check if each imported Master User is unique and insert to Users table
-    # with the original password encrypted using the current session_password_key
-    # Master Users are handled differently here since only the user field is checked
-    # for uniqueness while users passwords are checked for uniqueness across all fields
-    for i, decrypted_user in enumerate(decrypted_imported_users):
-        if decrypted_user[0] not in existing_users_list:
-            sqlite.insertMaster(
-                user=decrypted_user[0],
-                password=encryptPassword(decrypted_user[1]),
-                session_key=session_password_key.decode()
+        # Query the imported Users table and insert all values of the imported users table into a list 
+        imported_users_list = sqlite.importDatabase(import_path, table="users")
+        # Create a empty list of decrypted Master Users
+        decrypted_imported_users = []
+        # Loop through the imported_users_list and add all values into a list
+        # with the original password decrypted using the original encryption_key
+        for i, imported_user in enumerate(imported_users_list):
+            decrypted_imported_users.append(
+                [
+                    imported_users_list[i][0],
+                    decryptPassword(encryption_key=imported_user[2],
+                                    password=imported_user[1])
+                ]
+            )
+        
+        # Check if each imported Master User is unique and insert to Users table
+        # with the original password encrypted using the current session_password_key
+        # Master Users are handled differently here since only the user field is checked
+        # for uniqueness while users passwords are checked for uniqueness across all fields
+        for i, decrypted_user in enumerate(decrypted_imported_users):
+            if decrypted_user[0] not in existing_users_list:
+                sqlite.insertMaster(
+                    user=decrypted_user[0],
+                    password=encryptPassword(decrypted_user[1]),
+                    session_key=session_password_key.decode()
+                )
+
+
+        # Query the Passwords table to compare against imported passwords
+        existing_passwords = sqlite.queryData(user=None, table="passwords")
+        # Create an empty list of existing passwords
+        existing_passwords_list = []
+        # Loop through the imported_passwords_list and add all values into a list
+        # with the original password decrypted using the original encryption_key
+        for i, existing_password in enumerate(existing_passwords):
+            existing_passwords_list.append(
+                [
+                    existing_password[0],
+                    existing_password[1],
+                    existing_password[2],
+                    existing_password[3],
+                    decryptPassword(encryption_key=existing_password[5],
+                                    password=existing_password[4])
+                ]
             )
 
-
-    # Query the Passwords table to compare against imported passwords
-    existing_passwords = sqlite.queryData(user=None, table="passwords")
-    # Create an empty list of existing passwords
-    existing_passwords_list = []
-    # Loop through the imported_passwords_list and add all values into a list
-    # with the original password decrypted using the original encryption_key
-    for i, existing_password in enumerate(existing_passwords):
-        existing_passwords_list.append(
-            [
-                existing_password[0],
-                existing_password[1],
-                existing_password[2],
-                existing_password[3],
-                decryptPassword(encryption_key=existing_password[5],
-                                password=existing_password[4])
-            ]
-        )
-
-    # Insert all values of the imported users table into a list 
-    imported_passwords_list = sqlite.importDatabase(import_path, table="passwords")
-    # Create a empty list of decrypted Master Users
-    decrypted_imported_passwords = []
-    # Loop through the queried data and append all values into the decrypted_imported_passwords list
-    for i, imported_password in enumerate(imported_passwords_list):
-        decrypted_imported_passwords.append(
-            [
-                imported_password[0],
-                imported_password[1],
-                imported_password[2],
-                imported_password[3],
-                decryptPassword(encryption_key=imported_password[5],
-                                password=imported_password[4])
-            ]
-        )
-
-    # Check if each imported password is unique and insert to Passwords table
-    # with the original password encrypted using the current session_password_key
-    for i, decrypted_password in enumerate(decrypted_imported_passwords):
-        if i not in existing_passwords_list:
-            sqlite.insertData(
-                user=decrypted_password[0],
-                category=decrypted_password[1],
-                account=decrypted_password[2],
-                username=decrypted_password[3],
-                password=encryptPassword(decrypted_password[4]),
-                session_key=session_password_key.decode()
+        # Insert all values of the imported users table into a list 
+        imported_passwords_list = sqlite.importDatabase(import_path, table="passwords")
+        # Create a empty list of decrypted Master Users
+        decrypted_imported_passwords = []
+        # Loop through the queried data and append all values into the decrypted_imported_passwords list
+        for i, imported_password in enumerate(imported_passwords_list):
+            decrypted_imported_passwords.append(
+                [
+                    imported_password[0],
+                    imported_password[1],
+                    imported_password[2],
+                    imported_password[3],
+                    decryptPassword(encryption_key=imported_password[5],
+                                    password=imported_password[4])
+                ]
             )
 
+        # Check if each imported password is unique and insert to Passwords table
+        # with the original password encrypted using the current session_password_key
+        for i, decrypted_password in enumerate(decrypted_imported_passwords):
+            if i not in existing_passwords_list:
+                sqlite.insertData(
+                    user=decrypted_password[0],
+                    category=decrypted_password[1],
+                    account=decrypted_password[2],
+                    username=decrypted_password[3],
+                    password=encryptPassword(decrypted_password[4]),
+                    session_key=session_password_key.decode()
+                )
+        
+        logging(message=f"Successfully imported database from file path {import_path}")
+        if enterContinue("Database imported successfully") is True:
+            start(user)
 
-def displayTable(list_table, selected_index, table) -> None:
+    except Exception:
+        logging()
+
+
+def displayTable(list_table, selected_index,table) -> None:
     try:
         if table == "passwords":
             # Clear Terminal and print Logo with navigation_text and Search/Sort features

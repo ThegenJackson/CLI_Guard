@@ -159,6 +159,7 @@ def deleteMaster(user) -> None:
         sqlCursor.execute(sql_query, (user,))
         sqlConnection.commit()       
         logging(message=f"SUCCESS: Deleted master user {user}")
+        logging(message=f"SUCCESS: Deleted all passwords for master user {user}")
     except sqlite3.IntegrityError as integrity_error:
         logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
     except sqlite3.OperationalError as op_error:
