@@ -107,38 +107,15 @@ def mainMenu(menu_window, context_window, message_window):
     curses.curs_set(0)
     menu_window.keypad(True)
 
-    def navigation():
-        pass
+    # Function to navigate through relevant options and table data in the context_window
+    def navigation(options, headers, data, current_row):
 
-    # Define functions for each option
-    def passwordManagement():
-        options = ["Create Password", "Search Passwords", "Sort Passwords"]
-        headers = ["Index", "Name", "Age", "Country"]
-        data = [
-            [1, "John Doe", 28, "USA"],
-            [2, "Jane Smith", 34, "Canada"],
-            [3, "Sam Brown", 22, "UK"],
-            [4, "Lucy Green", 29, "Australia"],
-            [5, "David White", 45, "Ireland"],
-            [6, "Emily Black", 37, "USA"],
-            [7, "Michael Blue", 50, "Canada"],
-            [8, "Sophia Yellow", 31, "UK"],
-            [9, "James Red", 40, "Australia"],
-            [10, "Olivia Purple", 25, "Ireland"],
-            [11, "Noah Orange", 33, "USA"],
-            [12, "Ava Pink", 41, "Canada"],
-        ]
         # Find available space to size columns with first column (Index) constant and 10 spaces to the right
         column_width = (context_window.getmaxyx()[1] - 20) // (len(headers) - 1)
-        
-        # Set the first selectable item to be the options
-        # This will start with the button, not a data row
-        current_row = 0
         
         # Need to erase contents of context_window to avoid new texts overwriting previous text
         context_window.erase()
         context_window.border(0)
-        
         # Display headers
         context_window.addstr(3, 2, f"{headers[0]:<10}{headers[1]:<{column_width}}{headers[2]:<{column_width}}{headers[3]:<{column_width}}")
         context_window.refresh()
@@ -198,6 +175,53 @@ def mainMenu(menu_window, context_window, message_window):
             
             # Enter key to select an option
             elif key == 10:
+                return current_row
+            
+            # Escape key (ASCII value 27) to return to Main Menu
+            elif key == 27:
+                # Clear and redraw context_window
+                context_window.erase()
+                context_window.border(0)
+                context_window.addstr(1, 2, "CONTEXT WINDOW")  # Add the label or initial screen message
+                context_window.refresh()
+
+                # Clear and redraw message_window
+                message_window.erase()
+                message_window.border(0)
+                message_window.addstr(1, 2, "MESSAGE WINDOW")  # Reset message window
+                message_window.refresh()
+
+                mainMenu(menu_window, context_window, message_window)
+
+    # Define functions for each option
+    def passwordManagement():
+        options = ["Create Password", "Search Passwords", "Sort Passwords"]
+        headers = ["Index", "Name", "Age", "Country"]
+        data = [
+            [1, "John Doe", 28, "USA"],
+            [2, "Jane Smith", 34, "Canada"],
+            [3, "Sam Brown", 22, "UK"],
+            [4, "Lucy Green", 29, "Australia"],
+            [5, "David White", 45, "Ireland"],
+            [6, "Emily Black", 37, "USA"],
+            [7, "Michael Blue", 50, "Canada"],
+            [8, "Sophia Yellow", 31, "UK"],
+            [9, "James Red", 40, "Australia"],
+            [10, "Olivia Purple", 25, "Ireland"],
+            [11, "Noah Orange", 33, "USA"],
+            [12, "Ava Pink", 41, "Canada"],
+        ]
+        # Initialize current_row
+        current_row = 0
+
+        while True:
+            # Call navigation, passing current_row to preserve state
+            new_row = navigation(options, headers, data, current_row)
+
+            # If an option was selected
+            if new_row is not None:
+                # Update current_row for future navigation
+                current_row = new_row
                 if current_row == 0:
                     create_password()
                 elif current_row == 1:
@@ -205,27 +229,10 @@ def mainMenu(menu_window, context_window, message_window):
                 elif current_row == 2:
                     sort_passwords()
                 else:
-                    # Fetch the actual data row using current_row index (adjusted for the options)
-                    # Subtract 3 because table data starts from row 3
+                    # Fetch the actual table data row using current_row index (adjusted for the length of options list)
                     selected_row = data[current_row - 3]
                     message_window.addstr(1, 2, f"{selected_row[0]:<10}{selected_row[1]:<20}{selected_row[2]:<20}{selected_row[3]:<20}", curses.color_pair(6))
                     message_window.refresh()
-            
-            # Escape key (ASCII value 27) to return to Main Menu
-            elif key == 27:
-                # Clear and redraw context_window
-                context_window.erase()
-                context_window.border(0)
-                context_window.addstr(1, 2, "CONTEXT WINDOW")
-                context_window.refresh()
-
-                # Clear and redraw message_window
-                message_window.erase()
-                message_window.border(0)
-                message_window.addstr(1, 2, "MESSAGE  WINDOW")
-                message_window.refresh()
-
-                break  # Exit the loop
 
 
     def create_password():
