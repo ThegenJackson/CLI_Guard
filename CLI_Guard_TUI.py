@@ -70,6 +70,11 @@ def createWindows(stdscr):
     menu_window = curses.newwin(height - 10, 21, 10, 0)
     menu_window.border(0)
 
+    sub_menu_window = curses.newwin(height - 10, 21, 10, 21)
+    sub_menu_window.border(0)
+    sub_menu_panel = curses.panel.new_panel(sub_menu_window)
+    sub_menu_panel.hide()
+
     context_window = curses.newwin(height - 10, width - 21, 10, 21)
     context_window.border(0)
 
@@ -84,6 +89,8 @@ def createWindows(stdscr):
     # Display Current User information in the fourth and third last available row of the Terminal
     menu_window.addstr(menu_window.getmaxyx()[0] - 4, 2, "Current User:")
     menu_window.addstr(menu_window.getmaxyx()[0] - 3, 2, f"{user}")
+
+    sub_menu_window.addstr(1, 2, "SUB MENU")
     
     context_window.addstr(1, 2, "CONTEXT WINDOW")
 
@@ -92,23 +99,53 @@ def createWindows(stdscr):
     logo_window.noutrefresh()
     message_window.noutrefresh()
     menu_window.noutrefresh()
+    sub_menu_window.noutrefresh()
     context_window.noutrefresh()
 
     # Update screen
     curses.doupdate()
 
-    mainMenu(menu_window, context_window, message_window)
+    mainMenu(menu_window, context_window, message_window, sub_menu_window, sub_menu_panel)
 
 
 
-def mainMenu(menu_window, context_window, message_window):
+def mainMenu(menu_window, context_window, message_window, sub_menu_window, sub_menu_panel):
 
     # Disable cursor and enable keypad input
     curses.curs_set(0)
     menu_window.keypad(True)
 
-    # Function to navigate through relevant options and table data in the context_window
-    def navigation(options, headers, data, current_row):
+    def get_user_input(window, prompt):
+        window.clear()
+        window.border(0)
+        window.addstr(1, 2, prompt)
+        window.refresh()
+
+        # Get user input (max length of 50 characters in this case)
+        curses.echo()  # Allow typed input to be visible
+        user_input = window.getstr(2, 2, 50).decode('utf-8')
+        curses.noecho()  # Hide input again
+
+        return user_input
+
+    # Define functions for each option
+    def passwordManagement():
+        options = ["Create Password", "Search Passwords", "Sort Passwords"]
+        headers = ["Index", "Name", "Age", "Country"]
+        data = [
+            [1, "John Doe", 28, "USA"],
+            [2, "Jane Smith", 34, "Canada"],
+            [3, "Sam Brown", 22, "UK"],
+            [4, "Lucy Green", 29, "Australia"],
+            [5, "David White", 45, "Ireland"],
+            [6, "Emily Black", 37, "USA"],
+            [7, "Michael Blue", 50, "Canada"],
+            [8, "Sophia Yellow", 31, "UK"],
+            [9, "James Red", 40, "Australia"],
+            [10, "Olivia Purple", 25, "Ireland"],
+            [11, "Noah Orange", 33, "USA"],
+            [12, "Ava Pink", 41, "Canada"],
+        ]
 
         # Find available space to size columns with first column (Index) constant and 10 spaces to the right
         column_width = (context_window.getmaxyx()[1] - 20) // (len(headers) - 1)
@@ -116,6 +153,10 @@ def mainMenu(menu_window, context_window, message_window):
         # Need to erase contents of context_window to avoid new texts overwriting previous text
         context_window.erase()
         context_window.border(0)
+
+        # Initialize current_row
+        current_row = 0
+
         # Display headers
         context_window.addstr(3, 2, f"{headers[0]:<10}{headers[1]:<{column_width}}{headers[2]:<{column_width}}{headers[3]:<{column_width}}")
         context_window.refresh()
@@ -175,7 +216,17 @@ def mainMenu(menu_window, context_window, message_window):
             
             # Enter key to select an option
             elif key == 10:
-                return current_row
+                if current_row == 0:
+                    create_password()
+                elif current_row == 1:
+                    search_passwords()
+                elif current_row == 2:
+                    sort_passwords()
+                else:
+                    # Fetch the actual table data row using current_row index (adjusted for the length of options list)
+                    selected_row = data[current_row - 3]
+                    message_window.addstr(1, 2, f"{selected_row[0]:<10}{selected_row[1]:<20}{selected_row[2]:<20}{selected_row[3]:<20}", curses.color_pair(6))
+                    message_window.refresh()
             
             # Escape key (ASCII value 27) to return to Main Menu
             elif key == 27:
@@ -191,48 +242,8 @@ def mainMenu(menu_window, context_window, message_window):
                 message_window.addstr(1, 2, "MESSAGE WINDOW")  # Reset message window
                 message_window.refresh()
 
-                mainMenu(menu_window, context_window, message_window)
-
-    # Define functions for each option
-    def passwordManagement():
-        options = ["Create Password", "Search Passwords", "Sort Passwords"]
-        headers = ["Index", "Name", "Age", "Country"]
-        data = [
-            [1, "John Doe", 28, "USA"],
-            [2, "Jane Smith", 34, "Canada"],
-            [3, "Sam Brown", 22, "UK"],
-            [4, "Lucy Green", 29, "Australia"],
-            [5, "David White", 45, "Ireland"],
-            [6, "Emily Black", 37, "USA"],
-            [7, "Michael Blue", 50, "Canada"],
-            [8, "Sophia Yellow", 31, "UK"],
-            [9, "James Red", 40, "Australia"],
-            [10, "Olivia Purple", 25, "Ireland"],
-            [11, "Noah Orange", 33, "USA"],
-            [12, "Ava Pink", 41, "Canada"],
-        ]
-        # Initialize current_row
-        current_row = 0
-
-        while True:
-            # Call navigation, passing current_row to preserve state
-            new_row = navigation(options, headers, data, current_row)
-
-            # If an option was selected
-            if new_row is not None:
-                # Update current_row for future navigation
-                current_row = new_row
-                if current_row == 0:
-                    create_password()
-                elif current_row == 1:
-                    search_passwords()
-                elif current_row == 2:
-                    sort_passwords()
-                else:
-                    # Fetch the actual table data row using current_row index (adjusted for the length of options list)
-                    selected_row = data[current_row - 3]
-                    message_window.addstr(1, 2, f"{selected_row[0]:<10}{selected_row[1]:<20}{selected_row[2]:<20}{selected_row[3]:<20}", curses.color_pair(6))
-                    message_window.refresh()
+                # Break the loop after exiting
+                break
 
 
     def create_password():
@@ -248,6 +259,7 @@ def mainMenu(menu_window, context_window, message_window):
         message_window.addstr(1, 2, "User selected 'Sort Passwords' button")
         message_window.refresh()
 
+
     def search_passwords():
         message_window.erase()
         message_window.border(0)
@@ -255,27 +267,71 @@ def mainMenu(menu_window, context_window, message_window):
         message_window.refresh()
 
 
-    def option2():
+    def userManagement():
         context_window.erase()
         context_window.border(0)
         context_window.addstr(1, 2, "CONTEXT WINDOW")
-
         context_window.addstr(3, 3, "User selected User Management")
         context_window.refresh()
 
-    def option3():
-        context_window.erase()
-        context_window.border(0)
-        context_window.addstr(1, 2, "CONTEXT WINDOW")
+    def migrateDatabase():
 
-        context_window.addstr(3, 3, "User selected Migrate Database")
+        context_window.erase()
         context_window.refresh()
+        sub_menu_panel.show()
+
+        # Menu options
+        options = ["Export Database", "Import Database", "Back"]
+        current_row = 0
+
+        while True:
+
+            # Display the menu
+            for i, option in enumerate(options):
+                if i == current_row:
+                    # Highlight the selected option
+                    sub_menu_window.attron(curses.A_REVERSE)
+                    sub_menu_window.addstr(i + 5, 2, option)
+                    sub_menu_window.attroff(curses.A_REVERSE)
+                else:
+                    sub_menu_window.addstr(i + 5, 2, option)
+
+            sub_menu_window.refresh()
+
+            # Get user input
+            key = menu_window.getch()
+
+            if key == curses.KEY_UP and current_row > 0:
+                current_row -= 1
+            elif key == curses.KEY_DOWN and current_row < len(options) - 1:
+                current_row += 1
+            elif key == 27 or (key == 10 and current_row == len(options) - 1):
+                # Clear and redraw context_window
+                context_window.erase()
+                context_window.border(0)
+                context_window.addstr(1, 2, "CONTEXT WINDOW")  # Add the label or initial screen message
+                context_window.refresh()
+
+                # Clear and redraw message_window
+                message_window.erase()
+                message_window.border(0)
+                message_window.addstr(1, 2, "MESSAGE WINDOW")  # Reset message window
+                message_window.refresh()
+
+                sub_menu_panel.hide()
+                # Break the loop after exiting
+                break
+            elif key == 10:  # ASCII value for Enter key
+                # Call the function corresponding to the selected option
+                message_window.erase()
+                message_window.border(0)
+                message_window.addstr(1, 2, f"User select {options[current_row]}")
+                message_window.refresh()
 
     def option4():
         context_window.erase()
         context_window.border(0)
         context_window.addstr(1, 2, "CONTEXT WINDOW")
-
         context_window.addstr(3, 3, "User selected Settings")
         context_window.refresh()
 
@@ -283,7 +339,6 @@ def mainMenu(menu_window, context_window, message_window):
         context_window.erase()
         context_window.border(0)
         context_window.addstr(1, 2, "CONTEXT WINDOW")
-
         context_window.addstr(3, 3, "User selected Sign Out")
         context_window.refresh()
     
@@ -291,7 +346,6 @@ def mainMenu(menu_window, context_window, message_window):
         context_window.erase()
         context_window.border(0)
         context_window.addstr(1, 2, "CONTEXT WINDOW")
-
         context_window.addstr(3, 3, "Quiting...")
         context_window.refresh()
         time.sleep(1)
@@ -304,8 +358,8 @@ def mainMenu(menu_window, context_window, message_window):
     # Map menu options to functions
     functions = {
         0: passwordManagement,
-        1: option2,
-        2: option3,
+        1: userManagement,
+        2: migrateDatabase,
         3: option4,
         4: option5,
         5: option6
