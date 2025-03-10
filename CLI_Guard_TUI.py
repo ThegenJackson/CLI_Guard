@@ -70,10 +70,20 @@ def createWindows(stdscr):
     menu_window = curses.newwin(height - 10, 21, 10, 0)
     menu_window.border(0)
 
-    sub_menu_window = curses.newwin(height - 10, 21, 10, 21)
-    sub_menu_window.border(0)
-    sub_menu_panel = curses.panel.new_panel(sub_menu_window)
-    sub_menu_panel.hide()
+    user_menu = curses.newwin(6, 21, 12, 21)
+    user_menu.border(0)
+    user_menu_panel = curses.panel.new_panel(user_menu)
+    user_menu_panel.hide()
+
+    migration_menu = curses.newwin(5, 21, 13, 21)
+    migration_menu.border(0)
+    migration_menu_panel = curses.panel.new_panel(migration_menu)
+    migration_menu_panel.hide()
+
+    settings_menu = curses.newwin(6, 21, 14, 21)
+    settings_menu.border(0)
+    settings_menu_panel = curses.panel.new_panel(settings_menu)
+    settings_menu_panel.hide()
 
     context_window = curses.newwin(height - 10, width - 21, 10, 21)
     context_window.border(0)
@@ -81,35 +91,28 @@ def createWindows(stdscr):
     # Print the Logo to logo_window
     displayLogo(logo_window)
 
-    # Display text in other windows
-    message_window.addstr(1, 2, "MESSAGE WINDOW")
-
     user = None # CHANGE THIS / FIX THIS
-    menu_window.addstr(1, 2, "MAIN MENU")
+    menu_window.addstr(0, 2, "MAIN MENU")
     # Display Current User information in the fourth and third last available row of the Terminal
     menu_window.addstr(menu_window.getmaxyx()[0] - 4, 2, "Current User:")
     menu_window.addstr(menu_window.getmaxyx()[0] - 3, 2, f"{user}")
-
-    sub_menu_window.addstr(1, 2, "SUB MENU")
-    
-    context_window.addstr(1, 2, "CONTEXT WINDOW")
 
     # Use noutrefresh() to update all windows together
     main_win.noutrefresh()
     logo_window.noutrefresh()
     message_window.noutrefresh()
     menu_window.noutrefresh()
-    sub_menu_window.noutrefresh()
+    migration_menu.noutrefresh()
     context_window.noutrefresh()
 
     # Update screen
     curses.doupdate()
 
-    mainMenu(menu_window, context_window, message_window, sub_menu_window, sub_menu_panel)
+    mainMenu(menu_window, context_window, message_window, user_menu, user_menu_panel, migration_menu, migration_menu_panel, settings_menu, settings_menu_panel)
 
 
 
-def mainMenu(menu_window, context_window, message_window, sub_menu_window, sub_menu_panel):
+def mainMenu(menu_window, context_window, message_window, user_menu, user_menu_panel, migration_menu, migration_menu_panel, settings_menu, settings_menu_panel):
 
     # Disable cursor and enable keypad input
     curses.curs_set(0)
@@ -233,13 +236,11 @@ def mainMenu(menu_window, context_window, message_window, sub_menu_window, sub_m
                 # Clear and redraw context_window
                 context_window.erase()
                 context_window.border(0)
-                context_window.addstr(1, 2, "CONTEXT WINDOW")  # Add the label or initial screen message
                 context_window.refresh()
 
                 # Clear and redraw message_window
                 message_window.erase()
                 message_window.border(0)
-                message_window.addstr(1, 2, "MESSAGE WINDOW")  # Reset message window
                 message_window.refresh()
 
                 # Break the loop after exiting
@@ -249,39 +250,30 @@ def mainMenu(menu_window, context_window, message_window, sub_menu_window, sub_m
     def create_password():
         message_window.erase()
         message_window.border(0)
-        message_window.addstr(1, 2, "User selected 'Create Password' button")
+        message_window.addstr(1, 2, "User selected Create Password button")
         message_window.refresh()
 
 
     def sort_passwords():
         message_window.erase()
         message_window.border(0)
-        message_window.addstr(1, 2, "User selected 'Sort Passwords' button")
+        message_window.addstr(1, 2, "User selected Sort Passwords button")
         message_window.refresh()
 
 
     def search_passwords():
         message_window.erase()
         message_window.border(0)
-        message_window.addstr(1, 2, "User selected 'Search Passwords' button")
+        message_window.addstr(1, 2, "User selected Search Passwords button")
         message_window.refresh()
 
 
     def userManagement():
-        context_window.erase()
-        context_window.border(0)
-        context_window.addstr(1, 2, "CONTEXT WINDOW")
-        context_window.addstr(3, 3, "User selected User Management")
-        context_window.refresh()
-
-    def migrateDatabase():
-
-        context_window.erase()
-        context_window.refresh()
-        sub_menu_panel.show()
+        
+        user_menu_panel.show()
 
         # Menu options
-        options = ["Export Database", "Import Database", "Back"]
+        options = ["Create User", "Update User", "Delete User"]
         current_row = 0
 
         while True:
@@ -290,65 +282,178 @@ def mainMenu(menu_window, context_window, message_window, sub_menu_window, sub_m
             for i, option in enumerate(options):
                 if i == current_row:
                     # Highlight the selected option
-                    sub_menu_window.attron(curses.A_REVERSE)
-                    sub_menu_window.addstr(i + 5, 2, option)
-                    sub_menu_window.attroff(curses.A_REVERSE)
+                    user_menu.attron(curses.A_REVERSE)
+                    user_menu.addstr(i + 1, 2, option)
+                    user_menu.attroff(curses.A_REVERSE)
                 else:
-                    sub_menu_window.addstr(i + 5, 2, option)
+                    user_menu.addstr(i + 1, 2, option)
+        
+                if current_row == len(options):
+                    # Highlight the selected option
+                    user_menu.attron(curses.A_REVERSE)
+                    user_menu.addstr(len(options) + 2, 3, "Back")
+                    user_menu.attroff(curses.A_REVERSE)
+                else:
+                    user_menu.addstr(len(options) + 2, 3, "Back", curses.color_pair(4))
 
-            sub_menu_window.refresh()
+            user_menu.refresh()
 
             # Get user input
             key = menu_window.getch()
 
             if key == curses.KEY_UP and current_row > 0:
                 current_row -= 1
-            elif key == curses.KEY_DOWN and current_row < len(options) - 1:
+            elif key == curses.KEY_DOWN and current_row < len(options):
                 current_row += 1
-            elif key == 27 or (key == 10 and current_row == len(options) - 1):
+            elif key == 27 or (key == 10 and current_row == len(options)):
                 # Clear and redraw context_window
                 context_window.erase()
                 context_window.border(0)
-                context_window.addstr(1, 2, "CONTEXT WINDOW")  # Add the label or initial screen message
                 context_window.refresh()
 
                 # Clear and redraw message_window
                 message_window.erase()
                 message_window.border(0)
-                message_window.addstr(1, 2, "MESSAGE WINDOW")  # Reset message window
                 message_window.refresh()
 
-                sub_menu_panel.hide()
+                user_menu_panel.hide()
                 # Break the loop after exiting
                 break
             elif key == 10:  # ASCII value for Enter key
                 # Call the function corresponding to the selected option
                 message_window.erase()
                 message_window.border(0)
-                message_window.addstr(1, 2, f"User select {options[current_row]}")
+                message_window.addstr(1, 2, f"User selected {options[current_row]} button")
                 message_window.refresh()
 
-    def option4():
-        context_window.erase()
-        context_window.border(0)
-        context_window.addstr(1, 2, "CONTEXT WINDOW")
-        context_window.addstr(3, 3, "User selected Settings")
-        context_window.refresh()
+    def migrateDatabase():
+
+        migration_menu_panel.show()
+
+        # Menu options
+        options = ["Export Database", "Import Database"]
+        current_row = 0
+
+        while True:
+
+            # Display the menu
+            for i, option in enumerate(options):
+                if i == current_row:
+                    # Highlight the selected option
+                    migration_menu.attron(curses.A_REVERSE)
+                    migration_menu.addstr(i + 1, 2, option)
+                    migration_menu.attroff(curses.A_REVERSE)
+                else:
+                    migration_menu.addstr(i + 1, 2, option)
+
+                if current_row == len(options):
+                    # Highlight the selected option
+                    migration_menu.attron(curses.A_REVERSE)
+                    migration_menu.addstr(len(options) + 2, 3, "Back")
+                    migration_menu.attroff(curses.A_REVERSE)
+                else:
+                    migration_menu.addstr(len(options) + 2, 3, "Back", curses.color_pair(4))
+
+            migration_menu.refresh()
+
+            # Get user input
+            key = menu_window.getch()
+
+            if key == curses.KEY_UP and current_row > 0:
+                current_row -= 1
+            elif key == curses.KEY_DOWN and current_row < len(options):
+                current_row += 1
+            elif key == 27 or (key == 10 and current_row == len(options)):
+                # Clear and redraw context_window
+                context_window.erase()
+                context_window.border(0)
+                context_window.refresh()
+
+                # Clear and redraw message_window
+                message_window.erase()
+                message_window.border(0)
+                message_window.refresh()
+
+                migration_menu_panel.hide()
+                # Break the loop after exiting
+                break
+            elif key == 10:  # ASCII value for Enter key
+                # Call the function corresponding to the selected option
+                message_window.erase()
+                message_window.border(0)
+                message_window.addstr(1, 2, f"User selected {options[current_row]} button")
+                message_window.refresh()
+
+    def settingsManagement():
+
+        settings_menu_panel.show()
+
+        # Menu options
+        options = ["Settings Option 1", "Settings Option 2", "Settings Option 3"]
+        current_row = 0
+
+        while True:
+
+            # Display the menu
+            for i, option in enumerate(options):
+                if i == current_row:
+                    # Highlight the selected option
+                    settings_menu.attron(curses.A_REVERSE)
+                    settings_menu.addstr(i + 1, 2, option)
+                    settings_menu.attroff(curses.A_REVERSE)
+                else:
+                    settings_menu.addstr(i + 1, 2, option)
+
+                if current_row == len(options):
+                    # Highlight the selected option
+                    settings_menu.attron(curses.A_REVERSE)
+                    settings_menu.addstr(len(options) + 2, 3, "Back")
+                    settings_menu.attroff(curses.A_REVERSE)
+                else:
+                    settings_menu.addstr(len(options) + 2, 3, "Back", curses.color_pair(4))
+
+            settings_menu.refresh()
+
+            # Get user input
+            key = menu_window.getch()
+
+            if key == curses.KEY_UP and current_row > 0:
+                current_row -= 1
+            elif key == curses.KEY_DOWN and current_row < len(options):
+                current_row += 1
+            elif key == 27 or (key == 10 and current_row == len(options)):
+                # Clear and redraw context_window
+                context_window.erase()
+                context_window.border(0)
+                context_window.refresh()
+
+                # Clear and redraw message_window
+                message_window.erase()
+                message_window.border(0)
+                message_window.refresh()
+
+                settings_menu_panel.hide()
+                # Break the loop after exiting
+                break
+            elif key == 10:  # ASCII value for Enter key
+                # Call the function corresponding to the selected option
+                message_window.erase()
+                message_window.border(0)
+                message_window.addstr(1, 2, f"User selected {options[current_row]} button")
+                message_window.refresh()
 
     def option5():
         context_window.erase()
         context_window.border(0)
-        context_window.addstr(1, 2, "CONTEXT WINDOW")
         context_window.addstr(3, 3, "User selected Sign Out")
         context_window.refresh()
     
     def option6():
         context_window.erase()
         context_window.border(0)
-        context_window.addstr(1, 2, "CONTEXT WINDOW")
         context_window.addstr(3, 3, "Quiting...")
         context_window.refresh()
-        time.sleep(1)
+        time.sleep(0.5)
         exit()
 
     # Menu options
@@ -360,7 +465,7 @@ def mainMenu(menu_window, context_window, message_window, sub_menu_window, sub_m
         0: passwordManagement,
         1: userManagement,
         2: migrateDatabase,
-        3: option4,
+        3: settingsManagement,
         4: option5,
         5: option6
     }
@@ -372,10 +477,10 @@ def mainMenu(menu_window, context_window, message_window, sub_menu_window, sub_m
             if i == current_row:
                 # Highlight the selected option
                 menu_window.attron(curses.A_REVERSE)
-                menu_window.addstr(i + 3, 2, option)
+                menu_window.addstr(i + 2, 2, option)
                 menu_window.attroff(curses.A_REVERSE)
             else:
-                menu_window.addstr(i + 3, 2, option)
+                menu_window.addstr(i + 2, 2, option)
 
         menu_window.refresh()
 
