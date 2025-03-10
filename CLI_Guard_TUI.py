@@ -67,10 +67,10 @@ def createWindows(stdscr):
     message_window = curses.newwin(3, width, 7, 0)
     message_window.border(0)
 
-    menu_window = curses.newwin(height - 12, 21, 10, 0)
+    menu_window = curses.newwin(height - 10, 21, 10, 0)
     menu_window.border(0)
 
-    context_window = curses.newwin(height - 12, width - 21, 10, 21)
+    context_window = curses.newwin(height - 10, width - 21, 10, 21)
     context_window.border(0)
 
     # Print the Logo to logo_window
@@ -79,10 +79,11 @@ def createWindows(stdscr):
     # Display text in other windows
     message_window.addstr(1, 2, "MESSAGE WINDOW")
 
-    user = None
+    user = None # CHANGE THIS / FIX THIS
     menu_window.addstr(1, 2, "MAIN MENU")
-    menu_window.addstr(14, 2, "Current User:")
-    menu_window.addstr(15, 2, f"{user}")
+    # Display Current User information in the fourth and third last available row of the Terminal
+    menu_window.addstr(menu_window.getmaxyx()[0] - 4, 2, "Current User:")
+    menu_window.addstr(menu_window.getmaxyx()[0] - 3, 2, f"{user}")
     
     context_window.addstr(1, 2, "CONTEXT WINDOW")
 
@@ -96,7 +97,6 @@ def createWindows(stdscr):
     # Update screen
     curses.doupdate()
 
-    
     mainMenu(menu_window, context_window, message_window)
 
 
@@ -107,10 +107,12 @@ def mainMenu(menu_window, context_window, message_window):
     curses.curs_set(0)
     menu_window.keypad(True)
 
+    def navigation():
+        pass
+
     # Define functions for each option
-    def option1():
-
-
+    def passwordManagement():
+        options = ["Create Password", "Search Passwords", "Sort Passwords"]
         headers = ["Index", "Name", "Age", "Country"]
         data = [
             [1, "John Doe", 28, "USA"],
@@ -126,42 +128,89 @@ def mainMenu(menu_window, context_window, message_window):
             [11, "Noah Orange", 33, "USA"],
             [12, "Ava Pink", 41, "Canada"],
         ]
+        # Find available space to size columns with first column (Index) constant and 10 spaces to the right
+        column_width = (context_window.getmaxyx()[1] - 20) // (len(headers) - 1)
+        
+        # Set the first selectable item to be the options
+        # This will start with the button, not a data row
         current_row = 0
-
+        
         # Need to erase contents of context_window to avoid new texts overwriting previous text
-        # but this also erases the broder and heading which need to be reprinted
         context_window.erase()
         context_window.border(0)
-        context_window.addstr(1, 2, "CONTEXT WINDOW")
-        context_window.addstr(3, 2, f"{headers[0]:<10}{headers[1]:<20}{headers[2]:<20}{headers[3]:<20}")
+        
+        # Display headers
+        context_window.addstr(3, 2, f"{headers[0]:<10}{headers[1]:<{column_width}}{headers[2]:<{column_width}}{headers[3]:<{column_width}}")
         context_window.refresh()
 
         while True:
-
-            # Display the menu
-            for i, row in enumerate(data):
-                if i == current_row:
-                    # Highlight the selected option
+            # Display options with highlighted state based on current_row
+            for i, option in enumerate(options):
+                if current_row == i:
                     context_window.attron(curses.A_REVERSE)
-                    context_window.addstr(i + 4, 2, f"{row[0]:<10}{row[1]:<20}{row[2]:<20}{row[3]:<20}")
+                    context_window.addstr(1, 2 + (column_width * i), f"{option}")
                     context_window.attroff(curses.A_REVERSE)
                 else:
-                    context_window.addstr(i + 4, 2, f"{row[0]:<10}{row[1]:<20}{row[2]:<20}{row[3]:<20}")
+                    context_window.addstr(1, 2 + (column_width * i), f"{option}")
+            
+            # Display the data rows, starting from the 4th row (after the headers and options)
+            for i, row in enumerate(data):
+                # Start displaying data from row 4 (index 3 is for options and headers)
+                row_index = i + 4
+                if current_row == i + 3:
+                    # Highlight the selected data row based on current_row
+                    context_window.attron(curses.A_REVERSE)
+                    context_window.addstr(row_index, 2, f"{row[0]:<10}{row[1]:<{column_width}}{row[2]:<{column_width}}{row[3]:<{column_width}}")
+                    context_window.attroff(curses.A_REVERSE)
+                else:
+                    context_window.addstr(row_index, 2, f"{row[0]:<10}{row[1]:<{column_width}}{row[2]:<{column_width}}{row[3]:<{column_width}}")
 
             context_window.refresh()
 
             # Get user input
             key = menu_window.getch()
 
-            if key == curses.KEY_UP and current_row > 0:
-                current_row -= 1
-            elif key == curses.KEY_DOWN and current_row < len(data) - 1:
+            # Navigate through options separatley using LEFT and RIGHT
+            if 0 <= current_row <= (len(options) - 2) and key == curses.KEY_RIGHT:
                 current_row += 1
-            elif key == 10:  # Enter key
-                # Fetch the actual data row using current_row index
-                selected_row = data[current_row]
-                message_window.addstr(1, 2, f"{selected_row[0]:<10}{selected_row[1]:<20}{selected_row[2]:<20}{selected_row[3]:<20}", curses.color_pair(6))
-                message_window.refresh()
+            elif 1 <= current_row <= (len(options) - 1) and key == curses.KEY_LEFT:
+                current_row -= 1
+            
+            # Go to first row of table data if DOWN is pressed while current_row == any option
+            elif 0 <= current_row <= (len(options) - 1) and key == curses.KEY_DOWN:
+                current_row = len(options)
+            # Go to last row of table data if UP is pressed while current_row == 0
+            elif current_row == 0 and key == curses.KEY_UP:
+                current_row = (len(data) + len(options) - 1)
+            # Go to first option if UP is pressed while current_row is first row of table data
+            elif current_row == len(options) and key == curses.KEY_UP:
+                current_row = 0
+            
+            # Go back to first row of table data is DOWN is pressed while current_row is last row of table data
+            elif current_row == (len(data) + len(options) - 1) and key == curses.KEY_DOWN:
+                current_row = 3 
+
+            # Navigate through table data using UP and DOWN
+            elif key == curses.KEY_UP:
+                current_row -= 1
+            elif key == curses.KEY_DOWN:
+                current_row += 1
+            
+            # Enter key to select an option
+            elif key == 10:
+                if current_row == 0:
+                    create_password()
+                elif current_row == 1:
+                    search_passwords()
+                elif current_row == 2:
+                    sort_passwords()
+                else:
+                    # Fetch the actual data row using current_row index (adjusted for the options)
+                    # Subtract 3 because table data starts from row 3
+                    selected_row = data[current_row - 3]
+                    message_window.addstr(1, 2, f"{selected_row[0]:<10}{selected_row[1]:<20}{selected_row[2]:<20}{selected_row[3]:<20}", curses.color_pair(6))
+                    message_window.refresh()
+            
             # Escape key (ASCII value 27) to return to Main Menu
             elif key == 27:
                 # Clear and redraw context_window
@@ -177,6 +226,26 @@ def mainMenu(menu_window, context_window, message_window):
                 message_window.refresh()
 
                 break  # Exit the loop
+
+
+    def create_password():
+        message_window.erase()
+        message_window.border(0)
+        message_window.addstr(1, 2, "User selected 'Create Password' button")
+        message_window.refresh()
+
+
+    def sort_passwords():
+        message_window.erase()
+        message_window.border(0)
+        message_window.addstr(1, 2, "User selected 'Sort Passwords' button")
+        message_window.refresh()
+
+    def search_passwords():
+        message_window.erase()
+        message_window.border(0)
+        message_window.addstr(1, 2, "User selected 'Search Passwords' button")
+        message_window.refresh()
 
 
     def option2():
@@ -218,7 +287,7 @@ def mainMenu(menu_window, context_window, message_window):
 
         context_window.addstr(3, 3, "Quiting...")
         context_window.refresh()
-        time.sleep(2)
+        time.sleep(1)
         exit()
 
     # Menu options
@@ -227,7 +296,7 @@ def mainMenu(menu_window, context_window, message_window):
 
     # Map menu options to functions
     functions = {
-        0: option1,
+        0: passwordManagement,
         1: option2,
         2: option3,
         3: option4,
@@ -256,7 +325,7 @@ def mainMenu(menu_window, context_window, message_window):
             current_row -= 1
         elif key == curses.KEY_DOWN and current_row < len(options) - 1:
             current_row += 1
-        elif key == 10:  # Enter key
+        elif key == 10:  # ASCII value for Enter key
             # Call the function corresponding to the selected option
             functions[current_row]()
 
