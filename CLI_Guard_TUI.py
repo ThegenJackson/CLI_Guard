@@ -73,17 +73,17 @@ def createWindows(stdscr):
     menu_window = curses.newwin(height - 10, 21, 10, 0)
     menu_window.border(0)
 
-    user_menu = curses.newwin(7, 21, 13, 21)
+    user_menu = curses.newwin(6, 21, 13, 21)
     user_menu.border(0)
     user_menu_panel = curses.panel.new_panel(user_menu)
     user_menu_panel.hide()
 
-    migration_menu = curses.newwin(6, 21, 14, 21)
+    migration_menu = curses.newwin(5, 21, 14, 21)
     migration_menu.border(0)
     migration_menu_panel = curses.panel.new_panel(migration_menu)
     migration_menu_panel.hide()
 
-    settings_menu = curses.newwin(7, 21, 15, 21)
+    settings_menu = curses.newwin(6, 21, 15, 21)
     settings_menu.border(0)
     settings_menu_panel = curses.panel.new_panel(settings_menu)
     settings_menu_panel.hide()
@@ -137,17 +137,23 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
 
 
     # Define functions for each option
-    def passwordManagement():
+    def passwordManagement(feature=None, category=None, sort_variable=None):
         options = ["Create Password", "Search Passwords", "Sort Passwords"]
         headers = ["Index", "Category", "Account", "Username", "Last Modified"]
 
         # Create empty list to insert data into
-        list_passwords = []
+        passwords_list = []
 
-        data = sqlite.queryData(user="test", table="passwords")
+        if feature == None:
+            # Query the passwords table and insert all into passwords_list ordered by account name
+            data = sqlite.queryData(user="test", table="passwords")
+        elif feature == "Search":
+            data = sqlite.queryData(user="test", table="passwords") #, category=feature_variable[0], text=feature_variable[1], sort_by=None)
+        elif feature == "Sort":
+            data = sqlite.queryData(user="test", table="passwords", category=category, text=None, sort_by=sort_variable)
 
         for i, password in enumerate(data):
-            list_passwords.append([i + 1, password[1], password[2], password[3], password[6]])
+            passwords_list.append([i + 1, password[1], password[2], password[3], password[6]])
 
         # Find available space to size columns with first column (Index) constant and 10 spaces to the right
         column_width = (context_window.getmaxyx()[1] - 20) // (len(headers) - 1)
@@ -180,10 +186,10 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
                     context_window.addstr(1, 2 + (column_width * i), f"{option}")
 
             # Ensure start_index is within valid range
-            start_index = max(0, min(start_index, len(list_passwords) - max_visible_rows))
+            start_index = max(0, min(start_index, len(passwords_list) - max_visible_rows))
 
             # Get the slice of data to display
-            visible_passwords = list_passwords[start_index:start_index + max_visible_rows]
+            visible_passwords = passwords_list[start_index:start_index + max_visible_rows]
 
             # Display the data rows with scrolling
             for i, row in enumerate(visible_passwords):
@@ -218,13 +224,13 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
                 current_row -= 1
 
             # Go back to first row of table data if DOWN is pressed while current_row is last row of table data
-            elif current_row == (len(list_passwords) + len(options) - 1) and key == curses.KEY_DOWN:
+            elif current_row == (len(passwords_list) + len(options) - 1) and key == curses.KEY_DOWN:
                 current_row = len(options)  # Reset to first row of table data
                 start_index = 0             # Reset scroll to the top
 
             # Scroll down
             elif key == curses.KEY_DOWN:
-                if current_row < (len(list_passwords) + len(options) - 1):
+                if current_row < (len(passwords_list) + len(options) - 1):
                     current_row += 1
                     if (current_row - len(options)) >= (start_index + max_visible_rows):
                         start_index += 1
@@ -239,14 +245,14 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
             # Enter key to select an option
             elif key == 10:
                 if current_row == 0:
-                    create_password()
+                    createPassword()
                 elif current_row == 1:
-                    search_passwords()
+                    searchPasswords()
                 elif current_row == 2:
-                    sort_passwords()
+                    sortPasswords(column_width)
                 else:
                     # Fetch the actual table data row using current_row index (adjusted for the length of options list)
-                    selected_row = list_passwords[current_row - len(options)]
+                    selected_row = passwords_list[current_row - len(options)]
                     message_window.addstr(1, 2, f"{selected_row[0]:<10}{selected_row[1]:<20}{selected_row[2]:<20}{selected_row[3]:<20}", curses.color_pair(6))
                     message_window.refresh()
 
@@ -267,21 +273,102 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
 
 
 
-    def create_password():
+    def createPassword():
         message_window.erase()
         message_window.border(0)
         message_window.addstr(1, 2, "User selected Create Password button")
         message_window.refresh()
 
 
-    def sort_passwords():
-        message_window.erase()
-        message_window.border(0)
-        message_window.addstr(1, 2, "User selected Sort Passwords button")
-        message_window.refresh()
+    def sortPasswords(width, category=None):
+        # Menu options
+        if category is None:
+            options = ["Category", "Account", "Username"]
+            prompt = "Sort By:"
+        else:
+            options = ["Ascending", "Descending"]
+            prompt = f"Sort By {category}:"
+
+        sort_menu = curses.newwin(len(options) + 5, 21, 12, width * 3)
+        sort_menu.border(0)
+        sort_menu_panel = curses.panel.new_panel(sort_menu)
+
+        sort_menu_panel.show()
+
+        sort_menu.addstr(1, 2, prompt)
+
+        current_row = 0
+
+        while True:
+
+            # Display the menu
+            for i, option in enumerate(options):
+                if i == current_row:
+                    # Highlight the selected option
+                    sort_menu.attron(curses.A_REVERSE)
+                    sort_menu.addstr(i + 3, 2, option)
+                    sort_menu.attroff(curses.A_REVERSE)
+                else:
+                    sort_menu.addstr(i + 3, 2, option)
+        
+                if current_row == len(options):
+                    # Highlight the selected option
+                    sort_menu.attron(curses.A_REVERSE)
+                    sort_menu.addstr(len(options) + 4, 3, "Back")
+                    sort_menu.attroff(curses.A_REVERSE)
+                else:
+                    sort_menu.addstr(len(options) + 4, 3, "Back", curses.color_pair(4))
+
+            sort_menu.refresh()
+
+            # Get user input
+            key = menu_window.getch()
+
+            if key == curses.KEY_UP and current_row > 0:
+                current_row -= 1
+            elif key == curses.KEY_DOWN and current_row < len(options):
+                current_row += 1
+            elif key == 27 or (key == 10 and current_row == len(options)):
+                # Clear and redraw message_window
+                message_window.erase()
+                message_window.border(0)
+                message_window.refresh()
+
+                sort_menu_panel.hide()
+
+                # Break the loop after exiting
+                break
+            elif category is None and key == 10:  # ASCII value for Enter key
+
+                # Call the function corresponding to the selected option
+                message_window.erase()
+                message_window.border(0)
+                message_window.addstr(1, 2, f"User selected {options[current_row]} button")
+                message_window.refresh()
+
+                sort_menu.erase()
+                sort_menu.refresh()
+                sortPasswords(width, category=options[current_row])
+
+            elif key == 10:  # ASCII value for Enter key
+                
+                feature = "Sort"
+                sort_variable = options[current_row]
+
+                # Call the function corresponding to the selected option
+                message_window.erase()
+                message_window.border(0)
+                message_window.refresh()
+
+                context_window.erase()
+                context_window.border(0)
+                context_window.refresh()
+
+                passwordManagement(feature, category, sort_variable)
 
 
-    def search_passwords():
+
+    def searchPasswords():
         message_window.erase()
         message_window.border(0)
         message_window.addstr(1, 2, "User selected Search Passwords button")
@@ -475,7 +562,7 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
     def option6():
         context_window.erase()
         context_window.border(0)
-        context_window.addstr(3, 3, "Quiting...")
+        context_window.addstr(3, 3, "Quitting...")
         context_window.refresh()
         time.sleep(0.5)
         exit()

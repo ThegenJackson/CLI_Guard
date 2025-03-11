@@ -1,2 +1,0 @@
-[2025-03-11 16:30:21] DATABASE SUCCESS: Created master test
-[2025-03-11 16:32:54] DATABASE SUCCESS: Updated password for ivy_insta

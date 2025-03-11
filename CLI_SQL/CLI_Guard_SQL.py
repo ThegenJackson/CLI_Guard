@@ -48,20 +48,23 @@ else:
 def queryData(user, table, category=None, text=None, sort_by=None) -> list:
     try:
         if user is not None:
+            # Convert Category to category using .lower()
             if text is not None:
                 sql_query = f"""
                     SELECT * 
                     FROM vw_{table}
                     WHERE user = ?
-                    AND {category} LIKE ?;
+                    AND {category.lower()} LIKE ?;
                 """
                 sqlCursor.execute(sql_query, (user, f"%{text}%",))
+            # Convert sort_by fromm Ascending to ASC or Descending to DESC using .upper()[:-6]
+            # Convert Category to category using .lower()
             elif sort_by is not None:
                 sql_query = (f"""
                     SELECT * 
                     FROM vw_{table}
                     WHERE user = ?
-                    ORDER BY {category} {sort_by};
+                    ORDER BY {category.lower()} {sort_by.upper()[:-6]};
                 """)
                 sqlCursor.execute(sql_query, (user,))
             else:
