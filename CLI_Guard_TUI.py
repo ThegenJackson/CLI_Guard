@@ -1,3 +1,6 @@
+# CLI Guard SQL
+import  CLI_SQL.CLI_Guard_SQL as sqlite
+
 # Import curses for Terminal User Interface and navigation
 # https://docs.python.org/3/library/curses.html
 import curses
@@ -70,17 +73,17 @@ def createWindows(stdscr):
     menu_window = curses.newwin(height - 10, 21, 10, 0)
     menu_window.border(0)
 
-    user_menu = curses.newwin(6, 21, 12, 21)
+    user_menu = curses.newwin(7, 21, 12, 21)
     user_menu.border(0)
     user_menu_panel = curses.panel.new_panel(user_menu)
     user_menu_panel.hide()
 
-    migration_menu = curses.newwin(5, 21, 13, 21)
+    migration_menu = curses.newwin(6, 21, 13, 21)
     migration_menu.border(0)
     migration_menu_panel = curses.panel.new_panel(migration_menu)
     migration_menu_panel.hide()
 
-    settings_menu = curses.newwin(6, 21, 14, 21)
+    settings_menu = curses.newwin(7, 21, 14, 21)
     settings_menu.border(0)
     settings_menu_panel = curses.panel.new_panel(settings_menu)
     settings_menu_panel.hide()
@@ -92,7 +95,7 @@ def createWindows(stdscr):
     displayLogo(logo_window)
 
     user = None # CHANGE THIS / FIX THIS
-    menu_window.addstr(0, 2, "MAIN MENU")
+    menu_window.addstr(1, 2, "MAIN MENU")
     # Display Current User information in the fourth and third last available row of the Terminal
     menu_window.addstr(menu_window.getmaxyx()[0] - 4, 2, "Current User:")
     menu_window.addstr(menu_window.getmaxyx()[0] - 3, 2, f"{user}")
@@ -108,11 +111,11 @@ def createWindows(stdscr):
     # Update screen
     curses.doupdate()
 
-    mainMenu(menu_window, context_window, message_window, user_menu, user_menu_panel, migration_menu, migration_menu_panel, settings_menu, settings_menu_panel)
+    mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_menu, migration_menu_panel, settings_menu, settings_menu_panel, context_window)
 
 
 
-def mainMenu(menu_window, context_window, message_window, user_menu, user_menu_panel, migration_menu, migration_menu_panel, settings_menu, settings_menu_panel):
+def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_menu, migration_menu_panel, settings_menu, settings_menu_panel, context_window):
 
     # Disable cursor and enable keypad input
     curses.curs_set(0)
@@ -130,25 +133,21 @@ def mainMenu(menu_window, context_window, message_window, user_menu, user_menu_p
         curses.noecho()  # Hide input again
 
         return user_input
+    
+
 
     # Define functions for each option
     def passwordManagement():
         options = ["Create Password", "Search Passwords", "Sort Passwords"]
-        headers = ["Index", "Name", "Age", "Country"]
-        data = [
-            [1, "John Doe", 28, "USA"],
-            [2, "Jane Smith", 34, "Canada"],
-            [3, "Sam Brown", 22, "UK"],
-            [4, "Lucy Green", 29, "Australia"],
-            [5, "David White", 45, "Ireland"],
-            [6, "Emily Black", 37, "USA"],
-            [7, "Michael Blue", 50, "Canada"],
-            [8, "Sophia Yellow", 31, "UK"],
-            [9, "James Red", 40, "Australia"],
-            [10, "Olivia Purple", 25, "Ireland"],
-            [11, "Noah Orange", 33, "USA"],
-            [12, "Ava Pink", 41, "Canada"],
-        ]
+        headers = ["Index", "Category", "Account", "Username", "Last Modified"]
+
+        # Create empty list to insert data to
+        list_passwords = []
+
+        data = sqlite.queryData(user="test", table="passwords")
+
+        for i, password in enumerate(data):
+            list_passwords.append([i + 1, password[1], password[2], password[3], password[6]])
 
         # Find available space to size columns with first column (Index) constant and 10 spaces to the right
         column_width = (context_window.getmaxyx()[1] - 20) // (len(headers) - 1)
@@ -161,7 +160,7 @@ def mainMenu(menu_window, context_window, message_window, user_menu, user_menu_p
         current_row = 0
 
         # Display headers
-        context_window.addstr(3, 2, f"{headers[0]:<10}{headers[1]:<{column_width}}{headers[2]:<{column_width}}{headers[3]:<{column_width}}")
+        context_window.addstr(3, 2, f"{headers[0]:<10}{headers[1]:<{column_width}}{headers[2]:<{column_width}}{headers[3]:<{column_width}}{headers[4]:<{column_width}}")
         context_window.refresh()
 
         while True:
@@ -175,7 +174,7 @@ def mainMenu(menu_window, context_window, message_window, user_menu, user_menu_p
                     context_window.addstr(1, 2 + (column_width * i), f"{option}")
             
             # Display the data rows, starting from the 4th row (after the headers and options)
-            for i, row in enumerate(data):
+            for i, row in enumerate(list_passwords):
                 # Start displaying data from row 4 (index 3 is for options and headers)
                 row_index = i + 4
                 if current_row == i + 3:
@@ -202,13 +201,13 @@ def mainMenu(menu_window, context_window, message_window, user_menu, user_menu_p
                 current_row = len(options)
             # Go to last row of table data if UP is pressed while current_row == 0
             elif current_row == 0 and key == curses.KEY_UP:
-                current_row = (len(data) + len(options) - 1)
+                current_row = (len(list_passwords) + len(options) - 1)
             # Go to first option if UP is pressed while current_row is first row of table data
             elif current_row == len(options) and key == curses.KEY_UP:
                 current_row = 0
             
             # Go back to first row of table data is DOWN is pressed while current_row is last row of table data
-            elif current_row == (len(data) + len(options) - 1) and key == curses.KEY_DOWN:
+            elif current_row == (len(list_passwords) + len(options) - 1) and key == curses.KEY_DOWN:
                 current_row = 3 
 
             # Navigate through table data using UP and DOWN
@@ -227,7 +226,7 @@ def mainMenu(menu_window, context_window, message_window, user_menu, user_menu_p
                     sort_passwords()
                 else:
                     # Fetch the actual table data row using current_row index (adjusted for the length of options list)
-                    selected_row = data[current_row - 3]
+                    selected_row = list_passwords[current_row - 3]
                     message_window.addstr(1, 2, f"{selected_row[0]:<10}{selected_row[1]:<20}{selected_row[2]:<20}{selected_row[3]:<20}", curses.color_pair(6))
                     message_window.refresh()
             
@@ -326,6 +325,7 @@ def mainMenu(menu_window, context_window, message_window, user_menu, user_menu_p
                 message_window.addstr(1, 2, f"User selected {options[current_row]} button")
                 message_window.refresh()
 
+
     def migrateDatabase():
 
         migration_menu_panel.show()
@@ -383,6 +383,7 @@ def mainMenu(menu_window, context_window, message_window, user_menu, user_menu_p
                 message_window.border(0)
                 message_window.addstr(1, 2, f"User selected {options[current_row]} button")
                 message_window.refresh()
+
 
     def settingsManagement():
 
@@ -442,12 +443,14 @@ def mainMenu(menu_window, context_window, message_window, user_menu, user_menu_p
                 message_window.addstr(1, 2, f"User selected {options[current_row]} button")
                 message_window.refresh()
 
+
     def option5():
         context_window.erase()
         context_window.border(0)
         context_window.addstr(3, 3, "User selected Sign Out")
         context_window.refresh()
     
+
     def option6():
         context_window.erase()
         context_window.border(0)
@@ -455,6 +458,7 @@ def mainMenu(menu_window, context_window, message_window, user_menu, user_menu_p
         context_window.refresh()
         time.sleep(0.5)
         exit()
+
 
     # Menu options
     options = ["Passwords", "User Management", "Migrate Database", "Settings", "Sign Out", "Quit"]
@@ -477,10 +481,10 @@ def mainMenu(menu_window, context_window, message_window, user_menu, user_menu_p
             if i == current_row:
                 # Highlight the selected option
                 menu_window.attron(curses.A_REVERSE)
-                menu_window.addstr(i + 2, 2, option)
+                menu_window.addstr(i + 3, 2, option)
                 menu_window.attroff(curses.A_REVERSE)
             else:
-                menu_window.addstr(i + 2, 2, option)
+                menu_window.addstr(i + 3, 2, option)
 
         menu_window.refresh()
 
