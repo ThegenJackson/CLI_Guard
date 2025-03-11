@@ -73,17 +73,17 @@ def createWindows(stdscr):
     menu_window = curses.newwin(height - 10, 21, 10, 0)
     menu_window.border(0)
 
-    user_menu = curses.newwin(7, 21, 12, 21)
+    user_menu = curses.newwin(7, 21, 13, 21)
     user_menu.border(0)
     user_menu_panel = curses.panel.new_panel(user_menu)
     user_menu_panel.hide()
 
-    migration_menu = curses.newwin(6, 21, 13, 21)
+    migration_menu = curses.newwin(6, 21, 14, 21)
     migration_menu.border(0)
     migration_menu_panel = curses.panel.new_panel(migration_menu)
     migration_menu_panel.hide()
 
-    settings_menu = curses.newwin(7, 21, 14, 21)
+    settings_menu = curses.newwin(7, 21, 15, 21)
     settings_menu.border(0)
     settings_menu_panel = curses.panel.new_panel(settings_menu)
     settings_menu_panel.hide()
@@ -141,7 +141,7 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
         options = ["Create Password", "Search Passwords", "Sort Passwords"]
         headers = ["Index", "Category", "Account", "Username", "Last Modified"]
 
-        # Create empty list to insert data to
+        # Create empty list to insert data into
         list_passwords = []
 
         data = sqlite.queryData(user="test", table="passwords")
@@ -151,13 +151,19 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
 
         # Find available space to size columns with first column (Index) constant and 10 spaces to the right
         column_width = (context_window.getmaxyx()[1] - 20) // (len(headers) - 1)
-        
+
         # Need to erase contents of context_window to avoid new texts overwriting previous text
         context_window.erase()
         context_window.border(0)
 
         # Initialize current_row
         current_row = 0
+
+        # Track the starting index for visible rows
+        start_index = 0
+
+        # Maximum rows visible within the context window
+        max_visible_rows = context_window.getmaxyx()[0] - 5
 
         # Display headers
         context_window.addstr(3, 2, f"{headers[0]:<10}{headers[1]:<{column_width}}{headers[2]:<{column_width}}{headers[3]:<{column_width}}{headers[4]:<{column_width}}")
@@ -172,50 +178,64 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
                     context_window.attroff(curses.A_REVERSE)
                 else:
                     context_window.addstr(1, 2 + (column_width * i), f"{option}")
-            
-            # Display the data rows, starting from the 4th row (after the headers and options)
-            for i, row in enumerate(list_passwords):
-                # Start displaying data from row 4 (index 3 is for options and headers)
+
+            # Ensure start_index is within valid range
+            start_index = max(0, min(start_index, len(list_passwords) - max_visible_rows))
+
+            # Get the slice of data to display
+            visible_passwords = list_passwords[start_index:start_index + max_visible_rows]
+
+            # Display the data rows with scrolling
+            for i, row in enumerate(visible_passwords):
                 row_index = i + 4
-                if current_row == i + 3:
-                    # Highlight the selected data row based on current_row
+                is_selected = (start_index + i) == (current_row - len(options))
+
+                if is_selected:
                     context_window.attron(curses.A_REVERSE)
-                    context_window.addstr(row_index, 2, f"{row[0]:<10}{row[1]:<{column_width}}{row[2]:<{column_width}}{row[3]:<{column_width}}")
+
+                context_window.addstr(row_index, 2, f"{row[0]:<10}{row[1]:<{column_width}}{row[2]:<{column_width}}{row[3]:<{column_width}}{row[4]:<{column_width}}")
+
+                if is_selected:
                     context_window.attroff(curses.A_REVERSE)
-                else:
-                    context_window.addstr(row_index, 2, f"{row[0]:<10}{row[1]:<{column_width}}{row[2]:<{column_width}}{row[3]:<{column_width}}")
 
             context_window.refresh()
 
             # Get user input
             key = menu_window.getch()
 
-            # Navigate through options separatley using LEFT and RIGHT
-            if 0 <= current_row <= (len(options) - 2) and key == curses.KEY_RIGHT:
-                current_row += 1
-            elif 1 <= current_row <= (len(options) - 1) and key == curses.KEY_LEFT:
-                current_row -= 1
-            
             # Go to first row of table data if DOWN is pressed while current_row == any option
-            elif 0 <= current_row <= (len(options) - 1) and key == curses.KEY_DOWN:
+            if 0 <= current_row <= (len(options) - 1) and key == curses.KEY_DOWN:
                 current_row = len(options)
-            # Go to last row of table data if UP is pressed while current_row == 0
-            elif current_row == 0 and key == curses.KEY_UP:
-                current_row = (len(list_passwords) + len(options) - 1)
+
             # Go to first option if UP is pressed while current_row is first row of table data
             elif current_row == len(options) and key == curses.KEY_UP:
                 current_row = 0
-            
-            # Go back to first row of table data is DOWN is pressed while current_row is last row of table data
-            elif current_row == (len(list_passwords) + len(options) - 1) and key == curses.KEY_DOWN:
-                current_row = 3 
 
-            # Navigate through table data using UP and DOWN
-            elif key == curses.KEY_UP:
-                current_row -= 1
-            elif key == curses.KEY_DOWN:
+            # Navigate through options using LEFT and RIGHT
+            elif 0 <= current_row <= (len(options) - 2) and key == curses.KEY_RIGHT:
                 current_row += 1
-            
+            elif 1 <= current_row <= (len(options) - 1) and key == curses.KEY_LEFT:
+                current_row -= 1
+
+            # Go back to first row of table data if DOWN is pressed while current_row is last row of table data
+            elif current_row == (len(list_passwords) + len(options) - 1) and key == curses.KEY_DOWN:
+                current_row = len(options)  # Reset to first row of table data
+                start_index = 0             # Reset scroll to the top
+
+            # Scroll down
+            elif key == curses.KEY_DOWN:
+                if current_row < (len(list_passwords) + len(options) - 1):
+                    current_row += 1
+                    if (current_row - len(options)) >= (start_index + max_visible_rows):
+                        start_index += 1
+
+            # Scroll up
+            elif key == curses.KEY_UP:
+                if current_row > 0:
+                    current_row -= 1
+                    if (current_row - len(options)) < start_index:
+                        start_index -= 1
+
             # Enter key to select an option
             elif key == 10:
                 if current_row == 0:
@@ -226,10 +246,10 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
                     sort_passwords()
                 else:
                     # Fetch the actual table data row using current_row index (adjusted for the length of options list)
-                    selected_row = list_passwords[current_row - 3]
+                    selected_row = list_passwords[current_row - len(options)]
                     message_window.addstr(1, 2, f"{selected_row[0]:<10}{selected_row[1]:<20}{selected_row[2]:<20}{selected_row[3]:<20}", curses.color_pair(6))
                     message_window.refresh()
-            
+
             # Escape key (ASCII value 27) to return to Main Menu
             elif key == 27:
                 # Clear and redraw context_window
@@ -244,6 +264,7 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
 
                 # Break the loop after exiting
                 break
+
 
 
     def create_password():
