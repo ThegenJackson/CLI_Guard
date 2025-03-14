@@ -91,6 +91,11 @@ def createWindows(stdscr):
     context_window = curses.newwin(height - 10, width - 21, 10, 21)
     context_window.border(0)
 
+    popup_window = curses.newwin(15, 60, (height // 2) - 3, (width //2) - 30)
+    popup_window.border(0)
+    popup_window_panel = curses.panel.new_panel(popup_window)
+    popup_window_panel.hide()
+
     # Print the Logo to logo_window
     displayLogo(logo_window)
 
@@ -111,28 +116,12 @@ def createWindows(stdscr):
     # Update screen
     curses.doupdate()
 
-    mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_menu, migration_menu_panel, settings_menu, settings_menu_panel, context_window)
+    mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_menu, migration_menu_panel, settings_menu, settings_menu_panel, popup_window, popup_window_panel, context_window)
 
 
 
-def mainMenu(menu_window=None, message_window=None, user_menu=None, user_menu_panel=None, migration_menu=None, migration_menu_panel=None, settings_menu=None, settings_menu_panel=None, context_window=None):
+def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_menu, migration_menu_panel, settings_menu, settings_menu_panel, popup_window, popup_window_panel,  context_window):
 
-    def get_user_input(window, prompt):
-        window.clear()
-        window.border(0)
-        window.addstr(1, 2, prompt)
-        window.refresh()
-
-        # Get user input (max length of 50 characters in this case)
-        curses.echo()  # Allow typed input to be visible
-        user_input = window.getstr(2, 2, 50).decode('utf-8')
-        curses.noecho()  # Hide input again
-
-        return user_input
-    
-
-
-    # Define functions for each option
     def passwordManagement(feature=None, category=None, sort_variable=None):
         options = ["Create Password", "Search Passwords", "Sort Passwords"]
         headers = ["Index", "Category", "Account", "Username", "Last Modified"]
@@ -284,8 +273,90 @@ def mainMenu(menu_window=None, message_window=None, user_menu=None, user_menu_pa
     def createPassword():
         message_window.erase()
         message_window.border(0)
-        message_window.addstr(1, 2, "User selected Create Password button")
         message_window.refresh()
+
+        popup_window_panel.show()
+        
+        fields = ["Account Name:", "Username:", "Password:", "Category:"]
+        inputs = ["" for _ in fields]
+
+        buttons = ["Cancel", "Create"]
+
+        current_field = 0
+        current_button = 0
+        in_buttons = False
+
+        popup_window.keypad(True)
+
+        running = True
+
+        while running:
+            popup_window.erase()
+            popup_window.border(0)
+
+            # Draw fields and current inputs
+            for i, field in enumerate(fields):
+                popup_window.addstr(2 + i, 2, field)
+                popup_window.addstr(2 + i, 20, inputs[i])
+
+                # Highlight active input
+                if not in_buttons and current_field == i:
+                    popup_window.addstr(2 + i, 2, field, curses.A_REVERSE)
+
+            # Draw buttons
+            for i, button in enumerate(buttons):
+                x_pos = 20 + i * 12
+                popup_window.addstr(13, x_pos, button)
+
+                # Highlight active button
+                if in_buttons and current_button == i:
+                    popup_window.addstr(13, x_pos, button, curses.A_REVERSE)
+
+            popup_window.refresh()
+
+            key = popup_window.getch()
+
+            if key == curses.KEY_DOWN:
+                if not in_buttons:
+                    current_field += 1
+                    if current_field >= len(fields):
+                        in_buttons = True
+                        current_field = 0
+                else:
+                    current_button = (current_button + 1) % len(buttons)
+
+            elif key == curses.KEY_UP:
+                if in_buttons:
+                    in_buttons = False
+                else:
+                    current_field = max(0, current_field - 1)
+
+            elif key == curses.KEY_LEFT and in_buttons:
+                current_button = (current_button - 1) % len(buttons)
+
+            elif key == curses.KEY_RIGHT and in_buttons:
+                current_button = (current_button + 1) % len(buttons)
+
+            elif key == 10:  # Enter key
+                if in_buttons:
+                    if current_button == 0:  # Cancel
+                        popup_window_panel.hide()
+                        curses.panel.update_panels()  # Ensure the panel stack reflects changes
+                        running = False  # Exit the loop
+                    elif current_button == 1:  # Create
+                        return inputs
+                else:
+                    # Activate input mode
+                    curses.echo()
+                    popup_window.addstr(2 + current_field, 20, " " * 30)
+                    popup_window.refresh()
+                    inputs[current_field] = popup_window.getstr(2 + current_field, 20, 30).decode("utf-8")
+                    curses.noecho()
+
+            elif key == 27:  # ESC key
+                popup_window_panel.hide()
+                curses.panel.update_panels()  # Ensure the panel stack reflects changes
+                running = False  # Exit the loop
 
 
     def sortPasswords(width, category=None):
@@ -293,7 +364,7 @@ def mainMenu(menu_window=None, message_window=None, user_menu=None, user_menu_pa
         options = ["Category", "Account", "Username"]
         sort_order = ["Ascending", "Descending"]
 
-        sort_menu = curses.newwin(len(options) + 5, 21, 12, width * 3)
+        sort_menu = curses.newwin(len(options) + 5, 15, 12, width * 3)
         sort_menu.border(0)
         sort_menu_panel = curses.panel.new_panel(sort_menu)
 
@@ -343,7 +414,8 @@ def mainMenu(menu_window=None, message_window=None, user_menu=None, user_menu_pa
                 # Ask for ascending/descending
                 sort_menu.erase()
                 sort_menu.border(0)
-                sort_menu.addstr(1, 2, f"Sort By {sort_category}:")
+                sort_menu.addstr(1, 2, f"Sort By")
+                sort_menu.addstr(2, 2, f"{sort_category}:")
                 current_row = 0
 
                 while True:
@@ -351,7 +423,7 @@ def mainMenu(menu_window=None, message_window=None, user_menu=None, user_menu_pa
                     for i, option in enumerate(sort_order):
                         if i == current_row:
                             sort_menu.attron(curses.A_REVERSE)
-                        sort_menu.addstr(i + 3, 2, option)
+                        sort_menu.addstr(i + 4, 2, option)
                         if i == current_row:
                             sort_menu.attroff(curses.A_REVERSE)
 
