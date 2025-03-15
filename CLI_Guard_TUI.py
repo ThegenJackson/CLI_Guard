@@ -91,7 +91,7 @@ def createWindows(stdscr):
     context_window = curses.newwin(height - 10, width - 21, 10, 21)
     context_window.border(0)
 
-    popup_window = curses.newwin(15, 60, (height // 2) - 3, (width //2) - 30)
+    popup_window = curses.newwin(12, 60, (height // 2) - 3, (width //2) - 30)
     popup_window.border(0)
     popup_window_panel = curses.panel.new_panel(popup_window)
     popup_window_panel.hide()
@@ -121,6 +121,10 @@ def createWindows(stdscr):
 
 
 def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_menu, migration_menu_panel, settings_menu, settings_menu_panel, popup_window, popup_window_panel,  context_window):
+
+    def drawHeaders(context_window, headers, column_width):
+        context_window.addstr(3, 2, f"{headers[0]:<10}{headers[1]:<{column_width}}{headers[2]:<{column_width}}{headers[3]:<{column_width}}{headers[4]:<{column_width}}", curses.A_BOLD)
+        context_window.refresh()
 
     def passwordManagement(feature=None, category=None, sort_variable=None):
         options = ["Create Password", "Search Passwords", "Sort Passwords"]
@@ -240,8 +244,12 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
                 elif key == 10:
                     if current_row == 0:
                         createPassword()
+                        # Redraw the headers after popup closes
+                        drawHeaders(context_window, headers, column_width)
                     elif current_row == 1:
-                        searchPasswords()
+                        category, search_term = searchPasswords(column_width)
+                        feature = "Search" if category and search_term else None
+                        break  # Restart with search applied
                     elif current_row == 2:
                         category, sort_variable = sortPasswords(column_width)
                         feature = "Sort" if category and sort_variable else None
@@ -276,15 +284,19 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
         message_window.refresh()
 
         popup_window_panel.show()
-        
-        fields = ["Account Name:", "Username:", "Password:", "Category:"]
+
+        fields = ["Category:", "Account:", "Username:", "Password:"]
         inputs = ["" for _ in fields]
 
-        buttons = ["Cancel", "Create"]
+        options = ["Scramble Password", "Generate Random", "Generate Passphrase"]
+        buttons = ["Create", "Cancel"]
 
         current_field = 0
+        current_option = 0
         current_button = 0
+
         in_buttons = False
+        in_options = False
 
         popup_window.keypad(True)
 
@@ -300,63 +312,97 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
                 popup_window.addstr(2 + i, 20, inputs[i])
 
                 # Highlight active input
-                if not in_buttons and current_field == i:
+                if not in_buttons and not in_options and current_field == i:
                     popup_window.addstr(2 + i, 2, field, curses.A_REVERSE)
+
+            # Draw options (above buttons)
+            for i, option in enumerate(options):
+                popup_window.addstr(8, 2 + i * 18, f"{option:^18}")
+
+                # Highlight active option
+                if in_options and current_option == i:
+                    popup_window.addstr(8, 2 + i * 18, f"{option:^18}", curses.A_REVERSE)
 
             # Draw buttons
             for i, button in enumerate(buttons):
-                x_pos = 20 + i * 12
-                popup_window.addstr(13, x_pos, button)
+                popup_window.addstr(10, 20 + i * 12, button)
 
                 # Highlight active button
                 if in_buttons and current_button == i:
-                    popup_window.addstr(13, x_pos, button, curses.A_REVERSE)
+                    popup_window.addstr(10, 20 + i * 12, button, curses.A_REVERSE)
 
             popup_window.refresh()
 
             key = popup_window.getch()
 
             if key == curses.KEY_DOWN:
-                if not in_buttons:
+                if not in_buttons and not in_options:
                     current_field += 1
                     if current_field >= len(fields):
-                        in_buttons = True
+                        in_options = True
                         current_field = 0
+                elif in_options:
+                    in_options = False
+                    in_buttons = True
                 else:
                     current_button = (current_button + 1) % len(buttons)
 
             elif key == curses.KEY_UP:
                 if in_buttons:
                     in_buttons = False
+                    in_options = True
+                elif in_options:
+                    in_options = False
                 else:
                     current_field = max(0, current_field - 1)
 
-            elif key == curses.KEY_LEFT and in_buttons:
-                current_button = (current_button - 1) % len(buttons)
+            elif key == curses.KEY_LEFT:
+                if in_options:
+                    current_option = (current_option - 1) % len(options)
+                elif in_buttons:
+                    current_button = (current_button - 1) % len(buttons)
 
-            elif key == curses.KEY_RIGHT and in_buttons:
-                current_button = (current_button + 1) % len(buttons)
+            elif key == curses.KEY_RIGHT:
+                if in_options:
+                    current_option = (current_option + 1) % len(options)
+                elif in_buttons:
+                    current_button = (current_button + 1) % len(buttons)
+
+            elif not in_buttons and not in_options and 32 <= key <= 126:  # Typing in the active field
+                inputs[current_field] += chr(key)
+
+            elif key in (curses.KEY_BACKSPACE, 127, 8):  # Handle backspace (covering multiple cases)
+                if not in_buttons and not in_options and inputs[current_field]:
+                    inputs[current_field] = inputs[current_field][:-1]
 
             elif key == 10:  # Enter key
                 if in_buttons:
-                    if current_button == 0:  # Cancel
-                        popup_window_panel.hide()
-                        curses.panel.update_panels()  # Ensure the panel stack reflects changes
-                        running = False  # Exit the loop
-                    elif current_button == 1:  # Create
-                        return inputs
-                else:
-                    # Activate input mode
-                    curses.echo()
-                    popup_window.addstr(2 + current_field, 20, " " * 30)
-                    popup_window.refresh()
-                    inputs[current_field] = popup_window.getstr(2 + current_field, 20, 30).decode("utf-8")
-                    curses.noecho()
+                    if current_button == 1:  # Cancel
+                        context_window.erase()
+                        context_window.border(0)
+                        context_window.refresh()
 
-            elif key == 27:  # ESC key
-                popup_window_panel.hide()
-                curses.panel.update_panels()  # Ensure the panel stack reflects changes
-                running = False  # Exit the loop
+                        popup_window_panel.hide()
+                        running = False
+                    elif current_button == 0:  # Create
+                        return inputs
+                elif in_options:
+                    # Handle selected option action (e.g., scramble, generate random, etc.)
+                    if current_option == 0:
+                        inputs[current_field] = "[Scrambled Password]"
+                    elif current_option == 1:
+                        inputs[current_field] = "[Random Password]"
+                    elif current_option == 2:
+                        inputs[current_field] = "[Passphrase]"
+
+                elif key == 27:  # ESC key
+                    context_window.erase()
+                    context_window.border(0)
+                    context_window.refresh()
+
+                    popup_window_panel.hide()
+                    running = False
+
 
 
     def sortPasswords(width, category=None):
@@ -454,11 +500,115 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
 
 
 
-    def searchPasswords():
-        message_window.erase()
-        message_window.border(0)
-        message_window.addstr(1, 2, "User selected Search Passwords button")
-        message_window.refresh()
+    def searchPasswords(width):
+        # Search menu options
+        options = ["Category", "Account", "Username"]
+
+        search_menu = curses.newwin(len(options) + 5, 30, 12, width * 3)
+        search_menu.border(0)
+        search_menu_panel = curses.panel.new_panel(search_menu)
+
+        search_menu_panel.show()
+
+        search_menu.addstr(1, 2, "Search By:")
+
+        current_row = 0
+
+        while True:
+            # Display the menu
+            for i, option in enumerate(options):
+                if i == current_row:
+                    search_menu.attron(curses.A_REVERSE)
+                search_menu.addstr(i + 3, 2, option)
+                if i == current_row:
+                    search_menu.attroff(curses.A_REVERSE)
+
+            # Display back option with blue color
+            if current_row == len(options):
+                search_menu.attron(curses.A_REVERSE)
+            search_menu.addstr(len(options) + 4, 3, "| BACK |", curses.color_pair(4))
+            if current_row == len(options):
+                search_menu.attroff(curses.A_REVERSE)
+
+            search_menu.refresh()
+
+            search_menu.keypad(True)
+            key = search_menu.getch()
+
+            if key == curses.KEY_UP and current_row > 0:
+                current_row -= 1
+            elif key == curses.KEY_DOWN and current_row < len(options):
+                current_row += 1
+
+            # Handle Back option or ESC key
+            elif key == 27 or (key == 10 and current_row == len(options)):
+                search_menu_panel.hide()
+                return None, None
+
+            # If an option is selected
+            elif key == 10:
+                search_field = options[current_row]
+
+                # Ask for search term
+                search_menu.erase()
+                search_menu.border(0)
+                search_menu.addstr(1, 2, f"Search {search_field} for:")
+
+                input_row = 3
+                buttons = ["| SEARCH |", "| BACK |"]
+
+                search_term = ""
+                button_index = 0
+                input_mode = True  # True: Typing, False: Button Navigation
+
+                while True:
+                    # Display input field
+                    search_menu.addstr(input_row, 2, search_term + " ")
+
+                    # Display SEARCH and BACK buttons with color pair 4
+                    for i, button in enumerate(buttons):
+                        if i == button_index:
+                            search_menu.attron(curses.A_REVERSE)
+                        # Apply color pair 4 for unselected buttons
+                        search_menu.addstr(len(options) + 4, 3 + (i * 15), button, curses.color_pair(4))
+                        if i == button_index:
+                            search_menu.attroff(curses.A_REVERSE)
+
+                    search_menu.refresh()
+
+                    key = search_menu.getch()
+
+                    if input_mode:
+                        if key in (curses.KEY_BACKSPACE, 127, 8):  # Handle backspace
+                            search_term = search_term[:-1]
+                        elif key == 27:  # ESC key to cancel
+                            search_menu_panel.hide()
+                            return None, None
+                        elif key == curses.KEY_DOWN:  # Move to button navigation
+                            input_mode = False
+                        elif 32 <= key <= 126:  # Typing input (printable ASCII)
+                            search_term += chr(key)
+                            search_menu.refresh()  # Refresh to show the typed character
+                    else:  # Button navigation
+                        if key == curses.KEY_UP:
+                            button_index = 0  # Move back to input mode
+                            input_mode = True
+                        elif key == curses.KEY_DOWN and button_index < len(buttons) - 1:
+                            button_index += 1
+                        elif key == curses.KEY_UP and button_index > 0:
+                            button_index -= 1
+                        elif key == 10:
+                            if button_index == 0:  # SEARCH
+                                search_menu_panel.hide()
+                                return search_field, search_term
+                            elif button_index == 1:  # BACK
+                                search_menu_panel.hide()
+                                return None, None
+                        elif key == 27:  # ESC key to cancel
+                            search_menu_panel.hide()
+                            return None, None
+
+
 
 
     def userManagement():
@@ -586,7 +736,7 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
         settings_menu_panel.show()
 
         # Menu options
-        options = ["Settings Option 1", "Settings Option 2", "Settings Option 3"]
+        options = ["Scrambler", "Random Generator", "Passphrases"]
         current_row = 0
 
         while True:
