@@ -504,7 +504,7 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
         # Search menu options
         options = ["Category", "Account", "Username"]
 
-        search_menu = curses.newwin(len(options) + 5, 30, 12, width * 3)
+        search_menu = curses.newwin(len(options) + 5, 27, 12, width * 3)
         search_menu.border(0)
         search_menu_panel = curses.panel.new_panel(search_menu)
 
@@ -537,7 +537,7 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
 
             if key == curses.KEY_UP and current_row > 0:
                 current_row -= 1
-            elif key == curses.KEY_DOWN and current_row < len(options):
+            elif key == curses.KEY_DOWN and current_row <= len(options):
                 current_row += 1
 
             # Handle Back option or ESC key
@@ -569,8 +569,7 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
                     for i, button in enumerate(buttons):
                         if i == button_index:
                             search_menu.attron(curses.A_REVERSE)
-                        # Apply color pair 4 for unselected buttons
-                        search_menu.addstr(len(options) + 4, 3 + (i * 15), button, curses.color_pair(4))
+                        search_menu.addstr(len(options) + 4, 3 + (i * 13), button, curses.color_pair(4))
                         if i == button_index:
                             search_menu.attroff(curses.A_REVERSE)
 
