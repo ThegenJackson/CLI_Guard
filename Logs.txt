@@ -1,1 +1,18 @@
-[2025-03-22 12:25:21] DATABASE SUCCESS: Updated password for dave99
+[2025-03-29 16:52:03] Traceback (most recent call last):
+  File "C:\Users\thege\OneDrive\Desktop\PROJECTS\CLI_Guard\CLI_SQL\CLI_Guard_SQL.py", line 67, in queryData
+    ORDER BY {category.lower()} {sort_by.upper()[:-6]};
+              ^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'lower'
+
+[2025-04-06 22:01:13] DATABASE SUCCESS: Inserted password for it
+[2025-04-06 22:02:30] DATABASE SUCCESS: Inserted password for a
+[2025-04-21 11:46:05] Traceback (most recent call last):
+  File "C:\Users\thege\OneDrive\Desktop\PROJECTS\CLI_Guard\CLI_Guard.py", line 233, in decryptPassword
+    decrypted_password = Fernet(encryption_key).decrypt(password)
+                         ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\cryptography\fernet.py", line 40, in __init__
+    raise ValueError(
+ValueError: Fernet key must be 32 url-safe base64-encoded bytes.
+
+[2025-04-21 11:46:05] DATABASE SUCCESS: Created master testing
+[2025-04-21 11:46:05] DATABASE SUCCESS: Inserted password for a

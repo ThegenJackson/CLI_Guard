@@ -256,8 +256,8 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
                         break  # Restart with sorting applied
                     else:
                         # Fetch the actual table data row using current_row index (adjusted for the length of options list)
-                        selected_row = passwords_list[current_row - len(options)]
-                        message_window.addstr(1, 2, f"{selected_row[0]:<10}{selected_row[1]:<20}{selected_row[2]:<20}{selected_row[3]:<20}", curses.color_pair(6))
+                        selected_record = inputFields=passwords_list[current_row - len(options)]
+                        message_window.addstr(1, 2, f"{selected_record[0]:^10}{selected_record[1]:^{column_width}}{selected_record[2]:^{column_width}}{selected_record[3]:^{column_width}}")
                         message_window.refresh()
 
                 # Escape key (ASCII value 27) to return to Main Menu
@@ -278,7 +278,7 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
 
 
 
-    def createPassword():
+    def createPassword(inputFields=None):
         message_window.erase()
         message_window.border(0)
         message_window.refresh()
@@ -797,7 +797,7 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
         context_window.refresh()
     
 
-    def option6():
+    def quitMenu():
         context_window.erase()
         context_window.border(0)
         context_window.addstr(3, 3, "Quitting...")
@@ -817,7 +817,7 @@ def mainMenu(menu_window, message_window, user_menu, user_menu_panel, migration_
         2: migrateDatabase,
         3: settingsManagement,
         4: option5,
-        5: option6
+        5: quitMenu
     }
 
     while True:

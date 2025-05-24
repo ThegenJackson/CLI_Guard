@@ -1,0 +1,33 @@
+
+password generator:
+- random password generator
+- create a password algorythm to layer on top of passwords
+- pass phrase generator
+
+each has settings that persist through sessions by updating the sqlite3 generator settings table or a .config file
+
+
+
+FIX THESE THINGS
+Create Password Popup needs ESC to exit
+Create Password Popup fix button navigation
+Search Passwords Popup fix buttons and navigation
+Exiting Search Passwords Popup reverts data table, needs to retain sort and search results unless removed
+The Create Passwords Popup does not revert the data table so need to model off how that is working
+
+
+Pyperclip does not seem to be platform agnostic so consider replacing with the following
+	To use native Python directories, use:
+
+	import subprocess
+
+	def copy2clip(txt):
+		cmd='echo '+txt.strip()+'|clip'
+		return subprocess.check_call(cmd, shell=True)
+	on Mac, instead:
+
+	import subprocess
+
+	def copy2clip(txt):
+		cmd='echo '+txt.strip()+'|pbcopy'
+		return subprocess.check_call(cmd, shell=True)
