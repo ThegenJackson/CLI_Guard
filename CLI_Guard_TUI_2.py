@@ -127,7 +127,8 @@ def createWindows(stdscr: curses.window) -> dict[str, Any]:
         "settings_window":      settings_window,
         "settings_panel":       settings_panel,
         "popup_window":         popup_window,
-        "popup_panel":          popup_panel
+        "popup_panel":          popup_panel,
+        "stdscr":               stdscr
     }
 
     return windows
@@ -161,45 +162,31 @@ def signIn(windows: dict[str, Any]) -> None:
     for i, user_record in enumerate(data):
         users_list.append([user_record[0], user_record[1]])
 
-
     # Initialize current_row
     current_row: int = 0
-    # Track the starting index for visible rows
-    start_index: int = 0
-    # Maximum rows visible within the context window
-    # Height of current window - number of options - line for header - 2 lines for spacing
-    max_visible_rows: int = login_window.getmaxyx()[0] - len(login_options) - 3
-
 
     # Main input loop for Sign In
     while True:
-        
-        # Display options with highlighted state based on current_row
-        for i, option in enumerate(login_options):
-            if current_row == i:
-                login_window.attron(curses.A_REVERSE)
-                login_window.addstr(len(users_list) + 3 + i, 3, option)
-                login_window.attroff(curses.A_REVERSE)
-            else:
-                login_window.addstr(len(users_list) + 3 + i, 3, option)
-
-        # Ensure start_index is within valid range
-        start_index: int = max(0, min(start_index, len(users_list) - max_visible_rows))
-        # Get the slice of data to display
-        visible_users: list[list[str]] = users_list[start_index:start_index + max_visible_rows]
 
         # Display the data rows with scrolling
-        for i, user_data in enumerate(visible_users):
-            row_index:int = i + 2
-            is_selected: bool = (start_index + i) == (current_row - len(login_options))
-            if is_selected:
+        for i, user_data in enumerate(users_list):
+            if i == current_row:
                 login_window.attron(curses.A_REVERSE)
-            login_window.addstr(row_index, 3, user_data[0])
-            if is_selected:
+                login_window.addstr(i + 2, 3, user_data[0])
                 login_window.attroff(curses.A_REVERSE)
+            else:
+                login_window.addstr(i + 2, 3, user_data[0])
+
+        # Display options with highlighted state based on current_row
+        for i, option in enumerate(login_options, start=len(users_list)):
+            if  i == current_row:
+                login_window.attron(curses.A_REVERSE)
+                login_window.addstr(i + 3, 3, option)
+                login_window.attroff(curses.A_REVERSE)
+            else:
+                login_window.addstr(i + 3, 3, option)
 
         login_window.refresh()
-
 
         # Enable Curses keypad in the login_window context
         login_window.keypad(True)
@@ -212,25 +199,25 @@ def signIn(windows: dict[str, Any]) -> None:
         if key == curses.KEY_DOWN:
             if current_row < selectable_items:
                 current_row += 1
-                if current_row >= (start_index + max_visible_rows):
-                    start_index += 1
 
         # Scroll up
         elif key == curses.KEY_UP:
             if current_row > 0:
                 current_row -= 1
-                if current_row < start_index:
-                    start_index -= 1
-        
-        # Escape key (ASCII value 27) to return to Main Menu
-        elif key == 27:
-            # Clear and redraw login_window
-            login_window.erase()
-            login_window.refresh() 
-            login_panel.hide() 
-            mainMenu(windows)  
-            # Break the loop after exiting
-            break
+
+        elif key == 10:  # ASCII value for Enter key
+            if current_row <= selectable_items - len(login_options):
+                # Clear and redraw login_window
+                login_window.erase()
+                login_window.refresh() 
+                login_panel.hide() 
+                mainMenu(windows)  # FIX THIS  PASS USER
+                # Break the loop after exiting
+                break
+            elif current_row > selectable_items - len(login_options):
+                pass # FIX THIS
+            elif current_row == selectable_items:
+                exit(1)
 
 
 
@@ -344,13 +331,8 @@ def settingsManagement(windows: dict[str, Any]) -> None:
 
 
 def signOut(windows: dict[str, Any]) -> None:
-    content_window: curses.window = windows["content_window"]
-    content_window.erase()
-    content_window.box()
-    content_window.addstr(3, 3, "User selected Sign Out")
-    content_window.noutrefresh() # Mark for update
-    curses.doupdate() # Update marked windows
-
+    stdscr: curses.window = windows["stdscr"]
+    launch(stdscr)
 
 
 def quitMenu(windows: dict[str, Any]) -> None:
