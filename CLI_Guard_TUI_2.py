@@ -145,22 +145,26 @@ def signIn(windows: dict[str, Any]) -> None:
     # Show login_panel and update content of login_window
     login_panel.show()
     login_window.box()
-    login_window.addstr(0, 3, "Select a User to Sign In")
-
+    login_window.addstr(0, 3, "| Select a User to Sign In |")
+    
     # Mark window for update
     login_window.noutrefresh()
     # Initial draw
     curses.doupdate()
 
 # LOGIC
-    login_options: list[str] = ["Create new user", "Exit"]
+    login_options: dict[str, Any] = {
+    "Create new user":          createUser,
+    "Exit":                     quitMenu
+    }
 
     # Create empty list to insert data into
     users_list: list[list[str]] = []
+    # Query Users table
     data: list[list[Any]] = sqlite.queryData(user=None, table="users")
-    # Loop through query data and insert relevant data to passwords_list
+    # Loop through query data and insert relevant data to users_list
     for i, user_record in enumerate(data):
-        users_list.append([user_record[0], user_record[1]])
+        users_list.append([user_record[0], user_record[1]]) # FIX THIS / CHANGE THIS NEEDS TO BE ABSTRACTED INTO SEPERATE FILE FOR BUSINESS LOGIC
 
     # Initialize current_row
     current_row: int = 0
@@ -210,18 +214,19 @@ def signIn(windows: dict[str, Any]) -> None:
                 # Clear and redraw login_window
                 login_window.erase()
                 login_window.refresh() 
-                login_panel.hide() 
-                mainMenu(windows)  # FIX THIS  PASS USER
+                login_panel.hide()
+                # Pass windows and selected User to mainMenu
+                mainMenu(windows, user=users_list[current_row][0]) # CHANGE THIS / FIX THIS WITH REAL SIGN IN PASSWORD ETC
                 # Break the loop after exiting
                 break
             elif current_row > selectable_items - len(login_options):
-                pass # FIX THIS
-            elif current_row == selectable_items:
-                exit(1)
+                # Convert the login_options Dictionary to a List containing only the Dictionary Keys
+                # Convert the current_index to the correct index of the List by subtracting the length of users_list
+                # Pass the windows Dictionary, createUser requires it and Exit uses the quitMenu Key for compability
+                login_options[list(login_options.keys())[current_row - len(users_list)]](windows)
 
 
-
-def mainMenu(windows: dict[str, Any]) -> None:
+def mainMenu(windows: dict[str, Any], user) -> None:
 
 # WINDOWS
     #  Define windows
@@ -230,7 +235,6 @@ def mainMenu(windows: dict[str, Any]) -> None:
     content_window: curses.window = windows["content_window"]
     message_window: curses.window = windows["message_window"]
 
-    user: str = None # CHANGE THIS / FIX THIS
     menu_window.addstr(1, 2, "MAIN MENU")
     # Display Current User information in the fourth and third last available row of the Terminal
     menu_window.addstr(menu_window.getmaxyx()[0] - 4, 2, "Current User:")
@@ -310,6 +314,11 @@ def userManagement(windows: dict[str, Any]) -> None:
 
 
 
+def createUser(windows: dict[str, any]) -> None:
+    pass
+
+
+
 def migrateDatabase(windows: dict[str, Any]) -> None:
     content_window: curses.window = windows["content_window"]
     content_window.erase()
@@ -335,14 +344,9 @@ def signOut(windows: dict[str, Any]) -> None:
     launch(stdscr)
 
 
+
 def quitMenu(windows: dict[str, Any]) -> None:
-    content_window: curses.window = windows["content_window"]
-    content_window.erase()
-    content_window.box()
-    content_window.addstr(3, 3, "Quitting...")
-    content_window.noutrefresh() # Mark for update
-    curses.doupdate() # Update marked windows
-    time.sleep(0.5)
+    time.sleep(0.2)
     exit()
 
 
