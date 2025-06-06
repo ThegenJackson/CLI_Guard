@@ -4,3 +4,4 @@
 # Linguist stuff
 *.html linguist-detectable=false
 *.md linguist-detectable=false
+*.toc linguist-detectable=false
