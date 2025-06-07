@@ -1,6 +1,9 @@
 # CLI Guard SQL
 import  CLI_SQL.CLI_Guard_SQL as sqlite
 
+#CLI Guard Business Logic
+import CLI_Guard_2
+
 # Import curses for Terminal User Interface and navigation
 # https://docs.python.org/3/library/curses.html
 import curses
@@ -158,32 +161,27 @@ def signIn(windows: dict[str, Any]) -> None:
     "Exit":                     quitMenu
     }
 
-    # Create empty list to insert data into
-    users_list: list[list[str]] = []
-    # Query Users table
-    data: list[list[Any]] = sqlite.queryData(user=None, table="users")
-    # Loop through query data and insert relevant data to users_list
-    for i, user_record in enumerate(data):
-        users_list.append([user_record[0], user_record[1]]) # FIX THIS / CHANGE THIS NEEDS TO BE ABSTRACTED INTO SEPERATE FILE FOR BUSINESS LOGIC
+    # Get Users
+    users_list: list[str] = CLI_Guard_2.getUsers()
 
-    # Initialize current_row
-    current_row: int = 0
+    # Initialize selected value
+    selected: int = 0
 
     # Main input loop for Sign In
     while True:
 
         # Display the data rows with scrolling
         for i, user_data in enumerate(users_list):
-            if i == current_row:
+            if i == selected:
                 login_window.attron(curses.A_REVERSE)
                 login_window.addstr(i + 2, 3, user_data[0])
                 login_window.attroff(curses.A_REVERSE)
             else:
                 login_window.addstr(i + 2, 3, user_data[0])
 
-        # Display options with highlighted state based on current_row
+        # Display options with highlighted state based on selected
         for i, option in enumerate(login_options, start=len(users_list)):
-            if  i == current_row:
+            if  i == selected:
                 login_window.attron(curses.A_REVERSE)
                 login_window.addstr(i + 3, 3, option)
                 login_window.attroff(curses.A_REVERSE)
@@ -200,33 +198,142 @@ def signIn(windows: dict[str, Any]) -> None:
         selectable_items: int = len(users_list) + len(login_options) - 1
 
         # Scroll down
-        if key == curses.KEY_DOWN:
-            if current_row < selectable_items:
-                current_row += 1
+        if key == curses.KEY_DOWN and selected < selectable_items:
+                selected += 1
 
         # Scroll up
-        elif key == curses.KEY_UP:
-            if current_row > 0:
-                current_row -= 1
+        elif key == curses.KEY_UP and selected > 0:
+                selected -= 1
 
         elif key == 10:  # ASCII value for Enter key
-            if current_row <= selectable_items - len(login_options):
+            if selected <= selectable_items - len(login_options):
                 # Clear and redraw login_window
                 login_window.erase()
                 login_window.refresh() 
                 login_panel.hide()
+
                 # Pass windows and selected User to mainMenu
-                mainMenu(windows, user=users_list[current_row][0]) # CHANGE THIS / FIX THIS WITH REAL SIGN IN PASSWORD ETC
+                authSignIn(windows, user=users_list[selected][0])
+
                 # Break the loop after exiting
                 break
-            elif current_row > selectable_items - len(login_options):
+            
+            elif selected > selectable_items - len(login_options):
                 # Convert the login_options Dictionary to a List containing only the Dictionary Keys
                 # Convert the current_index to the correct index of the List by subtracting the length of users_list
                 # Pass the windows Dictionary, createUser requires it and Exit uses the quitMenu Key for compability
-                login_options[list(login_options.keys())[current_row - len(users_list)]](windows)
+                login_options[list(login_options.keys())[selected - len(users_list)]](windows)
+    
 
 
-def mainMenu(windows: dict[str, Any], user) -> None:
+def authSignIn(windows: dict[str, Any], user: str) -> None:
+
+# WINDOWS
+    # Define windows
+    login_window: curses.window = windows["login_window"]
+    login_panel: curses.panel.Panel  = windows["login_panel"]
+
+    # Show login_panel and update content of login_window
+    login_panel.show()
+    login_window.box()
+    login_window.addstr(0, 3, f"| Enter password for {user} |")
+    
+    # Mark window for update
+    login_window.noutrefresh()
+    # Initial draw
+    curses.doupdate()
+
+# LOGIC
+    # Define input field as a list to assist in logic later despite list containing a single value
+    # This method copies approach from createUser and createPassword to achieve forms in Python Curses
+    auth_fields: list[str] = ["Password:"]
+    auth_inputs: list[str] = ["" for _ in auth_fields]
+
+    # Options
+    auth_options: list[str] = ["Enter", "Cancel"]
+
+    # initialise selected value
+    selected: int = 0
+
+    # Initialise attempted_password
+    attempted_password: str = ""
+
+    while True:
+
+        # Draw fields and inputs
+        for i, field in enumerate(auth_fields):
+            login_window.addstr(2 + i, 2, field)
+            login_window.addstr(2 + i, 20, auth_inputs[i])
+            # Highlight inputs if selected
+            if selected == i:
+                login_window.addstr(2 + i, 2, field, curses.A_REVERSE)
+
+        # Draw options
+        for i, option in enumerate(auth_options):
+            login_window.addstr(4, 2 + i * 10, f"{option:^10}")
+            # Highlight active option
+            if selected == len(auth_fields) + i:
+                login_window.addstr(4, 2 + i * 10, f"{option:^10}", curses.A_REVERSE)
+
+        login_window.refresh()
+
+        # Enable Curses keypad in the login_window context
+        login_window.keypad(True)
+        # Get user input
+        key: int = login_window.getch()
+
+        # Scroll down
+        if key == curses.KEY_DOWN and selected < len(auth_options):
+            selected += 1
+    
+        # Return to Form inputs
+        elif key == curses.KEY_UP:
+            selected = 0
+        
+        # Navigate Right between auth_options
+        elif key == curses.KEY_RIGHT and selected < len(auth_options):
+            selected += 1
+
+        # Navigate Left between auth_options
+        elif key == curses.KEY_LEFT and 0 < selected <= len(auth_options):
+            selected -= 1
+
+        # Typing in the active field and tracking attempted_password
+        elif selected == 0 and 32 <= key <= 126:
+            attempted_password += chr(key)
+            auth_inputs[selected] += "*"
+
+        # Handle backspace (covering multiple cases) to modify attempted_password and inputted value
+        elif key in (curses.KEY_BACKSPACE, 127, 8):
+            if selected == 0 and auth_inputs[selected]:
+                # Shorten the attempted_password
+                attempted_password = attempted_password[:-1]
+                # Shorten the inputted value
+                auth_inputs[selected] = auth_inputs[selected][:-1]
+                # Replace the value with the shortened input value
+                login_window.addstr(2 + selected, 20 + len(auth_inputs[selected]), " ")
+
+        elif key == 10 and selected < len(auth_options):  # ASCII value for Enter key, Cancel is not selected
+            # attempted_password_hash: bytes = bcrypt hash attempted_password 
+            # if CLI_Guard_2,authUser(user, attempted_password_hash) is True:
+            mainMenu(windows, user) # CHANGE THIS / FIX THIS // Take field input and compare to user password hash
+            # else: attempts += 1
+            # if attempts == 3 block sign in for 1 day
+
+        elif key == 10 and selected == len(auth_options):  # Cancel selected
+            # Erase current screen
+            login_window.erase()
+            login_window.border(0)
+            login_window.refresh()
+            login_panel.hide()
+
+            # Return to Sign In
+            signIn(windows)
+
+
+
+
+def mainMenu(windows: dict[str, Any], user: str) -> None:
 
 # WINDOWS
     #  Define windows
@@ -254,7 +361,7 @@ def mainMenu(windows: dict[str, Any], user) -> None:
 # LOGIC
     # Menu options
     options: list[str] = ["Passwords", "User Management", "Migrate Database", "Settings", "Sign Out", "Quit"]
-    current_row: int = 0
+    selected: int = 0
 
     # Map menu options to functions
     functions: dict[int, Any] = {
@@ -270,7 +377,7 @@ def mainMenu(windows: dict[str, Any], user) -> None:
 
         # Display the menu
         for i, option in enumerate(options):
-            if i == current_row:
+            if i == selected:
                 # Highlight the selected option
                 menu_window.attron(curses.A_REVERSE)
                 menu_window.addstr(i + 3, 2, option)
@@ -284,13 +391,13 @@ def mainMenu(windows: dict[str, Any], user) -> None:
         # Get user input
         key: int = menu_window.getch()
 
-        if key == curses.KEY_UP and current_row > 0:
-            current_row -= 1
-        elif key == curses.KEY_DOWN and current_row < len(options) - 1:
-            current_row += 1
+        if key == curses.KEY_UP and selected > 0:
+            selected -= 1
+        elif key == curses.KEY_DOWN and selected < len(options) - 1:
+            selected += 1
         elif key == 10:  # ASCII value for Enter key
             # Call the function corresponding to the selected option and pass the dictionary of windows
-            functions[current_row](windows)
+            functions[selected](windows)
 
 
 
