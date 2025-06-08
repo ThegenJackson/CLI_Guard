@@ -6,7 +6,7 @@ from tabulate import tabulate
 
 # Import OS library
 import os
-
+insertUser
 # Import Traceback for logging
 import traceback
 
@@ -380,7 +380,7 @@ def attemptLogin(user, attempt, master_key, master_password) -> None:
                     attemptLogin(user, attempt, master_key, master_password)
         else:
             # Set last_locked to today on the users table
-            sqlite.lockMaster(user)
+            sqlite.lockUser(user)
             # Write to Log file
             logging(message=f"Incorrect password entered 3 times for Master User {user} - Account {user} locked until {tomorrow}")
             # Print Account Locked notice to screen and return to Login
@@ -555,7 +555,7 @@ def updatePassword(user, passwords_list, index, mode) -> None:
         # Returns True if replace_password was entered
         if replace_password:
             save_password = encryptPassword(replace_password)
-            sqlite.updateData(save_password, account, username, old_password, session_password_key.decode())
+            sqlite.updateData(user, save_password, account, username, old_password, session_password_key.decode())
 
             # Return to Start Menu or repeat
             tryAgain(user, mode, (passwords_list[index][2]), (done[0]))
@@ -772,7 +772,7 @@ def newMaster(user=None) -> None:
         # Check if the password is provided
         if new_master_password:
             save_password = encryptPassword(new_master_password)
-            sqlite.insertMaster(new_master_user, save_password, session_password_key.decode())
+            sqlite.insertUser(new_master_user, save_password, session_password_key.decode())
             # Go to Login screen after creating new Master User
             # Sign Out of current user and allow user to Sign In with new Master User or other
             if user is None:
@@ -802,7 +802,7 @@ def updateMaster(user) -> None:
         # Returns True if new_master_password was entered
         if new_master_password:
             save_password = encryptPassword(new_master_password)
-            sqlite.updateMasterPassword(user, save_password, session_password_key.decode())
+            sqlite.updateUserPassword(user, save_password, session_password_key.decode())
             if enterContinue(enter_continue_statement=f"Password updated for Master User {user}") is True:
                 # Return to Log In screen
                 splashScreen()
@@ -835,7 +835,7 @@ def removeMaster(user) -> None:
                 # Check if the user wants to delete the chosen Master User
                 statement = (f"Are you sure you want to delete the Master User {Fore.YELLOW}{master_users_list[selected_index][0]}{Style.RESET_ALL} ?\n")
                 if choice(statement, user, mode="Delete", password=None, confirm_delete=True, type="Master User") == True:
-                    sqlite.deleteMaster(user=master_users_list[selected_index][0])
+                    sqlite.deleteUser(user=master_users_list[selected_index][0])
                     if user == master_users_list[selected_index][0]:
                         if enterContinue(enter_continue_statement=f"Current User {Fore.YELLOW}{user}{Style.RESET_ALL} has been deleted") is True:
                             splashScreen()
@@ -999,7 +999,7 @@ def importData(user, import_path) -> None:
         # for uniqueness while users passwords are checked for uniqueness across all fields
         for i, decrypted_user in enumerate(decrypted_imported_users):
             if decrypted_user[0] not in existing_users_list:
-                sqlite.insertMaster(
+                sqlite.insertUser(
                     user=decrypted_user[0],
                     password=encryptPassword(decrypted_user[1]),
                     session_key=session_password_key.decode()

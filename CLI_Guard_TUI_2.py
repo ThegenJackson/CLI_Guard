@@ -9,6 +9,8 @@ import CLI_Guard_2
 import curses
 import curses.panel
 
+import bcrypt
+
 from typing import Any
 import time
 
@@ -54,7 +56,7 @@ def createWindows(stdscr: curses.window) -> dict[str, Any]:
 
     # Set Window sizes dynamically to avoid  overlapping
     answer_height: int = 5
-    message_height: int = 6
+    message_height: int = 5
 
     menu_start_y: int = answer_height # Y position where menu starts
     menu_height: int = height - (menu_start_y + message_height)
@@ -163,6 +165,8 @@ def signIn(windows: dict[str, Any]) -> None:
 
     # Get Users
     users_list: list[str] = CLI_Guard_2.getUsers()
+    # Sort users_list alphabetically
+    users_list.sort()
 
     # Initialize selected value
     selected: int = 0
@@ -421,8 +425,38 @@ def userManagement(windows: dict[str, Any]) -> None:
 
 
 
-def createUser(windows: dict[str, any]) -> None:
-    pass
+def createUser(windows: dict[str, any], user=None) -> None:
+
+# WINDOWS
+    # Define windows
+    popup_window: curses.window = windows["popup_window"]
+    popup_panel: curses.panel.Panel  = windows["popup_panel"]
+
+    # Show login_panel and update content of login_window
+    popup_panel.show()
+    popup_window.box()
+    popup_window.addstr(3, 3, f"| This is working now |")
+    
+    # Mark window for update
+    popup_window.noutrefresh()
+    # Initial draw
+    curses.doupdate()
+
+# LOGIC
+    create_user_fields = ["Category:", "Account:", "Username:", "Password:"]
+    create_user_inputs = ["" for _ in create_user_fields]
+
+    create_user_options = ["Scramble Password", "Generate Random", "Generate Passphrase"]
+    create_user_buttons = ["Create", "Cancel"]
+
+    # initialise selected value
+    selected: int = 0
+
+    # Initialise create_password
+    create_password: str = ""
+
+    time.sleep(10)
+    exit()
 
 
 
