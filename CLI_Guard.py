@@ -6,7 +6,7 @@ from tabulate import tabulate
 
 # Import OS library
 import os
-insertUser
+
 # Import Traceback for logging
 import traceback
 
