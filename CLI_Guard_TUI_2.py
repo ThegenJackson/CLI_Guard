@@ -170,6 +170,7 @@ def signIn(windows: dict[str, Any]) -> None:
 
     # Initialize selected value
     selected: int = 0
+    selectable_items: int = len(users_list) + len(login_options) - 1
 
     # Main input loop for Sign In
     while True:
@@ -198,8 +199,6 @@ def signIn(windows: dict[str, Any]) -> None:
         login_window.keypad(True)
         # Get user input
         key: int = login_window.getch()
-
-        selectable_items: int = len(users_list) + len(login_options) - 1
 
         # Scroll down
         if key == curses.KEY_DOWN and selected < selectable_items:
@@ -435,7 +434,6 @@ def createUser(windows: dict[str, any], user=None) -> None:
     # Show login_panel and update content of login_window
     popup_panel.show()
     popup_window.box()
-    popup_window.addstr(3, 3, f"| This is working now |")
     
     # Mark window for update
     popup_window.noutrefresh()
@@ -443,20 +441,77 @@ def createUser(windows: dict[str, any], user=None) -> None:
     curses.doupdate()
 
 # LOGIC
-    create_user_fields = ["Category:", "Account:", "Username:", "Password:"]
-    create_user_inputs = ["" for _ in create_user_fields]
+    # Create a dictionary to hold the form data
+    # The keys are the internal names of the fields
+    # The values are the inputs, which start as empty strings
+    create_user_fields: dict[str, str] = {
+        "Category":         "",
+        "Account":          "",
+        "Username":         "",
+        "Password":         ""
+    }
 
-    create_user_options = ["Scramble Password", "Generate Random", "Generate Passphrase"]
-    create_user_buttons = ["Create", "Cancel"]
+    # Use an ordered list of the keys for display
+    form_fields: list[str] = list(create_user_fields.keys())
+
+    form_inputs: list[str] = ["" for _ in create_user_fields]
+
+    # Top row options
+    create_user_options: dict[str, Any] = {     # FIX THIS / CHANGE THIS TO ACTUAL FUNCTIONS   
+        "Scramble Password":         exit,
+        "Generate Random":           exit,
+        "Generate Passphrase":       exit
+    }
+    
+    # Bottom row options
+    create_user_options_extended: list[str] = ["Create", "Cancel"]
 
     # initialise selected value
     selected: int = 0
+    selectable_items: int = len(form_fields) + len(create_user_options) + len(create_user_options_extended) - 3
 
-    # Initialise create_password
-    create_password: str = ""
 
-    time.sleep(10)
-    exit()
+    while True:
+        
+        # Draw fields and inputs
+        for i, field in enumerate(form_fields):
+            popup_window.addstr(2 + i, 2, f"{field}:")
+            popup_window.addstr(2 + i, 20, form_inputs[i])
+            # Highlight inputs if selected
+            if selected == i:
+                popup_window.addstr(2 + i, 2, f"{field}:", curses.A_REVERSE)
+
+        # Draw options
+        for i, option in enumerate(create_user_options):
+            popup_window.addstr(7, 2 + (i * 18), f"{option:^18}")
+            # Highlight active option
+            if selected == len(create_user_options) + i:
+                popup_window.addstr(7, 2 + (i * 18), f"{option:^18}", curses.A_REVERSE)
+
+        # Draw extended options
+        for i, option in enumerate(create_user_options_extended):
+            popup_window.addstr(9, 10 + (i * 18), f"{option:^18}")
+            # Highlight active option
+            if selected == len(create_user_options_extended) + i:
+                popup_window.addstr(9, 10 + (i * 18), f"{option:^18}", curses.A_REVERSE)
+        
+        popup_window.refresh()
+
+        # Enable Curses keypad in the login_window context
+        popup_window.keypad(True)
+        # Get user input
+        key: int = popup_window.getch()
+
+        # Scroll down
+        if key == curses.KEY_DOWN and selected < selectable_items:
+            selected += 1
+    
+        # Return to Form inputs
+        elif key == curses.KEY_UP and selected > 0:
+            selected -= 1
+        
+        elif key == 10:
+            exit()
 
 
 
