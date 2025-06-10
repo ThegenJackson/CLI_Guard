@@ -535,12 +535,10 @@ def createUser(windows: dict[str, any], user=None) -> None:
 
         elif key == 10:
             # Access each value by its known key and assign it to a variable.
-            create_user_category = create_user_fields["Category"]
-            create_user_account = create_user_fields["Account"]
-            create_user_username = create_user_fields["Username"]
-            create_user_password = create_user_fields["Password"] # FIX THIS / CHANGE THIS - hash this with bcrypt
-
-            sqlite.logging(message=create_user_account)
+            create_user_category: str = create_user_fields["Category"]
+            create_user_account: str = create_user_fields["Account"]
+            create_user_username: str = create_user_fields["Username"]
+            create_user_password: str = create_user_fields["Password"] # FIX THIS / CHANGE THIS - hash this with bcrypt
 
             time.sleep(5)
             exit()
