@@ -453,7 +453,6 @@ def createUser(windows: dict[str, any], user=None) -> None:
 
     # Use an ordered list of the keys for display
     form_fields: list[str] = list(create_user_fields.keys())
-
     form_inputs: list[str] = ["" for _ in create_user_fields]
 
     # Top row options
@@ -468,7 +467,7 @@ def createUser(windows: dict[str, any], user=None) -> None:
 
     # initialise selected value
     selected: int = 0
-    selectable_items: int = len(form_fields) + len(create_user_options) + len(create_user_options_extended) - 3
+    selectable_items: int = len(form_fields) + len(create_user_options) + len(create_user_options_extended) - 1
 
 
     while True:
@@ -485,14 +484,14 @@ def createUser(windows: dict[str, any], user=None) -> None:
         for i, option in enumerate(create_user_options):
             popup_window.addstr(7, 2 + (i * 18), f"{option:^18}")
             # Highlight active option
-            if selected == len(create_user_options) + i:
+            if selected == i + len(form_fields):
                 popup_window.addstr(7, 2 + (i * 18), f"{option:^18}", curses.A_REVERSE)
 
         # Draw extended options
         for i, option in enumerate(create_user_options_extended):
             popup_window.addstr(9, 10 + (i * 18), f"{option:^18}")
             # Highlight active option
-            if selected == len(create_user_options_extended) + i:
+            if selected == i + len(form_fields) + len(create_user_options):
                 popup_window.addstr(9, 10 + (i * 18), f"{option:^18}", curses.A_REVERSE)
         
         popup_window.refresh()
@@ -506,11 +505,44 @@ def createUser(windows: dict[str, any], user=None) -> None:
         if key == curses.KEY_DOWN and selected < selectable_items:
             selected += 1
     
-        # Return to Form inputs
+        # Scroll up
         elif key == curses.KEY_UP and selected > 0:
             selected -= 1
+
+        # Navigate Right between buttons
+        elif key == curses.KEY_RIGHT and selected < selectable_items:
+            selected += 1
         
+        # Navigate Left between buttons
+        elif key == curses.KEY_LEFT and selected <= selectable_items:
+            selected -= 1
+
+        # Typing in the active field
+        elif 32 <= key <= 126 and selected < len(form_fields):
+            create_user_fields[form_fields[selected]] += chr(key)
+
+            if selected == len(form_fields) - 1:
+                form_inputs[selected] += "*"
+            else:
+                form_inputs[selected] += chr(key)
+
+        # Handle backspace (covering multiple cases)
+        elif key in (curses.KEY_BACKSPACE, 127, 8) and selected < len(form_fields):
+            form_inputs[selected] = form_inputs[selected][:-1]
+            create_user_fields[form_fields[selected]] = form_inputs[selected][:-1]
+            # Replace the value with the shortened input value
+            popup_window.addstr(2 + selected, 20 + len(form_inputs[selected]), " ")
+
         elif key == 10:
+            # Access each value by its known key and assign it to a variable.
+            create_user_category = create_user_fields["Category"]
+            create_user_account = create_user_fields["Account"]
+            create_user_username = create_user_fields["Username"]
+            create_user_password = create_user_fields["Password"] # FIX THIS / CHANGE THIS - hash this with bcrypt
+
+            sqlite.logging(message=create_user_account)
+
+            time.sleep(5)
             exit()
 
 
