@@ -226,7 +226,10 @@ def signIn(windows: dict[str, Any]) -> None:
                 # Convert the current_index to the correct index of the List by subtracting the length of users_list
                 # Pass the windows Dictionary, createUser requires it and Exit uses the quitMenu Key for compability
                 login_options[list(login_options.keys())[selected - len(users_list)]](windows)
-    
+
+                # Break the loop after exiting
+                break
+
 
 
 def authSignIn(windows: dict[str, Any], user: str) -> None:
@@ -323,6 +326,9 @@ def authSignIn(windows: dict[str, Any], user: str) -> None:
             # else: attempts += 1
             # if attempts == 3 block sign in for 1 day
 
+            # Break the loop after exiting
+            break
+
         elif key == 10 and selected == len(auth_options):  # Cancel selected
             # Erase current screen
             login_window.erase()
@@ -333,6 +339,8 @@ def authSignIn(windows: dict[str, Any], user: str) -> None:
             # Return to Sign In
             signIn(windows)
 
+            # Break the loop after exiting
+            break
 
 
 
@@ -401,6 +409,9 @@ def mainMenu(windows: dict[str, Any], user: str) -> None:
         elif key == 10:  # ASCII value for Enter key
             # Call the function corresponding to the selected option and pass the dictionary of windows
             functions[selected](windows)
+
+            # Break the loop after exiting
+            break
 
 
 
@@ -542,6 +553,14 @@ def createUser(windows: dict[str, any], user=None) -> None:
 
             time.sleep(5)
             exit()
+
+            # Break the loop after exiting
+            break
+
+
+
+def hashUser(user: str, password: str) ->  bytes:
+    pass
 
 
 
