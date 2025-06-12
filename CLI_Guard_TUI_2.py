@@ -546,21 +546,22 @@ def createUser(windows: dict[str, any], user=None) -> None:
 
         elif key == 10:
             # Access each value by its known key and assign it to a variable.
-            create_user_category: str = create_user_fields["Category"]
-            create_user_account: str = create_user_fields["Account"]
-            create_user_username: str = create_user_fields["Username"]
-            create_user_password: str = create_user_fields["Password"] # FIX THIS / CHANGE THIS - hash this with bcrypt
+            # Pass the captured value for Password to hashUser to return the Password Hash as type Bytes
+            new_user_username: str = create_user_fields["Username"]
+            new_hashed_password: bytes = hashUser(password= create_user_fields["Password"] )
 
-            time.sleep(5)
-            exit()
+            sqlite.insertUser(user= new_user_username, password= new_hashed_password)
+
+            stdscr: curses.window = windows["stdscr"]
+            launch(stdscr)
 
             # Break the loop after exiting
             break
 
 
 
-def hashUser(user: str, password: str) ->  bytes:
-    pass
+def hashUser(password: str) ->  bytes:
+    return password # FIX THIS / CHANGE THIS
 
 
 
