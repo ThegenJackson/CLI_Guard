@@ -140,7 +140,7 @@ def createWindows(stdscr: curses.window) -> dict[str, Any]:
 
 
 
-def signIn(windows: dict[str, Any]) -> None:    
+def signIn(windows: dict[str, Any], user=None) -> None:    
 
 # WINDOWS
     # Define windows
@@ -216,7 +216,7 @@ def signIn(windows: dict[str, Any]) -> None:
                 login_panel.hide()
 
                 # Pass windows and selected User to mainMenu
-                authSignIn(windows, user=users_list[selected][0])
+                authSignIn(windows, on_cancel=signIn, user=users_list[selected][0])
 
                 # Break the loop after exiting
                 break
@@ -225,14 +225,14 @@ def signIn(windows: dict[str, Any]) -> None:
                 # Convert the login_options Dictionary to a List containing only the Dictionary Keys
                 # Convert the current_index to the correct index of the List by subtracting the length of users_list
                 # Pass the windows Dictionary, createUser requires it and Exit uses the quitMenu Key for compability
-                login_options[list(login_options.keys())[selected - len(users_list)]](windows)
+                login_options[list(login_options.keys())[selected - len(users_list)]](windows, on_cancel=signIn)
 
                 # Break the loop after exiting
                 break
 
 
 
-def authSignIn(windows: dict[str, Any], user: str) -> None:
+def authSignIn(windows: dict[str, Any], on_cancel, user: str) -> None:
 
 # WINDOWS
     # Define windows
@@ -435,7 +435,7 @@ def userManagement(windows: dict[str, Any]) -> None:
 
 
 
-def createUser(windows: dict[str, any], user=None) -> None:
+def createUser(windows: dict[str, any], on_cancel, user=None) -> None:
 
 # WINDOWS
     # Define windows
@@ -456,8 +456,6 @@ def createUser(windows: dict[str, any], user=None) -> None:
     # The keys are the internal names of the fields
     # The values are the inputs, which start as empty strings
     create_user_fields: dict[str, str] = {
-        "Category":         "",
-        "Account":          "",
         "Username":         "",
         "Password":         ""
     }
@@ -468,13 +466,16 @@ def createUser(windows: dict[str, any], user=None) -> None:
 
     # Top row options
     create_user_options: dict[str, Any] = {     # FIX THIS / CHANGE THIS TO ACTUAL FUNCTIONS   
-        "Scramble Password":         exit,
-        "Generate Random":           exit,
-        "Generate Passphrase":       exit
+        "Scramble Password":         goBack,
+        "Generate Random":           goBack,
+        "Generate Passphrase":       goBack
     }
     
     # Bottom row options
-    create_user_options_extended: list[str] = ["Create", "Cancel"]
+    create_user_options_extended: dict[str, Any] = {
+        "Create":                   sqlite.insertUser,
+        "Cancel":                   goBack
+        }
 
     # initialise selected value
     selected: int = 0
@@ -514,11 +515,17 @@ def createUser(windows: dict[str, any], user=None) -> None:
 
         # Scroll down
         if key == curses.KEY_DOWN and selected < selectable_items:
-            selected += 1
+            if len(form_fields) - 1 < selected < len(form_fields) + len(create_user_options):
+                selected = len(form_fields) + len(create_user_options)
+            else: 
+                selected += 1
     
         # Scroll up
         elif key == curses.KEY_UP and selected > 0:
-            selected -= 1
+            if len(form_fields) + len(create_user_options) - 1 < selected:
+                selected = len(form_fields)
+            else: 
+                selected -= 1
 
         # Navigate Right between buttons
         elif key == curses.KEY_RIGHT and selected < selectable_items:
@@ -545,18 +552,27 @@ def createUser(windows: dict[str, any], user=None) -> None:
             popup_window.addstr(2 + selected, 20 + len(form_inputs[selected]), " ")
 
         elif key == 10:
-            # Access each value by its known key and assign it to a variable.
-            # Pass the captured value for Password to hashUser to return the Password Hash as type Bytes
-            new_user_username: str = create_user_fields["Username"]
-            new_hashed_password: bytes = hashUser(password= create_user_fields["Password"] )
+            if selected == len(form_fields) + len(create_user_options):
+                # Access each value by its known key and assign it to a variable.
+                # Pass the captured value for Password to hashUser to return the Password Hash as type Bytes
+                new_user_username: str = create_user_fields["Username"]
+                new_hashed_password: bytes = hashUser(password= create_user_fields["Password"] )
 
-            sqlite.insertUser(user= new_user_username, password= new_hashed_password)
+                sqlite.insertUser(user= new_user_username, password= new_hashed_password)
 
-            stdscr: curses.window = windows["stdscr"]
-            launch(stdscr)
+                stdscr: curses.window = windows["stdscr"]
+                launch(stdscr)
 
-            # Break the loop after exiting
-            break
+                # Break the loop after exiting
+                break
+
+            if selected == selectable_items:
+                popup_window.erase()
+                popup_window.refresh()
+                popup_panel.hide()
+
+                on_cancel(windows, user)
+                break
 
 
 
@@ -591,9 +607,14 @@ def signOut(windows: dict[str, Any]) -> None:
 
 
 
-def quitMenu(windows: dict[str, Any]) -> None:
+def quitMenu(windows: dict[str, Any], on_cancel=None) -> None:
     time.sleep(0.2)
     exit()
+
+
+
+def goBack() ->  None:
+    pass
 
 
 

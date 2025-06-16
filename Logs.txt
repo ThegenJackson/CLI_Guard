@@ -2,3 +2,9 @@
 [2025-06-12 16:07:50] DATABASE SUCCESS: Created User test2ds
 [2025-06-12 16:08:41] DATABASE SUCCESS: Created User newnew
 [2025-06-12 16:08:41] DATABASE SUCCESS: Created User testingagain
+[2025-06-12 16:30:59] DATABASE SUCCESS: Created User 
+[2025-06-12 16:36:22] DATABASE SUCCESS: Created User 
+[2025-06-12 16:36:58] DATABASE ERROR: SQLite3 data integrity issue - UNIQUE constraint failed: users.user
+[2025-06-14 11:51:00] DATABASE ERROR: SQLite3 data integrity issue - UNIQUE constraint failed: users.user
+[2025-06-16 14:26:15] DATABASE SUCCESS: Created User fdadsf
+[2025-06-16 14:58:48] DATABASE SUCCESS: Created User newnew
