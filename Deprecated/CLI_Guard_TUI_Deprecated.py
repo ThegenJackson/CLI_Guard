@@ -2,7 +2,7 @@
 import  CLI_SQL.CLI_Guard_SQL as sqlite
 
 # CLI Guard Business Logic
-import CLI_Guard_Deprecated
+import CLI_Guard_Deprecated as CLI_Guard
 
 # Import curses for Terminal User Interface and navigation
 # https://docs.python.org/3/library/curses.html
