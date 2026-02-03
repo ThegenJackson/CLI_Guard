@@ -100,15 +100,14 @@ def queryData(user, table, category=None, text=None, sort_by=None) -> list:
 # INSERT new user into users SQLite table
 def insertUser(user, password) -> None:
     try:
-        sql_query = (f"""
+        # Handle password as bytes (bcrypt hash) or string
+        # SQLite stores bytes as BLOB type
+        sql_query = ("""
             INSERT INTO users
-            (user, user_pw, user_last_modified) 
-            VALUES(
-                ?,
-                '{password}',
-                '{today}');
+            (user, user_pw, user_last_modified)
+            VALUES(?, ?, ?);
             """)
-        sqlCursor.execute(sql_query, (user,))
+        sqlCursor.execute(sql_query, (user, password, today))
         sqlConnection.commit()
         logging(message=f"SUCCESS: Created User {user}")
     except sqlite3.IntegrityError as integrity_error:
@@ -124,13 +123,14 @@ def insertUser(user, password) -> None:
 # UPDATE records in the passwords SQLite table
 def updateUserPassword(user, password) -> None:
     try:
-        sql_query = (f"""
-            UPDATE users 
-            SET user_pw = '{password}', 
-                user_last_modified = '{today}'
+        # Handle password as bytes (bcrypt hash) or string
+        sql_query = ("""
+            UPDATE users
+            SET user_pw = ?,
+                user_last_modified = ?
             WHERE user = ?;
             """)
-        sqlCursor.execute(sql_query, (user,))
+        sqlCursor.execute(sql_query, (password, today, user))
         sqlConnection.commit()
         logging(message=f"SUCCESS: Updated password for {user}")
     except sqlite3.IntegrityError as integrity_error:
@@ -171,15 +171,15 @@ def deleteUser(user) -> None:
         logging()
 
 
-# UPDATE records in the passwords SQLite table
+# UPDATE records in the users SQLite table to lock account
 def lockUser(user) -> None:
     try:
-        sql_query = (f"""
-            UPDATE users 
-            SET last_locked = '{today}' 
+        sql_query = ("""
+            UPDATE users
+            SET last_locked = ?
             WHERE user = ?;
             """)
-        sqlCursor.execute(sql_query, (user,))
+        sqlCursor.execute(sql_query, (today, user))
         sqlConnection.commit()
         logging(message=f"SUCCESS: Locked User {user} until {tomorrow}")
     except sqlite3.IntegrityError as integrity_error:
@@ -192,20 +192,39 @@ def lockUser(user) -> None:
         logging()
 
 
+# CHECK if user account is locked
+def isUserLocked(user) -> bool:
+    try:
+        sql_query = ("""
+            SELECT last_locked
+            FROM users
+            WHERE user = ?;
+            """)
+        sqlCursor.execute(sql_query, (user,))
+        result = sqlCursor.fetchone()
+
+        if result and result[0]:
+            # Check if last_locked is today (still locked)
+            if str(result[0]) == str(today):
+                return True
+
+        return False
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to check lock status for User {user} - {str(sql_error)}")
+        return False
+    except Exception:
+        logging()
+        return False
+
+
 # INSERT new records into passwords SQLite table
 def insertData(user, category, account, username, password) -> None:
     try:
-        sql_query = (f"""
-            INSERT INTO passwords 
-            VALUES(
-                ?,
-                ?,
-                ?,
-                ?,
-                '{password}',
-                '{today}');
+        sql_query = ("""
+            INSERT INTO passwords
+            VALUES(?, ?, ?, ?, ?, ?);
             """)
-        sqlCursor.execute(sql_query, (user, category, account, username,))
+        sqlCursor.execute(sql_query, (user, category, account, username, password, today))
         sqlConnection.commit()
         logging(message=f"SUCCESS: Inserted password for {account} in User account {user}")
     except sqlite3.IntegrityError as integrity_error:
@@ -221,15 +240,15 @@ def insertData(user, category, account, username, password) -> None:
 # UPDATE records in the passwords SQLite table
 def updateData(user, password, account, username, old_password) -> None:
     try:
-        sql_query = (f"""
-            UPDATE passwords 
-            SET password = '{password}', 
-                last_modified = '{today}' 
-            WHERE account = ? 
+        sql_query = ("""
+            UPDATE passwords
+            SET password = ?,
+                last_modified = ?
+            WHERE account = ?
             AND username = ?
-            AND password = '{old_password}';
+            AND password = ?;
             """)
-        sqlCursor.execute(sql_query,(account,username,))
+        sqlCursor.execute(sql_query, (password, today, account, username, old_password))
         sqlConnection.commit()
         logging(message=f"SUCCESS: Updated password for {account} in User account {user}")
     except sqlite3.IntegrityError as integrity_error:
@@ -245,14 +264,14 @@ def updateData(user, password, account, username, old_password) -> None:
 # DELETE records from the passwords SQLite table
 def deleteData(user, account, username, password) -> None:
     try:
-        sql_query = (f"""
-            DELETE FROM passwords 
+        sql_query = ("""
+            DELETE FROM passwords
             WHERE user = ?
-            AND account = ? 
+            AND account = ?
             AND username = ?
-            AND password = '{password}';
+            AND password = ?;
             """)
-        sqlCursor.execute(sql_query, (user, account, username,))
+        sqlCursor.execute(sql_query, (user, account, username, password))
         sqlConnection.commit()
         logging(message=f"SUCCESS: Deleted password for {account} in User account {user}")
     except sqlite3.IntegrityError as integrity_error:

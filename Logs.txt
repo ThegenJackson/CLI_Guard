@@ -1,10 +1,6 @@
-[2025-06-12 16:06:08] DATABASE SUCCESS: Created User balls
-[2025-06-12 16:07:50] DATABASE SUCCESS: Created User test2ds
-[2025-06-12 16:08:41] DATABASE SUCCESS: Created User newnew
-[2025-06-12 16:08:41] DATABASE SUCCESS: Created User testingagain
-[2025-06-12 16:30:59] DATABASE SUCCESS: Created User 
-[2025-06-12 16:36:22] DATABASE SUCCESS: Created User 
-[2025-06-12 16:36:58] DATABASE ERROR: SQLite3 data integrity issue - UNIQUE constraint failed: users.user
-[2025-06-14 11:51:00] DATABASE ERROR: SQLite3 data integrity issue - UNIQUE constraint failed: users.user
-[2025-06-16 14:26:15] DATABASE SUCCESS: Created User fdadsf
-[2025-06-16 14:58:48] DATABASE SUCCESS: Created User newnew
+[2026-02-03 18:39:22] DATABASE SUCCESS: Inserted password for 1 in User account test
+[2026-02-03 18:39:22] DATABASE SUCCESS: Inserted password for 2 in User account test
+[2026-02-03 18:44:51] DATABASE SUCCESS: Inserted password for 3 in User account test
+[2026-02-03 18:44:51] DATABASE SUCCESS: Inserted password for 4 in User account test
+[2026-02-03 18:44:51] DATABASE SUCCESS: Inserted password for 5 in User account test
+[2026-02-03 19:02:25] DATABASE SUCCESS: Inserted password for a in User account test
