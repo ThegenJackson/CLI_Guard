@@ -4,6 +4,9 @@ import  CLI_SQL.CLI_Guard_SQL as sqlite
 #CLI Guard Business Logic
 import CLI_Guard
 
+# Input validation
+import validation
+
 # Import curses for Terminal User Interface and navigation
 # https://docs.python.org/3/library/curses.html
 import curses
@@ -526,6 +529,7 @@ def createPassword(windows: dict[str, Any]) -> Optional[list[str]]:
     """
     popup_window: curses.window = windows["popup_window"]
     popup_panel: curses.panel.Panel = windows["popup_panel"]
+    menu_window: curses.window = windows["menu_window"]
     content_window: curses.window = windows["content_window"]
 
     # Show popup
@@ -641,27 +645,64 @@ def createPassword(windows: dict[str, Any]) -> Optional[list[str]]:
             if in_buttons:
                 if current_button == 1:  # Cancel
                     popup_panel.hide()
-                    content_window.erase()
-                    content_window.box()
-                    content_window.noutrefresh()
-                    curses.doupdate()
+                    # Force complete redraw of menu and content windows
+                    curses.panel.update_panels()
+                    menu_window.touchwin()
+                    menu_window.refresh()
+                    content_window.touchwin()
+                    content_window.refresh()
                     return None
                 elif current_button == 0:  # Create
                     # Validate all fields are filled
-                    if all(inputs):
-                        popup_panel.hide()
-                        # Clear content window to refresh display
-                        content_window.erase()
-                        content_window.box()
-                        content_window.noutrefresh()
-                        curses.doupdate()
-                        return inputs
-                    else:
-                        # Show error in title
+                    if not all(inputs):
                         popup_window.addstr(0, 2, "| All fields required! |", curses.A_BOLD)
                         popup_window.noutrefresh()
                         curses.doupdate()
                         time.sleep(1)
+                        continue
+
+                    # Validate each field
+                    category_valid, category_error = validation.validate_text_field(inputs[0], "Category", max_len=50)
+                    if not category_valid:
+                        popup_window.addstr(0, 2, f"| {category_error} |", curses.A_BOLD)
+                        popup_window.noutrefresh()
+                        curses.doupdate()
+                        time.sleep(2)
+                        continue
+
+                    account_valid, account_error = validation.validate_text_field(inputs[1], "Account", max_len=100)
+                    if not account_valid:
+                        popup_window.addstr(0, 2, f"| {account_error} |", curses.A_BOLD)
+                        popup_window.noutrefresh()
+                        curses.doupdate()
+                        time.sleep(2)
+                        continue
+
+                    username_valid, username_error = validation.validate_text_field(inputs[2], "Username", max_len=100)
+                    if not username_valid:
+                        popup_window.addstr(0, 2, f"| {username_error} |", curses.A_BOLD)
+                        popup_window.noutrefresh()
+                        curses.doupdate()
+                        time.sleep(2)
+                        continue
+
+                    password_valid, password_error = validation.validate_text_field(inputs[3], "Password", min_len=1, max_len=500)
+                    if not password_valid:
+                        popup_window.addstr(0, 2, f"| {password_error} |", curses.A_BOLD)
+                        popup_window.noutrefresh()
+                        curses.doupdate()
+                        time.sleep(2)
+                        continue
+
+                    # All validations passed
+                    popup_panel.hide()
+                    # Force complete redraw of menu and content windows
+                    curses.panel.update_panels()
+                    menu_window.touchwin()
+                    menu_window.refresh()
+                    content_window.touchwin()
+                    content_window.refresh()
+                    return inputs
             elif in_options:
                 # Password generation options (placeholders for now)
                 if current_option == 0:
@@ -681,6 +722,374 @@ def createPassword(windows: dict[str, Any]) -> Optional[list[str]]:
         # ESC key
         elif key == 27:
             popup_panel.hide()
+            # Force complete redraw of menu and content windows
+            curses.panel.update_panels()
+            menu_window.touchwin()
+            menu_window.refresh()
+            content_window.touchwin()
+            content_window.refresh()
+            return None
+
+    return None
+
+
+
+def updatePassword(windows: dict[str, Any], existing_data: list) -> Optional[list[str]]:
+    """
+    Update an existing password entry with popup form
+
+    Args:
+        windows: Dictionary of curses windows and panels
+        existing_data: Current password data [category, account, username, encrypted_password]
+
+    Returns:
+        List of updated inputs [category, account, username, password] if Update clicked
+        None if Cancel clicked
+    """
+    popup_window: curses.window = windows["popup_window"]
+    popup_panel: curses.panel.Panel = windows["popup_panel"]
+    menu_window: curses.window = windows["menu_window"]
+    content_window: curses.window = windows["content_window"]
+
+    # Show popup
+    popup_panel.show()
+
+    # Form fields
+    fields: list[str] = ["Category:", "Account:", "Username:", "Password:"]
+
+    # Pre-fill inputs with existing data
+    # Decrypt the password for editing
+    try:
+        decrypted_password = CLI_Guard.decryptPassword(existing_data[3])
+    except Exception:
+        # If decryption fails, leave blank
+        decrypted_password = ""
+
+    inputs: list[str] = [existing_data[0], existing_data[1], existing_data[2], decrypted_password]
+
+    # Password generation options (placeholders)
+    options: list[str] = ["Scramble Password", "Generate Random", "Generate Passphrase"]
+
+    # Buttons
+    buttons: list[str] = ["Update", "Cancel"]
+
+    # Navigation state
+    current_field: int = 0
+    current_option: int = 0
+    current_button: int = 0
+    in_buttons: bool = False
+    in_options: bool = False
+
+    popup_window.keypad(True)
+    running: bool = True
+
+    while running:
+        popup_window.erase()
+        popup_window.box()
+        popup_window.addstr(0, 2, "| Update Password |")
+
+        # Draw fields and inputs
+        for i, field in enumerate(fields):
+            popup_window.addstr(2 + i, 2, field)
+
+            # Mask password field
+            if i == 3:  # Password field
+                popup_window.addstr(2 + i, 20, "*" * len(inputs[i]))
+            else:
+                popup_window.addstr(2 + i, 20, inputs[i])
+
+            # Highlight active field
+            if not in_buttons and not in_options and current_field == i:
+                popup_window.addstr(2 + i, 2, field, curses.A_REVERSE)
+
+        # Draw password generation options
+        popup_window.addstr(7, 2, "Password Options:")
+        for i, option in enumerate(options):
+            x_pos = 2 + (i * 18)
+            popup_window.addstr(8, x_pos, f"{option[:16]:^16}")
+
+            if in_options and current_option == i:
+                popup_window.addstr(8, x_pos, f"{option[:16]:^16}", curses.A_REVERSE)
+
+        # Draw buttons
+        for i, button in enumerate(buttons):
+            x_pos = 20 + (i * 12)
+            popup_window.addstr(10, x_pos, button)
+
+            if in_buttons and current_button == i:
+                popup_window.addstr(10, x_pos, button, curses.A_REVERSE)
+
+        popup_window.noutrefresh()
+        curses.doupdate()
+
+        # Get user input
+        key: int = popup_window.getch()
+
+        # Navigation: DOWN
+        if key == curses.KEY_DOWN:
+            if not in_buttons and not in_options:
+                current_field += 1
+                if current_field >= len(fields):
+                    in_options = True
+                    current_field = len(fields) - 1
+            elif in_options:
+                in_options = False
+                in_buttons = True
+
+        # Navigation: UP
+        elif key == curses.KEY_UP:
+            if in_buttons:
+                in_buttons = False
+                in_options = True
+            elif in_options:
+                in_options = False
+            else:
+                current_field = max(0, current_field - 1)
+
+        # Navigation: LEFT/RIGHT
+        elif key == curses.KEY_LEFT:
+            if in_options:
+                current_option = (current_option - 1) % len(options)
+            elif in_buttons:
+                current_button = (current_button - 1) % len(buttons)
+
+        elif key == curses.KEY_RIGHT:
+            if in_options:
+                current_option = (current_option + 1) % len(options)
+            elif in_buttons:
+                current_button = (current_button + 1) % len(buttons)
+
+        # Typing in field
+        elif not in_buttons and not in_options and 32 <= key <= 126:
+            inputs[current_field] += chr(key)
+
+        # Backspace
+        elif key in (curses.KEY_BACKSPACE, 127, 8):
+            if not in_buttons and not in_options and inputs[current_field]:
+                inputs[current_field] = inputs[current_field][:-1]
+
+        # Enter key
+        elif key == 10:
+            if in_buttons:
+                if current_button == 1:  # Cancel
+                    popup_panel.hide()
+                    # Force complete redraw of menu and content windows
+                    curses.panel.update_panels()
+                    menu_window.touchwin()
+                    menu_window.refresh()
+                    content_window.touchwin()
+                    content_window.refresh()
+                    return None
+                elif current_button == 0:  # Update
+                    # Validate all fields are filled
+                    if not all(inputs):
+                        popup_window.addstr(0, 2, "| All fields required! |", curses.A_BOLD)
+                        popup_window.noutrefresh()
+                        curses.doupdate()
+                        time.sleep(1)
+                        continue
+
+                    # Validate each field
+                    category_valid, category_error = validation.validate_text_field(inputs[0], "Category", max_len=50)
+                    if not category_valid:
+                        popup_window.addstr(0, 2, f"| {category_error} |", curses.A_BOLD)
+                        popup_window.noutrefresh()
+                        curses.doupdate()
+                        time.sleep(2)
+                        continue
+
+                    account_valid, account_error = validation.validate_text_field(inputs[1], "Account", max_len=100)
+                    if not account_valid:
+                        popup_window.addstr(0, 2, f"| {account_error} |", curses.A_BOLD)
+                        popup_window.noutrefresh()
+                        curses.doupdate()
+                        time.sleep(2)
+                        continue
+
+                    username_valid, username_error = validation.validate_text_field(inputs[2], "Username", max_len=100)
+                    if not username_valid:
+                        popup_window.addstr(0, 2, f"| {username_error} |", curses.A_BOLD)
+                        popup_window.noutrefresh()
+                        curses.doupdate()
+                        time.sleep(2)
+                        continue
+
+                    password_valid, password_error = validation.validate_text_field(inputs[3], "Password", min_len=1, max_len=500)
+                    if not password_valid:
+                        popup_window.addstr(0, 2, f"| {password_error} |", curses.A_BOLD)
+                        popup_window.noutrefresh()
+                        curses.doupdate()
+                        time.sleep(2)
+                        continue
+
+                    # All validations passed
+                    popup_panel.hide()
+                    # Force complete redraw of menu and content windows
+                    curses.panel.update_panels()
+                    menu_window.touchwin()
+                    menu_window.refresh()
+                    content_window.touchwin()
+                    content_window.refresh()
+                    return inputs
+            elif in_options:
+                # Password generation options (placeholders for now)
+                if current_option == 0:
+                    inputs[3] = "ScrambledPass123!"
+                elif current_option == 1:
+                    inputs[3] = "RandomPass789$"
+                elif current_option == 2:
+                    inputs[3] = "correct-horse-battery-staple"
+            else:
+                # ENTER pressed on a form field - move to next field
+                if not in_buttons and not in_options:
+                    current_field += 1
+                    if current_field >= len(fields):
+                        in_options = True
+                        current_field = len(fields) - 1
+
+        # ESC key
+        elif key == 27:
+            popup_panel.hide()
+            # Force complete redraw of menu and content windows
+            curses.panel.update_panels()
+            menu_window.touchwin()
+            menu_window.refresh()
+            content_window.touchwin()
+            content_window.refresh()
+            return None
+
+    return None
+
+
+
+def viewPasswordDetails(windows: dict[str, Any], password_data: list) -> Optional[str]:
+    """
+    View password details in a popup with Update/Delete options
+
+    Args:
+        windows: Dictionary of curses windows and panels
+        password_data: Password record [user, category, account, username, encrypted_password, last_modified]
+
+    Returns:
+        "update" if user wants to update
+        "delete" if user wants to delete
+        None if cancelled
+    """
+    popup_window: curses.window = windows["popup_window"]
+    popup_panel: curses.panel.Panel = windows["popup_panel"]
+    menu_window: curses.window = windows["menu_window"]
+    content_window: curses.window = windows["content_window"]
+
+    # Show popup
+    popup_panel.show()
+
+    # Extract data
+    category = password_data[1]
+    account = password_data[2]
+    username = password_data[3]
+    encrypted_password = password_data[4]
+    last_modified = password_data[5]
+
+    # Decrypt password for display
+    try:
+        decrypted_password = CLI_Guard.decryptPassword(encrypted_password)
+    except Exception:
+        decrypted_password = "[Decryption failed]"
+
+    # Action buttons
+    actions: list[str] = ["Update (U)", "Delete (D)", "Close (ESC)"]
+    selected_action: int = 2  # Default to Close
+
+    popup_window.keypad(True)
+    running: bool = True
+
+    while running:
+        popup_window.erase()
+        popup_window.box()
+        popup_window.addstr(0, 2, "| Password Details |")
+
+        # Display password details
+        popup_window.addstr(2, 2, f"Category:      {category}")
+        popup_window.addstr(3, 2, f"Account:       {account}")
+        popup_window.addstr(4, 2, f"Username:      {username}")
+        popup_window.addstr(5, 2, f"Password:      {decrypted_password}")
+        popup_window.addstr(6, 2, f"Last Modified: {last_modified}")
+
+        # Draw action buttons
+        popup_window.addstr(8, 2, "Actions:")
+        for i, action in enumerate(actions):
+            y_pos = 9
+            x_pos = 4 + (i * 16)
+            if selected_action == i:
+                popup_window.addstr(y_pos, x_pos, action, curses.A_REVERSE)
+            else:
+                popup_window.addstr(y_pos, x_pos, action)
+
+        popup_window.noutrefresh()
+        curses.doupdate()
+
+        # Get user input
+        key: int = popup_window.getch()
+
+        # Navigation: LEFT/RIGHT
+        if key == curses.KEY_LEFT:
+            selected_action = (selected_action - 1) % len(actions)
+        elif key == curses.KEY_RIGHT:
+            selected_action = (selected_action + 1) % len(actions)
+
+        # ENTER key
+        elif key == 10:
+            if selected_action == 0:  # Update
+                popup_panel.hide()
+                # Force complete redraw of menu and content windows
+                curses.panel.update_panels()
+                menu_window.touchwin()
+                menu_window.refresh()
+                content_window.touchwin()
+                content_window.refresh()
+                return "update"
+            elif selected_action == 1:  # Delete
+                popup_panel.hide()
+                # Force complete redraw of menu and content windows
+                curses.panel.update_panels()
+                menu_window.touchwin()
+                menu_window.refresh()
+                content_window.touchwin()
+                content_window.refresh()
+                return "delete"
+            else:  # Close
+                popup_panel.hide()
+                # Force complete redraw of menu and content windows
+                curses.panel.update_panels()
+                menu_window.touchwin()
+                menu_window.refresh()
+                content_window.touchwin()
+                content_window.refresh()
+                return None
+
+        # Keyboard shortcuts
+        elif key in (ord('u'), ord('U')):  # Update
+            popup_panel.hide()
+            menu_window.noutrefresh()
+            content_window.erase()
+            content_window.box()
+            content_window.noutrefresh()
+            curses.doupdate()
+            return "update"
+        elif key in (ord('d'), ord('D')):  # Delete
+            popup_panel.hide()
+            menu_window.noutrefresh()
+            content_window.erase()
+            content_window.box()
+            content_window.noutrefresh()
+            curses.doupdate()
+            return "delete"
+
+        # ESC key
+        elif key == 27:
+            popup_panel.hide()
+            # Refresh windows to hide popup
+            menu_window.noutrefresh()
             content_window.erase()
             content_window.box()
             content_window.noutrefresh()
@@ -704,6 +1113,7 @@ def searchPasswords(windows: dict[str, Any]) -> tuple[Optional[str], Optional[st
     """
     popup_window: curses.window = windows["popup_window"]
     popup_panel: curses.panel.Panel = windows["popup_panel"]
+    menu_window: curses.window = windows["menu_window"]
     content_window: curses.window = windows["content_window"]
 
     # Show popup
@@ -809,34 +1219,50 @@ def searchPasswords(windows: dict[str, Any]) -> tuple[Optional[str], Optional[st
             elif in_buttons:
                 if selected_button == 1:  # Cancel
                     popup_panel.hide()
-                    content_window.erase()
-                    content_window.box()
-                    content_window.noutrefresh()
-                    curses.doupdate()
+                    # Force complete redraw of menu and content windows
+                    curses.panel.update_panels()
+                    menu_window.touchwin()
+                    menu_window.refresh()
+                    content_window.touchwin()
+                    content_window.refresh()
                     return (None, None)
                 elif selected_button == 0:  # Search
-                    if search_term:
-                        column_name = column_options[selected_column]
-                        popup_panel.hide()
-                        content_window.erase()
-                        content_window.box()
-                        content_window.noutrefresh()
-                        curses.doupdate()
-                        return (column_name, search_term)
-                    else:
-                        # Show error
+                    if not search_term:
                         popup_window.addstr(0, 2, "| Enter search term! |", curses.A_BOLD)
                         popup_window.noutrefresh()
                         curses.doupdate()
                         time.sleep(1)
+                        continue
+
+                    # Validate search term
+                    search_valid, search_error = validation.validate_text_field(search_term, "Search term", max_len=100)
+                    if not search_valid:
+                        popup_window.addstr(0, 2, f"| {search_error} |", curses.A_BOLD)
+                        popup_window.noutrefresh()
+                        curses.doupdate()
+                        time.sleep(2)
+                        continue
+
+                    # Validation passed
+                    column_name = column_options[selected_column]
+                    popup_panel.hide()
+                    # Force complete redraw of menu and content windows
+                    curses.panel.update_panels()
+                    menu_window.touchwin()
+                    menu_window.refresh()
+                    content_window.touchwin()
+                    content_window.refresh()
+                    return (column_name, search_term)
 
         # ESC key
         elif key == 27:
             popup_panel.hide()
-            content_window.erase()
-            content_window.box()
-            content_window.noutrefresh()
-            curses.doupdate()
+            # Force complete redraw of menu and content windows
+            curses.panel.update_panels()
+            menu_window.touchwin()
+            menu_window.refresh()
+            content_window.touchwin()
+            content_window.refresh()
             return (None, None)
 
     return (None, None)
@@ -856,6 +1282,7 @@ def sortPasswords(windows: dict[str, Any]) -> tuple[Optional[str], Optional[str]
     """
     popup_window: curses.window = windows["popup_window"]
     popup_panel: curses.panel.Panel = windows["popup_panel"]
+    menu_window: curses.window = windows["menu_window"]
     content_window: curses.window = windows["content_window"]
 
     # Show popup
@@ -964,28 +1391,34 @@ def sortPasswords(windows: dict[str, Any]) -> tuple[Optional[str], Optional[str]
             elif in_buttons:
                 if selected_button == 1:  # Cancel
                     popup_panel.hide()
-                    content_window.erase()
-                    content_window.box()
-                    content_window.noutrefresh()
-                    curses.doupdate()
+                    # Force complete redraw of menu and content windows
+                    curses.panel.update_panels()
+                    menu_window.touchwin()
+                    menu_window.refresh()
+                    content_window.touchwin()
+                    content_window.refresh()
                     return (None, None)
                 elif selected_button == 0:  # Sort
                     column_name = column_options[selected_column]
                     sort_order = sort_options[selected_sort]
                     popup_panel.hide()
-                    content_window.erase()
-                    content_window.box()
-                    content_window.noutrefresh()
-                    curses.doupdate()
+                    # Force complete redraw of menu and content windows
+                    curses.panel.update_panels()
+                    menu_window.touchwin()
+                    menu_window.refresh()
+                    content_window.touchwin()
+                    content_window.refresh()
                     return (column_name, sort_order)
 
         # ESC key
         elif key == 27:
             popup_panel.hide()
-            content_window.erase()
-            content_window.box()
-            content_window.noutrefresh()
-            curses.doupdate()
+            # Force complete redraw of menu and content windows
+            curses.panel.update_panels()
+            menu_window.touchwin()
+            menu_window.refresh()
+            content_window.touchwin()
+            content_window.refresh()
             return (None, None)
 
     return (None, None)
@@ -1018,8 +1451,8 @@ def passwordManagement(windows: dict[str, Any]) -> None:
         time.sleep(2)
         return
 
-    # Options and headers
-    options: list[str] = ["Create Password", "Search Passwords", "Sort Passwords"]
+    # Options and headers (removed Update and Delete - they're in the password details popup)
+    options: list[str] = ["Create Password (C)", "Search Passwords (S)", "Sort Passwords (O)"]
     headers: list[str] = ["Index", "Category", "Account", "Username", "Last Modified"]
 
     # Navigation state
@@ -1171,9 +1604,9 @@ def passwordManagement(windows: dict[str, Any]) -> None:
                     message_window.noutrefresh()
                     curses.doupdate()
                     time.sleep(1)
-
-                    # Refresh password list
-                    break
+                    message_window.erase()
+                    message_window.noutrefresh()
+                    # Refresh password list - loop continues to requery and redraw
 
             elif current_row == 1:  # Search Passwords
                 # Call searchPasswords function
@@ -1186,8 +1619,8 @@ def passwordManagement(windows: dict[str, Any]) -> None:
                     # Reset current_row to first password
                     current_row = len(options)
                     start_index = 0
-                    # Refresh password list
-                    break
+                    # Refresh password list - continue to requery and redraw
+                    # Don't use break here as it exits the entire function!
 
             elif current_row == 2:  # Sort Passwords
                 # Call sortPasswords function
@@ -1200,34 +1633,85 @@ def passwordManagement(windows: dict[str, Any]) -> None:
                     # Reset current_row to first password
                     current_row = len(options)
                     start_index = 0
-                    # Refresh password list
-                    break
+                    # Refresh password list - continue to requery and redraw
+                    # Don't use break here as it exits the entire function!
 
             else:  # Password row selected
                 if passwords_list and (current_row - len(options)) < len(passwords_list):
                     selected_record = passwords_list[current_row - len(options)]
 
-                    # Get original data row to access encrypted password
+                    # Get original data row to access all password data
                     data_index = selected_record[0] - 1
                     original_record = data[data_index]
 
-                    # Extract and decrypt password
-                    encrypted_password = original_record[4]
-                    try:
-                        decrypted_password = CLI_Guard.decryptPassword(encrypted_password)
+                    # Show password details popup
+                    action = viewPasswordDetails(windows, original_record)
 
-                        # Display in message window
+                    if action == "update":
+                        # Prepare existing data for update form
+                        existing_data = [
+                            original_record[1],  # category
+                            original_record[2],  # account
+                            original_record[3],  # username
+                            original_record[4]   # encrypted password
+                        ]
+
+                        # Call updatePassword with existing data
+                        updated_inputs = updatePassword(windows, existing_data)
+                        if updated_inputs:
+                            new_category = updated_inputs[0]
+                            new_account = updated_inputs[1]
+                            new_username = updated_inputs[2]
+                            new_plaintext_password = updated_inputs[3]
+
+                            # Encrypt new password
+                            new_encrypted_password = CLI_Guard.encryptPassword(new_plaintext_password)
+
+                            # Update in database
+                            sqlite.updateData(user, new_encrypted_password, new_account, new_username, original_record[4])
+
+                            message_window.erase()
+                            message_window.addstr(2, 2, f"Password for {new_account} updated successfully")
+                            message_window.noutrefresh()
+                            curses.doupdate()
+                            time.sleep(1)
+                            message_window.erase()
+                            message_window.noutrefresh()
+                            # Loop continues to requery and redraw
+
+                    elif action == "delete":
+                        # Show confirmation dialog
+                        confirm_msg = f"Delete password for {original_record[2]}? (Y/N)"
                         message_window.erase()
-                        message_window.addstr(1, 2, f"Category: {selected_record[1]} | Account: {selected_record[2]}")
-                        message_window.addstr(2, 2, f"Username: {selected_record[3]} | Password: {decrypted_password}")
+                        message_window.addstr(2, 2, confirm_msg, curses.A_BOLD)
                         message_window.noutrefresh()
                         curses.doupdate()
 
-                    except Exception as e:
-                        message_window.erase()
-                        message_window.addstr(2, 2, f"Error decrypting password: {str(e)}")
-                        message_window.noutrefresh()
-                        curses.doupdate()
+                        # Wait for confirmation
+                        message_window.keypad(True)
+                        confirm_key = message_window.getch()
+
+                        if confirm_key in (ord('y'), ord('Y')):
+                            # Delete from database
+                            sqlite.deleteData(
+                                user,
+                                original_record[2],  # account
+                                original_record[3],  # username
+                                original_record[4]   # encrypted password
+                            )
+
+                            message_window.erase()
+                            message_window.addstr(2, 2, f"Password for {original_record[2]} deleted successfully")
+                            message_window.noutrefresh()
+                            curses.doupdate()
+                            time.sleep(1)
+                            message_window.erase()
+                            message_window.noutrefresh()
+                            # Loop continues to requery and redraw
+                        else:
+                            # Cancelled - just clear message
+                            message_window.erase()
+                            message_window.noutrefresh()
 
         # ESC key: Clear filter or return to main menu
         elif key == 27:
@@ -1258,6 +1742,23 @@ def passwordManagement(windows: dict[str, Any]) -> None:
                 message_window.noutrefresh()
                 curses.doupdate()
                 running = False
+                break
+
+        # Keyboard shortcuts
+        elif key in (ord('c'), ord('C')):  # Create Password
+            inputs = createPassword(windows)
+            if inputs:
+                category_input = inputs[0]
+                account = inputs[1]
+                username_input = inputs[2]
+                plaintext_password = inputs[3]
+                encrypted_password = CLI_Guard.encryptPassword(plaintext_password)
+                sqlite.insertData(user, category_input, account, username_input, encrypted_password)
+                message_window.erase()
+                message_window.addstr(2, 2, f"Password for {account} created successfully")
+                message_window.noutrefresh()
+                curses.doupdate()
+                time.sleep(1)
                 break
 
 
@@ -1418,12 +1919,37 @@ def createUser(windows: dict[str, any], on_cancel, user=None) -> None:
 
         elif key == 10:
             if selected == len(form_fields) + len(create_user_options):
-                # Access each value by its known key and assign it to a variable.
-                # Pass the captured value for Password to hashUser to return the Password Hash as type Bytes
+                # Validate username
                 new_user_username: str = create_user_fields["Username"]
-                new_hashed_password: bytes = hashUser(password= create_user_fields["Password"] )
+                username_valid, username_error = validation.validate_username(new_user_username)
+                if not username_valid:
+                    popup_window.addstr(0, 2, f"| {username_error} |", curses.A_BOLD)
+                    popup_window.noutrefresh()
+                    curses.doupdate()
+                    time.sleep(2)
+                    popup_window.erase()
+                    popup_window.box()
+                    popup_window.noutrefresh()
+                    curses.doupdate()
+                    continue
 
-                sqlite.insertUser(user= new_user_username, password= new_hashed_password)
+                # Validate password (master password needs strong requirements)
+                new_user_password: str = create_user_fields["Password"]
+                password_valid, password_error = validation.validate_password(new_user_password)
+                if not password_valid:
+                    popup_window.addstr(0, 2, f"| {password_error} |", curses.A_BOLD)
+                    popup_window.noutrefresh()
+                    curses.doupdate()
+                    time.sleep(2)
+                    popup_window.erase()
+                    popup_window.box()
+                    popup_window.noutrefresh()
+                    curses.doupdate()
+                    continue
+
+                # All validations passed - create user
+                new_hashed_password: bytes = hashUser(password=new_user_password)
+                sqlite.insertUser(user=new_user_username, password=new_hashed_password)
 
                 stdscr: curses.window = windows["stdscr"]
                 launch(stdscr)

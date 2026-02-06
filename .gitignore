@@ -9,3 +9,9 @@ venv/
 
 # IDE files
 .vscode/
+
+# AI development artifacts
+.claude/
+claude.md
+*.claude.md
+.aider*

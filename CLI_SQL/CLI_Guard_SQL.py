@@ -10,9 +10,24 @@ import traceback
 # DateTime used for Logging
 from datetime import date, datetime, timedelta
 
-today = date.today()
-todays_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-tomorrow = date.today() + timedelta(1)
+
+def get_today() -> date:
+    """Get current date (calculated dynamically)"""
+    return date.today()
+
+
+def get_now_timestamp() -> str:
+    """Get current timestamp as formatted string (calculated dynamically)"""
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def get_tomorrow() -> date:
+    """Get tomorrow's date (calculated dynamically)"""
+    return date.today() + timedelta(1)
+
+# Whitelist of allowed column names for SQL queries (prevents SQL injection)
+ALLOWED_COLUMNS = {'category', 'account', 'username', 'last_modified'}
+ALLOWED_SORT_ORDERS = {'ascending', 'descending'}
 
 
 
@@ -23,20 +38,101 @@ def logging(message=None):
         if message is None:
             # traceback.format_exc() function works without explicitly passing an error
             # because it captures the most recent exception from the current context
-            file.write(f"[{todays_time}] {traceback.format_exc()}\n")
+            file.write(f"[{get_now_timestamp()}] {traceback.format_exc()}\n")
         else:
             # Handles Logging when a message argument is passed
-            file.write(f"[{todays_time}] DATABASE {message}\n")
+            file.write(f"[{get_now_timestamp()}] DATABASE {message}\n")
 
 
-# Check if database exists
-if os.path.exists(os.path.join(os.getcwd(), "CLI_SQL", "CLI_Guard_DB.db")):
-    # Connect to the CLI Guard Database
-    sqlConnection = sqlite3.connect(os.path.join(os.getcwd(), "CLI_SQL", "CLI_Guard_DB.db"))
-    # Create a cursor - read more docs on this
+# Database path constant
+DB_PATH = os.path.join(os.getcwd(), "CLI_SQL", "CLI_Guard_DB.db")
+
+
+def get_db_connection() -> sqlite3.Connection:
+    """
+    Get a database connection with proper error handling
+
+    Returns:
+        sqlite3.Connection: Active database connection
+
+    Raises:
+        FileNotFoundError: If database file doesn't exist
+        sqlite3.Error: If connection fails
+    """
+    if not os.path.exists(DB_PATH):
+        error_msg = "ERROR: Could not connect to CLI Guard Database - Default database does not exist or cannot be found"
+        logging(message=error_msg)
+        raise FileNotFoundError(error_msg)
+
+    try:
+        connection = sqlite3.connect(DB_PATH)
+        # Enable foreign keys (SQLite doesn't enable them by default)
+        connection.execute("PRAGMA foreign_keys = ON")
+        return connection
+    except sqlite3.Error as e:
+        logging(message=f"ERROR: Failed to connect to database - {str(e)}")
+        raise
+
+
+# Legacy global connection for backward compatibility (will be phased out)
+# TODO: Remove these globals once all functions use get_db_connection()
+try:
+    sqlConnection = get_db_connection()
     sqlCursor = sqlConnection.cursor()
-else:
-    logging(message="ERROR: Could not connect to CLI Guard Database - Default database does not exist or cannot be found")
+except (FileNotFoundError, sqlite3.Error):
+    sqlConnection = None
+    sqlCursor = None
+
+
+def close_db_connection() -> None:
+    """
+    Properly close the database connection
+
+    This should be called when the application exits.
+    In the future, this will be managed by context managers.
+    """
+    global sqlConnection, sqlCursor
+    try:
+        if sqlCursor:
+            sqlCursor.close()
+        if sqlConnection:
+            sqlConnection.commit()  # Commit any pending transactions
+            sqlConnection.close()
+            logging(message="Database connection closed successfully")
+    except sqlite3.Error as e:
+        logging(message=f"ERROR: Failed to close database connection - {str(e)}")
+
+
+def ensure_connection() -> bool:
+    """
+    Ensure database connection is active, reconnect if needed
+
+    Returns:
+        bool: True if connection is active, False otherwise
+    """
+    global sqlConnection, sqlCursor
+
+    # Check if connection exists and is valid
+    if sqlConnection is None or sqlCursor is None:
+        try:
+            sqlConnection = get_db_connection()
+            sqlCursor = sqlConnection.cursor()
+            return True
+        except (FileNotFoundError, sqlite3.Error):
+            return False
+
+    # Test if connection is still alive
+    try:
+        sqlConnection.execute("SELECT 1")
+        return True
+    except sqlite3.Error:
+        # Connection is dead, try to reconnect
+        try:
+            sqlConnection = get_db_connection()
+            sqlCursor = sqlConnection.cursor()
+            return True
+        except (FileNotFoundError, sqlite3.Error):
+            return False
 
 
 
@@ -47,6 +143,21 @@ else:
 # https://docs.python.org/3/library/sqlite3.html#sqlite3-placeholders
 def queryData(user, table, category=None, text=None, sort_by=None) -> list:
     try:
+        # Ensure database connection is active
+        if not ensure_connection():
+            logging(message="ERROR: No database connection available")
+            return []
+
+        # Validate column name against whitelist to prevent SQL injection
+        if category is not None and category.lower() not in ALLOWED_COLUMNS:
+            logging(message=f"ERROR: Invalid column name attempted: {category}")
+            raise ValueError(f"Invalid column name: {category}")
+
+        # Validate sort order against whitelist
+        if sort_by is not None and sort_by.lower() not in ALLOWED_SORT_ORDERS:
+            logging(message=f"ERROR: Invalid sort order attempted: {sort_by}")
+            raise ValueError(f"Invalid sort order: {sort_by}")
+
         if user is not None:
             # Convert Category to category using .lower()
             if text is not None:
@@ -57,14 +168,16 @@ def queryData(user, table, category=None, text=None, sort_by=None) -> list:
                     AND {category.lower()} LIKE ?;
                 """
                 sqlCursor.execute(sql_query, (user, f"%{text}%",))
-            # Convert sort_by fromm Ascending to ASC or Descending to DESC using .upper()[:-6]
+            # Convert sort_by from "ascending" to "ASC" or "descending" to "DESC"
             # Convert Category to category using .lower()
             elif sort_by is not None:
+                # Map validated sort order to SQL keywords
+                sort_sql = "ASC" if sort_by.lower() == "ascending" else "DESC"
                 sql_query = (f"""
-                    SELECT * 
+                    SELECT *
                     FROM vw_{table}
                     WHERE user = ?
-                    ORDER BY {category.lower()} {sort_by.upper()[:-6]};
+                    ORDER BY {category.lower()} {sort_sql};
                 """)
                 sqlCursor.execute(sql_query, (user,))
             else:
@@ -87,6 +200,9 @@ def queryData(user, table, category=None, text=None, sort_by=None) -> list:
             list_table = sqlCursor.fetchall()
             # Return the list of values
             return list_table
+    except ValueError:
+        # Return empty list for validation errors (already logged above)
+        return []
     except sqlite3.IntegrityError as integrity_error:
         logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
     except sqlite3.OperationalError as op_error:
@@ -100,6 +216,11 @@ def queryData(user, table, category=None, text=None, sort_by=None) -> list:
 # INSERT new user into users SQLite table
 def insertUser(user, password) -> None:
     try:
+        # Ensure database connection is active
+        if not ensure_connection():
+            logging(message="ERROR: Cannot insert user - no database connection")
+            return
+
         # Handle password as bytes (bcrypt hash) or string
         # SQLite stores bytes as BLOB type
         sql_query = ("""
@@ -107,7 +228,7 @@ def insertUser(user, password) -> None:
             (user, user_pw, user_last_modified)
             VALUES(?, ?, ?);
             """)
-        sqlCursor.execute(sql_query, (user, password, today))
+        sqlCursor.execute(sql_query, (user, password, get_today()))
         sqlConnection.commit()
         logging(message=f"SUCCESS: Created User {user}")
     except sqlite3.IntegrityError as integrity_error:
@@ -130,7 +251,7 @@ def updateUserPassword(user, password) -> None:
                 user_last_modified = ?
             WHERE user = ?;
             """)
-        sqlCursor.execute(sql_query, (password, today, user))
+        sqlCursor.execute(sql_query, (password, get_today(), user))
         sqlConnection.commit()
         logging(message=f"SUCCESS: Updated password for {user}")
     except sqlite3.IntegrityError as integrity_error:
@@ -179,9 +300,9 @@ def lockUser(user) -> None:
             SET last_locked = ?
             WHERE user = ?;
             """)
-        sqlCursor.execute(sql_query, (today, user))
+        sqlCursor.execute(sql_query, (get_today(), user))
         sqlConnection.commit()
-        logging(message=f"SUCCESS: Locked User {user} until {tomorrow}")
+        logging(message=f"SUCCESS: Locked User {user} until {get_tomorrow()}")
     except sqlite3.IntegrityError as integrity_error:
         logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
     except sqlite3.OperationalError as op_error:
@@ -205,7 +326,7 @@ def isUserLocked(user) -> bool:
 
         if result and result[0]:
             # Check if last_locked is today (still locked)
-            if str(result[0]) == str(today):
+            if str(result[0]) == str(get_today()):
                 return True
 
         return False
@@ -220,11 +341,16 @@ def isUserLocked(user) -> bool:
 # INSERT new records into passwords SQLite table
 def insertData(user, category, account, username, password) -> None:
     try:
+        # Ensure database connection is active
+        if not ensure_connection():
+            logging(message="ERROR: Cannot insert password - no database connection")
+            return
+
         sql_query = ("""
             INSERT INTO passwords
             VALUES(?, ?, ?, ?, ?, ?);
             """)
-        sqlCursor.execute(sql_query, (user, category, account, username, password, today))
+        sqlCursor.execute(sql_query, (user, category, account, username, password, get_today()))
         sqlConnection.commit()
         logging(message=f"SUCCESS: Inserted password for {account} in User account {user}")
     except sqlite3.IntegrityError as integrity_error:
@@ -248,7 +374,7 @@ def updateData(user, password, account, username, old_password) -> None:
             AND username = ?
             AND password = ?;
             """)
-        sqlCursor.execute(sql_query, (password, today, account, username, old_password))
+        sqlCursor.execute(sql_query, (password, get_today(), account, username, old_password))
         sqlConnection.commit()
         logging(message=f"SUCCESS: Updated password for {account} in User account {user}")
     except sqlite3.IntegrityError as integrity_error:
