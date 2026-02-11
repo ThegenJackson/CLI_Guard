@@ -4,9 +4,6 @@ import sqlite3
 # Import OS library
 import os
 
-# Import Traceback for logging
-import traceback
-
 # DateTime used for Logging
 from datetime import date, datetime, timedelta
 
@@ -32,16 +29,15 @@ ALLOWED_SORT_ORDERS = {'ascending', 'descending'}
 
 
 # Write to Debugging Log file
+# This wraps the shared logger (logger.py) for backward compatibility.
+# All existing calls to logging(message="...") continue to work unchanged.
+# New code should use: from logger import log; log("DATABASE", "message")
 def logging(message=None):
-    with open(os.path.join(".", "Logs.txt"), "a") as file:
-        #  Handles Traceback since no message argument is passed
-        if message is None:
-            # traceback.format_exc() function works without explicitly passing an error
-            # because it captures the most recent exception from the current context
-            file.write(f"[{get_now_timestamp()}] {traceback.format_exc()}\n")
-        else:
-            # Handles Logging when a message argument is passed
-            file.write(f"[{get_now_timestamp()}] DATABASE {message}\n")
+    from logger import log as shared_log
+    if message is None:
+        shared_log("DATABASE", "Unhandled exception", exc_info=True)
+    else:
+        shared_log("DATABASE", message)
 
 
 # Database path constant

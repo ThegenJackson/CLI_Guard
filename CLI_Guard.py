@@ -7,6 +7,8 @@ import base64
 import hashlib
 from typing import Optional
 
+from logger import log
+
 
 # Session management - stores the current user's encryption key and username
 _session_encryption_key: Optional[bytes] = None
@@ -96,6 +98,7 @@ def authUser(user: str, attempted_password: str) -> bool:
     user_data: list[tuple] = sqlite.queryData(user=user, table="users")
 
     if not user_data or len(user_data) == 0:
+        log("AUTH", f"Authentication failed for '{user}' - user not found")
         return False
 
     # Get the stored password hash
@@ -108,8 +111,14 @@ def authUser(user: str, attempted_password: str) -> bool:
 
     # Verify the password using bcrypt
     try:
-        return bcrypt.checkpw(attempted_password.encode('utf-8'), stored_hash)
+        result = bcrypt.checkpw(attempted_password.encode('utf-8'), stored_hash)
+        if result:
+            log("AUTH", f"Authentication successful for '{user}'")
+        else:
+            log("AUTH", f"Authentication failed for '{user}' - incorrect password")
+        return result
     except Exception:
+        log("AUTH", f"Authentication error for '{user}'", exc_info=True)
         return False
 
 
@@ -129,6 +138,7 @@ def startSession(user: str, password: str) -> None:
 
     _session_user = user
     _session_encryption_key = deriveEncryptionKey(password)
+    log("AUTH", f"Session started for '{user}'")
 
 
 def endSession() -> None:
@@ -140,6 +150,7 @@ def endSession() -> None:
     """
     global _session_encryption_key, _session_user
 
+    log("AUTH", f"Session ended for '{_session_user}'")
     _session_encryption_key = None
     _session_user = None
 
@@ -178,10 +189,12 @@ def encryptPassword(password: str) -> str:
         RuntimeError: If no active session exists
     """
     if _session_encryption_key is None:
+        log("ERROR", "Encryption attempted with no active session")
         raise RuntimeError("No active session - cannot encrypt password")
 
     fernet = Fernet(_session_encryption_key)
     encrypted = fernet.encrypt(password.encode('utf-8'))
+    log("AUTH", "Password encrypted successfully")
     return encrypted.decode('utf-8')
 
 
@@ -199,8 +212,10 @@ def decryptPassword(encrypted_password: str) -> str:
         RuntimeError: If no active session exists
     """
     if _session_encryption_key is None:
+        log("ERROR", "Decryption attempted with no active session")
         raise RuntimeError("No active session - cannot decrypt password")
 
     fernet = Fernet(_session_encryption_key)
     decrypted = fernet.decrypt(encrypted_password.encode('utf-8'))
+    log("AUTH", "Password decrypted successfully")
     return decrypted.decode('utf-8')

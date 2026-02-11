@@ -10,8 +10,8 @@ venv/
 # IDE files
 .vscode/
 
-# AI development artifacts
-.claude/
-claude.md
-*.claude.md
+# Claude Code - track hooks and shared settings, ignore personal config
+.claude/settings.local.json
+
+# AI development artifacts (other tools)
 .aider*

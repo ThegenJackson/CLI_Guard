@@ -8,3 +8,46 @@
 [2026-02-06 10:37:32] DATABASE SUCCESS: Updated password for 3 in User account test
 [2026-02-06 10:44:46] DATABASE SUCCESS: Inserted password for ff in User account test
 [2026-02-06 10:44:55] DATABASE SUCCESS: Updated password for 4 in User account test
+[2026-02-12 06:47:24] AUTH: Session started for 'test_user'
+[2026-02-12 06:47:24] AUTH: Password encrypted successfully
+[2026-02-12 06:47:24] AUTH: Password decrypted successfully
+[2026-02-12 06:47:24] AUTH: Session ended for 'test_user'
+[2026-02-12 06:47:24] AUTH: Session started for 'test_user'
+[2026-02-12 06:47:24] AUTH: Password encrypted successfully
+[2026-02-12 06:47:24] AUTH: Session ended for 'test_user'
+[2026-02-12 06:47:24] AUTH: Session started for 'test_user'
+[2026-02-12 06:47:24] AUTH: Session ended for 'test_user'
+[2026-02-12 06:47:24] AUTH: Session started for 'test_user'
+[2026-02-12 06:47:24] AUTH: Password encrypted successfully
+[2026-02-12 06:47:24] AUTH: Session ended for 'test_user'
+[2026-02-12 06:47:24] ERROR: Decryption attempted with no active session
+[2026-02-12 06:47:24] AUTH: Session ended for 'None'
+[2026-02-12 06:47:24] AUTH: Session started for 'test_user'
+[2026-02-12 06:47:24] AUTH: Password encrypted successfully
+[2026-02-12 06:47:24] AUTH: Password decrypted successfully
+[2026-02-12 06:47:24] AUTH: Session ended for 'test_user'
+[2026-02-12 06:47:24] AUTH: Session started for 'test_user'
+[2026-02-12 06:47:24] AUTH: Password encrypted successfully
+[2026-02-12 06:47:24] AUTH: Password decrypted successfully
+[2026-02-12 06:47:24] AUTH: Session ended for 'test_user'
+[2026-02-12 06:47:24] AUTH: Session started for 'test_user'
+[2026-02-12 06:47:24] AUTH: Password encrypted successfully
+[2026-02-12 06:47:24] AUTH: Password decrypted successfully
+[2026-02-12 06:47:24] AUTH: Session ended for 'test_user'
+[2026-02-12 06:47:24] AUTH: Session started for 'test_user'
+[2026-02-12 06:47:24] AUTH: Password encrypted successfully
+[2026-02-12 06:47:24] AUTH: Session ended for 'test_user'
+[2026-02-12 06:47:24] AUTH: Session started for 'test_user'
+[2026-02-12 06:47:24] AUTH: Session ended for 'test_user'
+[2026-02-12 06:47:24] ERROR: Encryption attempted with no active session
+[2026-02-12 06:47:24] AUTH: Session ended for 'None'
+[2026-02-12 06:47:26] AUTH: Session started for 'test_user'
+[2026-02-12 06:47:26] AUTH: Session ended for 'test_user'
+[2026-02-12 06:47:26] AUTH: Session started for 'user1'
+[2026-02-12 06:47:26] AUTH: Session ended for 'user1'
+[2026-02-12 06:47:26] AUTH: Session started for 'user2'
+[2026-02-12 06:47:26] AUTH: Session ended for 'user2'
+[2026-02-12 06:47:26] AUTH: Session started for 'test_user'
+[2026-02-12 06:47:26] AUTH: Session ended for 'test_user'
+[2026-02-12 06:47:26] AUTH: Session started for 'test_user'
+[2026-02-12 06:47:26] AUTH: Session ended for 'test_user'

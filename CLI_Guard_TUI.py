@@ -17,6 +17,8 @@ import bcrypt
 from typing import Any, Optional
 import time
 
+from logger import log
+
 
 
 # Create custom Curses colour pairs
@@ -1597,6 +1599,7 @@ def passwordManagement(windows: dict[str, Any]) -> None:
 
                     # Save to database
                     sqlite.insertData(user, category_input, account, username_input, encrypted_password)
+                    log("TUI", f"Password created for account '{account}' by user '{user}'")
 
                     # Show success message
                     message_window.erase()
@@ -1612,6 +1615,7 @@ def passwordManagement(windows: dict[str, Any]) -> None:
                 # Call searchPasswords function
                 search_column, search_text = searchPasswords(windows)
                 if search_column and search_text:
+                    log("TUI", f"Search: {search_column} contains '{search_text}'")
                     # Set search parameters
                     feature = "Search"
                     category = search_column
@@ -1626,6 +1630,7 @@ def passwordManagement(windows: dict[str, Any]) -> None:
                 # Call sortPasswords function
                 sort_column, sort_order = sortPasswords(windows)
                 if sort_column and sort_order:
+                    log("TUI", f"Sort: {sort_column} {sort_order}")
                     # Set sort parameters
                     feature = "Sort"
                     category = sort_column
@@ -1669,6 +1674,7 @@ def passwordManagement(windows: dict[str, Any]) -> None:
 
                             # Update in database
                             sqlite.updateData(user, new_encrypted_password, new_account, new_username, original_record[4])
+                            log("TUI", f"Password updated for account '{new_account}' by user '{user}'")
 
                             message_window.erase()
                             message_window.addstr(2, 2, f"Password for {new_account} updated successfully")
@@ -1699,6 +1705,7 @@ def passwordManagement(windows: dict[str, Any]) -> None:
                                 original_record[3],  # username
                                 original_record[4]   # encrypted password
                             )
+                            log("TUI", f"Password deleted for account '{original_record[2]}' by user '{user}'")
 
                             message_window.erase()
                             message_window.addstr(2, 2, f"Password for {original_record[2]} deleted successfully")
