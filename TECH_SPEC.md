@@ -15,7 +15,7 @@ share the same business logic and data access layers:
 │ │ Login │ │ Password │ │ │ │ get   │ │ list     │ │
 │ │Screen │ │  Table   │ │ │ │secret │ │secrets   │ │
 │ └───────┘ └──────────┘ │ │ └───────┘ └──────────┘ │
-│         DONE            │ │        PLANNED          │
+│         DONE            │ │         DONE            │
 ├─────────────────────────┴─┴─────────────────────────┤
 │               validation.py                          │
 │          (Input Validation - shared)                 │
@@ -41,23 +41,44 @@ share the same business logic and data access layers:
 └──────────────────────────────────────────────────────┘
 ```
 
-### Planned CLI Usage (scripting interface)
+### CLI Usage (scripting interface)
 ```bash
 # Retrieve a secret for use in a script (like az keyvault secret show)
-DB_PASS=$(cli-guard get --user admin --account "production-db" --field password)
+DB_PASS=$(python3 CLI_Guard_CLI.py get --user admin --account "production-db")
 
-# List all secrets for a user
-cli-guard list --user admin
+# Authenticate via environment variable (recommended for CI/CD)
+export CLIGUARD_PASSWORD="master_pass"
+python3 CLI_Guard_CLI.py get --user admin --account "production-db"
 
-# Use in a pipeline
-cli-guard get --user deploy --account "api-key" | curl -H "Authorization: Bearer $(cat -)"
+# Authenticate via stdin pipe
+echo "master_pass" | python3 CLI_Guard_CLI.py get --user admin --account "production-db"
+
+# List all secrets as JSON
+python3 CLI_Guard_CLI.py list --user admin --json
+
+# Add a new secret
+python3 CLI_Guard_CLI.py add --user admin --category DB --account prod-db \
+    --secret-username dbadmin --secret "P@ssw0rd!"
+
+# Update a secret
+python3 CLI_Guard_CLI.py update --user admin --account prod-db --new-secret "NewP@ss!"
+
+# Delete a secret (--force required)
+python3 CLI_Guard_CLI.py delete --user admin --account prod-db --force
+
+# Check exit codes in scripts
+python3 CLI_Guard_CLI.py get --user admin --account nonexistent
+echo $?  # prints 3 (EXIT_NOT_FOUND)
 ```
 
 ```python
-# Python import usage
+# Python import usage (convenience functions)
 import CLI_Guard
+
 CLI_Guard.startSession("admin", master_password)
-secret = CLI_Guard.decryptPassword(encrypted_value)
+secret = CLI_Guard.getSecret("admin", "production-db")  # returns dict with decrypted password
+secrets = CLI_Guard.getSecrets("admin")                  # returns list of dicts
+CLI_Guard.endSession()
 ```
 
 ## Technology Stack

@@ -80,11 +80,11 @@ CLI Guard fills the gap for environments that need:
 | ID | Requirement | Status |
 |----|------------|--------|
 | **Scripting Interface** | | |
-| FR-1 | CLI mode: retrieve secret by account/username (non-interactive) | Planned |
-| FR-2 | CLI mode: authenticate with master password (via argument or stdin) | Planned |
-| FR-3 | CLI mode: output secret to stdout for script consumption | Planned |
-| FR-4 | CLI mode: list available secrets (non-interactive) | Planned |
-| FR-5 | Python module: importable interface for Python scripts | Planned |
+| FR-1 | CLI mode: retrieve secret by account/username (non-interactive) | Done |
+| FR-2 | CLI mode: authenticate with master password (via argument, env var, or stdin) | Done |
+| FR-3 | CLI mode: output secret to stdout for script consumption | Done |
+| FR-4 | CLI mode: list available secrets (non-interactive) | Done |
+| FR-5 | Python module: importable interface for Python scripts | Done |
 | **Core (Done)** | | |
 | FR-6 | User authentication with bcrypt-hashed master password | Done |
 | FR-7 | Account lockout after 3 failed attempts | Done |
@@ -109,9 +109,9 @@ CLI Guard fills the gap for environments that need:
 | NFR-2 | All encryption/decryption happens in memory only | Done |
 | NFR-3 | Zero network calls — fully offline application | Done |
 | NFR-4 | Python 3.12+ with minimal dependencies (bcrypt, cryptography) | Done |
-| NFR-5 | Unit test coverage for business logic and validation | Done (55 tests) |
+| NFR-5 | Unit test coverage for business logic and validation | Done (96 tests) |
 | NFR-6 | Works on airgapped systems with no internet access | Done |
-| NFR-7 | Scriptable: can be invoked non-interactively from bash/Python | Planned |
+| NFR-7 | Scriptable: can be invoked non-interactively from bash/Python | Done |
 
 ## Development Strategy
 The project is being built foundation-up:

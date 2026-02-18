@@ -187,5 +187,70 @@ class TestSessionManagement(unittest.TestCase):
         CLI_Guard.endSession()
 
 
+class TestConvenienceFunctions(unittest.TestCase):
+    """Test convenience functions used by CLI/scripting interface"""
+
+    def setUp(self):
+        """Start a test session"""
+        CLI_Guard.startSession("test_user", "TestPassword123!")
+
+    def tearDown(self):
+        """End session"""
+        CLI_Guard.endSession()
+
+    def test_get_secrets_no_session_raises(self):
+        """getSecrets should raise RuntimeError if no session"""
+        CLI_Guard.endSession()
+        with self.assertRaises(RuntimeError):
+            CLI_Guard.getSecrets("test_user")
+
+    def test_get_secret_no_session_raises(self):
+        """getSecret should raise RuntimeError if no session"""
+        CLI_Guard.endSession()
+        with self.assertRaises(RuntimeError):
+            CLI_Guard.getSecret("test_user", "some-account")
+
+    def test_add_secret_no_session_raises(self):
+        """addSecret should raise RuntimeError if no session"""
+        CLI_Guard.endSession()
+        with self.assertRaises(RuntimeError):
+            CLI_Guard.addSecret("test_user", "cat", "acct", "user", "pass")
+
+    def test_update_secret_no_session_raises(self):
+        """updateSecret should raise RuntimeError if no session"""
+        CLI_Guard.endSession()
+        with self.assertRaises(RuntimeError):
+            CLI_Guard.updateSecret("test_user", "acct", "user", "old", "new")
+
+    def test_delete_secret_no_session_raises(self):
+        """deleteSecret should raise RuntimeError if no session"""
+        CLI_Guard.endSession()
+        with self.assertRaises(RuntimeError):
+            CLI_Guard.deleteSecret("test_user", "acct", "user", "encrypted")
+
+    def test_is_account_locked_returns_bool(self):
+        """isAccountLocked should return a boolean"""
+        result = CLI_Guard.isAccountLocked("nonexistent_user_xyz")
+        self.assertIsInstance(result, bool)
+        self.assertFalse(result)
+
+    def test_get_secrets_returns_list(self):
+        """getSecrets should return a list (even if empty)"""
+        result = CLI_Guard.getSecrets("nonexistent_user_xyz")
+        self.assertIsInstance(result, list)
+
+    def test_get_secret_returns_none_for_missing(self):
+        """getSecret should return None for nonexistent account"""
+        result = CLI_Guard.getSecret("test_user", "nonexistent_account_xyz")
+        self.assertIsNone(result)
+
+    def test_get_secrets_dict_structure(self):
+        """getSecrets results should have expected dict keys"""
+        expected_keys = {"category", "account", "username", "password", "last_modified"}
+        results = CLI_Guard.getSecrets("test_user")
+        for secret in results:
+            self.assertEqual(set(secret.keys()), expected_keys)
+
+
 if __name__ == '__main__':
     unittest.main()

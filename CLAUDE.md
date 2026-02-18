@@ -4,13 +4,13 @@
 CLI Guard is a lightweight, locally-hosted secret manager for scripting and automation workflows.
 Think Azure Key Vault, but self-hosted and offline — for airgapped systems, container clusters, and internal networks.
 
-**Primary purpose:** Scripts and automations retrieve encrypted secrets at runtime (CLI/scripting interface — being built next).
+**Primary purpose:** Scripts and automations retrieve encrypted secrets at runtime via CLI.
 **Secondary purpose:** TUI for human operators to manually manage the secret store.
 
 **Repository:** CLI_Guard
 **Language:** Python 3.12+
 **TUI entry point:** `CLI_Guard_TUI.py` (run with `python3 CLI_Guard_TUI.py`)
-**CLI entry point:** Planned — will call the same `CLI_Guard.py` business logic functions
+**CLI entry point:** `CLI_Guard_CLI.py` (run with `python3 CLI_Guard_CLI.py get --user admin --account prod-db`)
 
 ## Architecture
 Three-tier architecture — each layer only talks to the one below it.
@@ -18,7 +18,7 @@ Multiple interfaces (TUI, CLI, Python import) all share the same business logic 
 
 ```
 CLI_Guard_TUI.py      (TUI Interface)    → curses windows, panels, user input
-CLI_Guard_CLI.py      (CLI Interface)    → non-interactive scripting access (planned)
+CLI_Guard_CLI.py      (CLI Interface)    → non-interactive scripting access (argparse)
         ↓                    ↓
 CLI_Guard.py          (Business Logic)   → encryption, hashing, session management
 validation.py         (Shared)           → input validation
@@ -32,14 +32,16 @@ CLI_SQL/CLI_Guard_SQL.py (Data Access)   → SQLite queries, connection manageme
 ```
 CLI_Guard/
 ├── CLI_Guard_TUI.py          # TUI interface (curses) - for human operators
+├── CLI_Guard_CLI.py           # CLI interface (argparse) - for scripts/automation
 ├── CLI_Guard.py               # Business logic (encryption, auth, sessions)
 ├── validation.py              # Input validation utilities
-├── logger.py                  # Shared logging (AUTH, DATABASE, TUI, ERROR)
+├── logger.py                  # Shared logging (AUTH, DATABASE, TUI, CLI, ERROR)
 ├── CLI_SQL/
 │   ├── CLI_Guard_SQL.py       # Database access layer
 │   └── CLI_Guard_DB.db        # SQLite database (DO NOT commit test data)
 ├── tests/
-│   ├── test_cli_guard.py      # Tests for business logic
+│   ├── test_cli_guard.py      # Tests for business logic + convenience functions
+│   ├── test_cli_guard_cli.py  # Tests for CLI parser + password resolution
 │   └── test_validation.py     # Tests for validation
 ├── Deprecated/                # Old code kept for reference only
 ├── Logs.txt                   # Runtime debug log

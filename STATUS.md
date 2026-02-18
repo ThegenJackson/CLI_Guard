@@ -1,9 +1,9 @@
 # CLI Guard - Project Status
 
-> Last updated: 2026-02-12
+> Last updated: 2026-02-18
 
 ## Quick Summary
-CLI Guard is a locally-hosted secret manager for scripting and automation workflows (like a lightweight Azure Key Vault). The foundation is built: database layer, business logic (encryption/auth), and a TUI for manual management. Next milestone is the CLI/scripting interface so scripts can retrieve secrets non-interactively.
+CLI Guard is a locally-hosted secret manager for scripting and automation workflows (like a lightweight Azure Key Vault). The foundation is complete: database layer, business logic (encryption/auth), TUI for manual management, and CLI for scripting. Next milestone is polish features (password generation, clipboard, session timeout).
 
 ## Development Phases
 
@@ -11,8 +11,8 @@ CLI Guard is a locally-hosted secret manager for scripting and automation workfl
 |-------|------------|--------|
 | A | Database layer, business logic, encryption/hashing | Done |
 | B | TUI for manual secret management + visual testing | Done |
-| C | CLI/scripting interface (non-interactive secret retrieval) | **Next** |
-| D | Polish (password generation, clipboard, session timeout) | Planned |
+| C | CLI/scripting interface (non-interactive secret retrieval) | Done |
+| D | Polish (password generation, clipboard, session timeout) | **Next** |
 
 ## What's Done
 
@@ -40,21 +40,26 @@ CLI Guard is a locally-hosted secret manager for scripting and automation workfl
 - [x] Sort secrets by any column (ascending/descending)
 - [x] Clear filters with ESC
 
+### Phase C: CLI/Scripting Interface
+- [x] `cli-guard get` — retrieve a secret by account/username (non-interactive)
+- [x] `cli-guard list` — list available secrets for a user
+- [x] `cli-guard add` / `update` / `delete` — full CRUD via CLI
+- [x] Authentication via `--password` flag, `CLIGUARD_PASSWORD` env var, or stdin pipe
+- [x] Output to stdout for `$()` capture, `--json` for structured output
+- [x] Convenience functions in CLI_Guard.py (Python importable interface)
+- [x] Exit codes: 0=success, 1=error, 2=auth failure, 3=not found, 4=db error
+- [x] `delete --force` safety flag to prevent accidental deletions
+- [x] Input validation on all CLI fields
+- [x] DB_PATH fix — works when invoked from any working directory
+
 ### Infrastructure
-- [x] 55 unit tests passing (business logic + validation)
+- [x] 96 unit tests passing (business logic + validation + CLI parser)
 - [x] Project documentation (CLAUDE.md, PRD.md, TECH_SPEC.md, STATUS.md)
 - [x] Claude Code hooks (branch protection, dangerous command blocking, pre-commit tests)
 - [x] Dynamic timestamp generation (no stale dates)
 - [x] Popup panel rendering fix (touchwin/refresh pattern)
 
 ## What's Not Done
-
-### Phase C: CLI/Scripting Interface (Next Priority)
-- [ ] `cli-guard get` — retrieve a secret by account/username (non-interactive)
-- [ ] `cli-guard list` — list available secrets for a user
-- [ ] Authentication via argument or stdin (for piping)
-- [ ] Output to stdout for script consumption
-- [ ] Python importable interface
 
 ### Phase D: Polish
 - [ ] Secret generation (scramble, random, passphrase) — buttons exist but are placeholders
@@ -73,12 +78,14 @@ CLI Guard is a locally-hosted secret manager for scripting and automation workfl
 | File | Lines | Role |
 |------|-------|------|
 | CLI_Guard_TUI.py | ~2100 | TUI interface |
+| CLI_Guard_CLI.py | ~385 | CLI interface |
+| CLI_Guard.py | ~410 | Business logic |
 | CLI_Guard_SQL.py | ~460 | Data access |
 | validation.py | 216 | Input validation |
-| CLI_Guard.py | ~210 | Business logic |
-| logger.py | ~40 | Shared logging |
+| logger.py | ~48 | Shared logging |
+| test_cli_guard.py | ~257 | Business logic tests |
+| test_cli_guard_cli.py | ~210 | CLI parser tests |
 | test_validation.py | 237 | Validation tests |
-| test_cli_guard.py | 191 | Business logic tests |
 
 ## Current Branch
 Working on `main`. Feature branches should be used for future work.
