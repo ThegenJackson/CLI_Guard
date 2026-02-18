@@ -41,7 +41,8 @@ def logging(message=None):
 
 
 # Database path constant
-DB_PATH = os.path.join(os.getcwd(), "CLI_SQL", "CLI_Guard_DB.db")
+# Uses __file__ (not getcwd) so the path is correct regardless of where the CLI is invoked from
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "CLI_Guard_DB.db")
 
 
 def get_db_connection() -> sqlite3.Connection:

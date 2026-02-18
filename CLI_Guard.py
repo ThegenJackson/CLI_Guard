@@ -219,3 +219,192 @@ def decryptPassword(encrypted_password: str) -> str:
     decrypted = fernet.decrypt(encrypted_password.encode('utf-8'))
     log("AUTH", "Password decrypted successfully")
     return decrypted.decode('utf-8')
+
+
+# ---------------------------------------------------------------------------
+# Convenience functions for CLI / scripting interface
+# These wrap SQL + encryption calls so interface layers never import SQL directly
+# ---------------------------------------------------------------------------
+
+def isAccountLocked(user: str) -> bool:
+    """
+    Check if a user account is currently locked out
+
+    Args:
+        user: Username to check
+
+    Returns:
+        True if account is locked, False otherwise
+    """
+    return sqlite.isUserLocked(user)
+
+
+def getSecrets(user: str, category: str = None, text: str = None,
+               sort_by: str = None) -> list[dict]:
+    """
+    Query all secrets for a user, returning structured dicts
+
+    Passwords are left encrypted in the returned dicts. Call decryptPassword()
+    on individual values when you need plaintext.
+
+    Args:
+        user: Username to query secrets for
+        category: Column to filter/sort by (must be in ALLOWED_COLUMNS)
+        text: Search text for LIKE filtering
+        sort_by: Sort order ('ascending' or 'descending')
+
+    Returns:
+        List of dicts with keys: category, account, username, password (encrypted), last_modified
+
+    Raises:
+        RuntimeError: If no active session
+    """
+    if _session_encryption_key is None:
+        raise RuntimeError("No active session - cannot query secrets")
+
+    data = sqlite.queryData(user=user, table="passwords", category=category,
+                            text=text, sort_by=sort_by)
+    results = []
+    for row in (data or []):
+        # row tuple: (user, category, account, username, encrypted_password, last_modified)
+        results.append({
+            "category": row[1],
+            "account": row[2],
+            "username": row[3],
+            "password": row[4],
+            "last_modified": str(row[5]),
+        })
+    return results
+
+
+def getSecret(user: str, account: str, username: str = None) -> Optional[dict]:
+    """
+    Get a specific secret by account name, with password decrypted
+
+    Uses queryData with LIKE search, then filters for an exact account match.
+    If multiple secrets share an account name, pass username to disambiguate.
+
+    Args:
+        user: Username who owns the secrets
+        account: Account name to look up
+        username: Optional username to disambiguate multiple matches
+
+    Returns:
+        Dict with keys: category, account, username, password (decrypted), last_modified
+        None if no matching secret found
+
+    Raises:
+        RuntimeError: If no active session
+    """
+    if _session_encryption_key is None:
+        raise RuntimeError("No active session - cannot retrieve secret")
+
+    # queryData uses LIKE with %text%, so we post-filter for exact match
+    data = sqlite.queryData(user=user, table="passwords",
+                            category="account", text=account)
+    if not data:
+        return None
+
+    # Filter for exact account match
+    matches = [row for row in data if row[2] == account]
+    if not matches:
+        return None
+
+    # Narrow by username if provided
+    if username:
+        matches = [row for row in matches if row[3] == username]
+        if not matches:
+            return None
+
+    row = matches[0]
+    try:
+        decrypted = decryptPassword(row[4])
+    except Exception:
+        decrypted = None
+
+    return {
+        "category": row[1],
+        "account": row[2],
+        "username": row[3],
+        "password": decrypted,
+        "last_modified": str(row[5]),
+    }
+
+
+def addSecret(user: str, category: str, account: str,
+              username: str, password: str) -> bool:
+    """
+    Encrypt a password and store it as a new secret entry
+
+    Args:
+        user: Username who owns this secret
+        category: Category for the secret
+        account: Account name
+        username: Username for the account
+        password: Plaintext password to encrypt and store
+
+    Returns:
+        True if successful
+
+    Raises:
+        RuntimeError: If no active session
+    """
+    if _session_encryption_key is None:
+        raise RuntimeError("No active session - cannot add secret")
+
+    encrypted = encryptPassword(password)
+    sqlite.insertData(user, category, account, username, encrypted)
+    log("AUTH", f"Secret added for account '{account}' by user '{user}'")
+    return True
+
+
+def updateSecret(user: str, account: str, username: str,
+                 old_encrypted_password: str, new_password: str) -> bool:
+    """
+    Encrypt a new password and update an existing secret entry
+
+    Args:
+        user: Username who owns this secret
+        account: Account name
+        username: Username for the account
+        old_encrypted_password: Current encrypted password (identifies the row)
+        new_password: New plaintext password to encrypt and store
+
+    Returns:
+        True if successful
+
+    Raises:
+        RuntimeError: If no active session
+    """
+    if _session_encryption_key is None:
+        raise RuntimeError("No active session - cannot update secret")
+
+    new_encrypted = encryptPassword(new_password)
+    sqlite.updateData(user, new_encrypted, account, username, old_encrypted_password)
+    log("AUTH", f"Secret updated for account '{account}' by user '{user}'")
+    return True
+
+
+def deleteSecret(user: str, account: str, username: str,
+                 encrypted_password: str) -> bool:
+    """
+    Delete a specific secret entry
+
+    Args:
+        user: Username who owns this secret
+        account: Account name
+        username: Username for the account
+        encrypted_password: The encrypted password value (identifies the exact row)
+
+    Returns:
+        True if successful
+
+    Raises:
+        RuntimeError: If no active session
+    """
+    if _session_encryption_key is None:
+        raise RuntimeError("No active session - cannot delete secret")
+
+    sqlite.deleteData(user, account, username, encrypted_password)
+    log("AUTH", f"Secret deleted for account '{account}' by user '{user}'")
+    return True

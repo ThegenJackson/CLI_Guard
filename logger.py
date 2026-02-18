@@ -10,6 +10,7 @@ Usage:
     log("AUTH", "User john signed in successfully")
     log("DATABASE", "Inserted password for Gmail")
     log("TUI", "Password created for account Twitter")
+    log("CLI", "Command: get --user admin --account prod-db")
     log("ERROR", "Failed to decrypt password", exc_info=True)
 """
 
@@ -27,7 +28,7 @@ def log(source: str, message: str, exc_info: bool = False) -> None:
     Write a timestamped log entry to Logs.txt
 
     Args:
-        source: Which layer generated the log (AUTH, DATABASE, TUI, VALIDATION, ERROR)
+        source: Which layer generated the log (AUTH, DATABASE, TUI, CLI, VALIDATION, ERROR)
         message: Human-readable description of what happened
         exc_info: If True, appends the current exception traceback (use in except blocks)
     """
