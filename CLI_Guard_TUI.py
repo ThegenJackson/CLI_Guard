@@ -485,9 +485,15 @@ def mainMenu(windows: dict[str, Any], user: str) -> None:
             else:
                 menu_window.addstr(i + 3, 2, option)
 
+        # Draw help tips in message_window
+        message_window.erase()
+        message_window.addstr(1, 2, "\u2191\u2193 Navigate menu | ENTER Select", curses.A_DIM)
+        message_window.noutrefresh()
+
         # Disable cursor and enable keypad input
         curses.curs_set(0)
         menu_window.keypad(True)
+        curses.doupdate()
         # Get user input
         key: int = menu_window.getch()
 
@@ -1462,24 +1468,24 @@ def passwordManagement(windows: dict[str, Any]) -> None:
     start_index: int = 0
     running: bool = True
 
-    # Feature state (for search/sort)
-    feature: Optional[str] = None
-    category: Optional[str] = None
-    sort_variable: Optional[str] = None
-    search_term: Optional[str] = None
+    # Search and sort state (independent — can be combined)
+    search_column: Optional[str] = None    # Column to filter on (e.g. "category", "account")
+    search_term: Optional[str] = None      # Search text (e.g. "gmail")
+    sort_column: Optional[str] = None      # Column to sort by (e.g. "account", "last_modified")
+    sort_order: Optional[str] = None       # Sort direction (e.g. "Ascending", "Descending")
 
     while running:
         # Query passwords from database
         passwords_list: list[list] = []
 
-        if feature is None:
-            data = sqlite.queryData(user=user, table="passwords")
-        elif feature == "Sort":
-            data = sqlite.queryData(user=user, table="passwords", category=category, text=None, sort_by=sort_variable)
-        elif feature == "Search":
-            data = sqlite.queryData(user=user, table="passwords", category=category, text=search_term, sort_by=None)
-        else:
-            data = sqlite.queryData(user=user, table="passwords")
+        data = sqlite.queryData(
+            user=user,
+            table="passwords",
+            category=search_column,
+            text=search_term,
+            sort_column=sort_column,
+            sort_by=sort_order,
+        )
 
         # Build display list
         if data:
@@ -1491,8 +1497,8 @@ def passwordManagement(windows: dict[str, Any]) -> None:
         content_width: int = content_window.getmaxyx()[1] - 4
         column_width: int = (content_width - 10) // (len(headers) - 1)
 
-        # Maximum visible rows in content window
-        max_visible_rows: int = content_window.getmaxyx()[0] - 6
+        # Maximum visible rows in content window (border + options + headers + border = 5)
+        max_visible_rows: int = content_window.getmaxyx()[0] - 5
 
         # Clear and redraw content window
         content_window.erase()
@@ -1506,14 +1512,8 @@ def passwordManagement(windows: dict[str, Any]) -> None:
             if current_row == i:
                 content_window.attroff(curses.A_REVERSE)
 
-        # Draw active filter status
-        if feature == "Search" and category and search_term:
-            content_window.addstr(2, 2, f"Filter: {category} contains '{search_term}' (ESC to clear)", curses.A_DIM)
-        elif feature == "Sort" and category and sort_variable:
-            content_window.addstr(2, 2, f"Sorted by: {category} ({sort_variable}) (ESC to clear)", curses.A_DIM)
-
-        # Draw table headers
-        content_window.addstr(3, 2, f"{headers[0]:<10}{headers[1]:<{column_width}}{headers[2]:<{column_width}}{headers[3]:<{column_width}}{headers[4]:<{column_width}}", curses.A_BOLD)
+        # Draw table headers (row 2 — directly below options)
+        content_window.addstr(2, 2, f"{headers[0]:<10}{headers[1]:<{column_width}}{headers[2]:<{column_width}}{headers[3]:<{column_width}}{headers[4]:<{column_width}}", curses.A_BOLD)
 
         # Ensure start_index is valid
         start_index = max(0, min(start_index, len(passwords_list) - max_visible_rows if len(passwords_list) > 0 else 0))
@@ -1523,7 +1523,7 @@ def passwordManagement(windows: dict[str, Any]) -> None:
 
         # Draw password rows
         for i, row in enumerate(visible_passwords):
-            row_index: int = i + 4
+            row_index: int = i + 3
             is_selected: bool = (start_index + i) == (current_row - len(options))
 
             if is_selected:
@@ -1543,6 +1543,29 @@ def passwordManagement(windows: dict[str, Any]) -> None:
                 content_window.attroff(curses.A_REVERSE)
 
         content_window.noutrefresh()
+
+        # Draw message_window: filter status (row 1) + contextual help (row 3)
+        message_window.erase()
+        msg_width: int = message_window.getmaxyx()[1] - 4
+
+        # Row 1: Active filter/sort status
+        status_parts: list[str] = []
+        if search_column and search_term:
+            status_parts.append(f"Filter: {search_column} contains '{search_term}'")
+        if sort_column and sort_order:
+            status_parts.append(f"Sorted by: {sort_column} ({sort_order})")
+        if status_parts:
+            status_text = " | ".join(status_parts)
+            message_window.addstr(1, 2, status_text[:msg_width], curses.A_BOLD)
+
+        # Row 3: Contextual navigation help
+        if current_row < len(options):
+            help_text = "\u2190\u2192 Navigate options | \u2193 Jump to list | ENTER Select | C Create | S Search | O Sort | ESC Back"
+        else:
+            help_text = "\u2191\u2193 Navigate list | ENTER View details | C Create | S Search | O Sort | ESC Clear/Back"
+        message_window.addstr(3, 2, help_text[:msg_width], curses.A_DIM)
+
+        message_window.noutrefresh()
         curses.doupdate()
 
         # Get user input
@@ -1613,14 +1636,13 @@ def passwordManagement(windows: dict[str, Any]) -> None:
 
             elif current_row == 1:  # Search Passwords
                 # Call searchPasswords function
-                search_column, search_text = searchPasswords(windows)
-                if search_column and search_text:
-                    log("TUI", f"Search: {search_column} contains '{search_text}'")
-                    # Set search parameters
-                    feature = "Search"
-                    category = search_column
-                    search_term = search_text
-                    # Reset current_row to first password
+                returned_column, returned_text = searchPasswords(windows)
+                if returned_column and returned_text:
+                    log("TUI", f"Search: {returned_column} contains '{returned_text}'")
+                    # Set search parameters (sort state is preserved)
+                    search_column = returned_column
+                    search_term = returned_text
+                    # Reset cursor to first password
                     current_row = len(options)
                     start_index = 0
                     # Refresh password list - continue to requery and redraw
@@ -1628,14 +1650,13 @@ def passwordManagement(windows: dict[str, Any]) -> None:
 
             elif current_row == 2:  # Sort Passwords
                 # Call sortPasswords function
-                sort_column, sort_order = sortPasswords(windows)
-                if sort_column and sort_order:
-                    log("TUI", f"Sort: {sort_column} {sort_order}")
-                    # Set sort parameters
-                    feature = "Sort"
-                    category = sort_column
-                    sort_variable = sort_order
-                    # Reset current_row to first password
+                returned_column, returned_order = sortPasswords(windows)
+                if returned_column and returned_order:
+                    log("TUI", f"Sort: {returned_column} {returned_order}")
+                    # Set sort parameters (search state is preserved)
+                    sort_column = returned_column
+                    sort_order = returned_order
+                    # Reset cursor to first password
                     current_row = len(options)
                     start_index = 0
                     # Refresh password list - continue to requery and redraw
@@ -1720,19 +1741,19 @@ def passwordManagement(windows: dict[str, Any]) -> None:
                             message_window.erase()
                             message_window.noutrefresh()
 
-        # ESC key: Clear filter or return to main menu
+        # ESC key: Clear filters or return to main menu
         elif key == 27:
-            # If there's an active filter, clear it
-            if feature in ["Search", "Sort"]:
-                feature = None
-                category = None
-                sort_variable = None
+            # If there's an active search or sort, clear both
+            if search_column or search_term or sort_column or sort_order:
+                search_column = None
                 search_term = None
+                sort_column = None
+                sort_order = None
                 current_row = 0
                 start_index = 0
                 # Show cleared message
                 message_window.erase()
-                message_window.addstr(2, 2, "Filter cleared - showing all passwords")
+                message_window.addstr(2, 2, "Filters cleared - showing all passwords")
                 message_window.noutrefresh()
                 curses.doupdate()
                 time.sleep(1)

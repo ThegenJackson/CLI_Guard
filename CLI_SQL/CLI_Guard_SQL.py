@@ -138,17 +138,22 @@ def ensure_connection() -> bool:
 # The trailing comma when passing Placeholder Bindings avoids the "Incorrect number of bindings supplied" error
 # by ensuring the argument is treated as a tuple, which is what execute() expects
 # https://docs.python.org/3/library/sqlite3.html#sqlite3-placeholders
-def queryData(user, table, category=None, text=None, sort_by=None) -> list:
+def queryData(user, table, category=None, text=None, sort_by=None, sort_column=None) -> list:
     try:
         # Ensure database connection is active
         if not ensure_connection():
             logging(message="ERROR: No database connection available")
             return []
 
-        # Validate column name against whitelist to prevent SQL injection
+        # Validate search column name against whitelist to prevent SQL injection
         if category is not None and category.lower() not in ALLOWED_COLUMNS:
             logging(message=f"ERROR: Invalid column name attempted: {category}")
             raise ValueError(f"Invalid column name: {category}")
+
+        # Validate sort column name against whitelist to prevent SQL injection
+        if sort_column is not None and sort_column.lower() not in ALLOWED_COLUMNS:
+            logging(message=f"ERROR: Invalid sort column attempted: {sort_column}")
+            raise ValueError(f"Invalid sort column: {sort_column}")
 
         # Validate sort order against whitelist
         if sort_by is not None and sort_by.lower() not in ALLOWED_SORT_ORDERS:
@@ -156,47 +161,28 @@ def queryData(user, table, category=None, text=None, sort_by=None) -> list:
             raise ValueError(f"Invalid sort order: {sort_by}")
 
         if user is not None:
-            # Convert Category to category using .lower()
-            if text is not None:
-                sql_query = f"""
-                    SELECT * 
-                    FROM vw_{table}
-                    WHERE user = ?
-                    AND {category.lower()} LIKE ?;
-                """
-                sqlCursor.execute(sql_query, (user, f"%{text}%",))
-            # Convert sort_by from "ascending" to "ASC" or "descending" to "DESC"
-            # Convert Category to category using .lower()
-            elif sort_by is not None:
-                # Map validated sort order to SQL keywords
+            # Build query incrementally — search and sort can combine
+            sql_query = f"SELECT * FROM vw_{table} WHERE user = ?"
+            params: list = [user]
+
+            # Apply search filter (WHERE ... LIKE)
+            if text is not None and category is not None:
+                sql_query += f" AND {category.lower()} LIKE ?"
+                params.append(f"%{text}%")
+
+            # Apply sort order (ORDER BY)
+            # sort_column is the column to sort by; sort_by is the direction
+            # For backward compatibility: if sort_column is None, fall back to category
+            effective_sort_col = sort_column if sort_column is not None else category
+            if sort_by is not None and effective_sort_col is not None:
                 sort_sql = "ASC" if sort_by.lower() == "ascending" else "DESC"
-                sql_query = (f"""
-                    SELECT *
-                    FROM vw_{table}
-                    WHERE user = ?
-                    ORDER BY {category.lower()} {sort_sql};
-                """)
-                sqlCursor.execute(sql_query, (user,))
-            else:
-                sql_query = (f"""
-                    SELECT * 
-                    FROM vw_{table}
-                    WHERE user = ?;
-                """)
-                sqlCursor.execute(sql_query, (user,))
-            # Insert query data to a list
-            list_table = sqlCursor.fetchall()
-            # Return the list of values
-            return list_table
+                sql_query += f" ORDER BY {effective_sort_col.lower()} {sort_sql}"
+
+            sqlCursor.execute(sql_query, tuple(params))
+            return sqlCursor.fetchall()
         else:
-            sqlCursor.execute(f"""
-                SELECT * 
-                FROM vw_{table};
-            """)
-            # Insert query data to a list
-            list_table = sqlCursor.fetchall()
-            # Return the list of values
-            return list_table
+            sqlCursor.execute(f"SELECT * FROM vw_{table}")
+            return sqlCursor.fetchall()
     except ValueError:
         # Return empty list for validation errors (already logged above)
         return []

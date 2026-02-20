@@ -240,7 +240,7 @@ def isAccountLocked(user: str) -> bool:
 
 
 def getSecrets(user: str, category: str = None, text: str = None,
-               sort_by: str = None) -> list[dict]:
+               sort_by: str = None, sort_column: str = None) -> list[dict]:
     """
     Query all secrets for a user, returning structured dicts
 
@@ -249,9 +249,10 @@ def getSecrets(user: str, category: str = None, text: str = None,
 
     Args:
         user: Username to query secrets for
-        category: Column to filter/sort by (must be in ALLOWED_COLUMNS)
+        category: Column to filter on (must be in ALLOWED_COLUMNS)
         text: Search text for LIKE filtering
         sort_by: Sort order ('ascending' or 'descending')
+        sort_column: Column to sort by (must be in ALLOWED_COLUMNS, defaults to category if None)
 
     Returns:
         List of dicts with keys: category, account, username, password (encrypted), last_modified
@@ -263,7 +264,7 @@ def getSecrets(user: str, category: str = None, text: str = None,
         raise RuntimeError("No active session - cannot query secrets")
 
     data = sqlite.queryData(user=user, table="passwords", category=category,
-                            text=text, sort_by=sort_by)
+                            text=text, sort_by=sort_by, sort_column=sort_column)
     results = []
     for row in (data or []):
         # row tuple: (user, category, account, username, encrypted_password, last_modified)
