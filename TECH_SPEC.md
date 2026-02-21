@@ -171,6 +171,16 @@ No `--password` flag on data commands. Passwords are only used during `signin` a
 ### Security Note on Salt
 The current PBKDF2 salt is fixed (`CLI_Guard_Salt_v1_2025`). This is acceptable for a single-user local application, but if multi-device sync is ever added, per-user salts stored in the database would be required.
 
+### Security Model and Threat Assumptions
+
+CLI Guard makes every reasonable effort to be cryptographically secure: master passwords are hashed with bcrypt, stored secrets are encrypted with Fernet (AES-128-CBC + HMAC-SHA256), and encryption keys are derived via PBKDF2-HMAC-SHA256 with 100,000 iterations — never stored on disk.
+
+However, as a locally-hosted application, CLI Guard's security model places some responsibility on the operator to secure the hosting environment. The assumption is that untrusted parties should never have direct access to the machine running CLI Guard — the host itself is the primary security boundary. This is the same trust model used by tools like `pass`, `gpg-agent`, and local SSH key storage.
+
+**Account lockout** (3 failed attempts, locked until the next day) is an intentional lightweight guard. It deters casual brute-force attempts but is not designed to withstand a determined attacker with local machine access — someone with filesystem access could modify the SQLite database directly or manipulate the system clock. Strengthening this (e.g., increasing PBKDF2 iterations to the OWASP-recommended 600,000) was evaluated and deferred: while the code change is trivial, it would break decryption of all existing secrets and require a migration step to re-encrypt every stored entry under the new key. For a lightweight local tool, this migration cost outweighs the marginal security gain given that the real protection comes from the hosting environment, not the lockout mechanism.
+
+**In summary:** CLI Guard's cryptographic layer (bcrypt, Fernet, PBKDF2) protects against offline attacks like database theft. The account lockout is a courtesy guard for honest mistakes. The operator is responsible for ensuring the host machine is hardened against unauthorized access.
+
 ## Database Schema
 
 ### Tables

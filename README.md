@@ -255,6 +255,14 @@ User signs in → PBKDF2 derives Fernet key → Query DB → Decrypt password �
 - **Fernet**: Authenticated encryption (AES-128 + HMAC-SHA256)
 - **Random Salt**: Bcrypt generates unique salt per password
 
+#### **Security Model**
+
+CLI Guard makes every reasonable effort to be cryptographically secure — master passwords are hashed with bcrypt, secrets are encrypted with Fernet (AES-128-CBC + HMAC-SHA256), and encryption keys are derived via PBKDF2 and never stored on disk.
+
+As a locally-hosted application, CLI Guard's security model places responsibility on the operator to secure the hosting environment. The host machine is the primary security boundary — untrusted parties should not have direct access. This is the same trust model used by tools like `pass`, `gpg-agent`, and local SSH key storage.
+
+For a detailed discussion of threat assumptions and design trade-offs, see the [Security Model and Threat Assumptions](TECH_SPEC.md#security-model-and-threat-assumptions) section in the technical specification.
+
 ---
 
 ## Database Schema
