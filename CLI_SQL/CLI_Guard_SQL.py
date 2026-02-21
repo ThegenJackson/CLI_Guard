@@ -197,7 +197,7 @@ def queryData(user, table, category=None, text=None, sort_by=None, sort_column=N
 
 
 # INSERT new user into users SQLite table
-def insertUser(user, password) -> None:
+def insertUser(user, password, encryption_salt) -> None:
     try:
         # Ensure database connection is active
         if not ensure_connection():
@@ -206,12 +206,13 @@ def insertUser(user, password) -> None:
 
         # Handle password as bytes (bcrypt hash) or string
         # SQLite stores bytes as BLOB type
+        # encryption_salt is a hex string from os.urandom(32).hex()
         sql_query = ("""
             INSERT INTO users
-            (user, user_pw, user_last_modified)
-            VALUES(?, ?, ?);
+            (user, user_pw, user_last_modified, encryption_salt)
+            VALUES(?, ?, ?, ?);
             """)
-        sqlCursor.execute(sql_query, (user, password, get_today()))
+        sqlCursor.execute(sql_query, (user, password, get_today(), encryption_salt))
         sqlConnection.commit()
         logging(message=f"SUCCESS: Created User {user}")
     except sqlite3.IntegrityError as integrity_error:
@@ -415,6 +416,100 @@ def exportDatabase(export_path) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Per-user encryption salt
+# ---------------------------------------------------------------------------
+
+def queryUserSalt(user) -> str | None:
+    """
+    Retrieve the encryption salt for a user
+
+    Args:
+        user: Username to look up
+
+    Returns:
+        Hex-encoded salt string, or None if user not found or salt is NULL
+    """
+    try:
+        if not ensure_connection():
+            logging(message="ERROR: No database connection available")
+            return None
+
+        sql_query = "SELECT encryption_salt FROM users WHERE user = ?"
+        sqlCursor.execute(sql_query, (user,))
+        result = sqlCursor.fetchone()
+
+        if result and result[0]:
+            return result[0]
+        return None
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to query salt for User {user} - {str(sql_error)}")
+        return None
+    except Exception:
+        logging()
+        return None
+
+
+def updateUserSalt(user, encryption_salt) -> None:
+    """
+    Update the encryption salt for a user
+
+    Args:
+        user: Username to update
+        encryption_salt: New hex-encoded salt string
+    """
+    try:
+        if not ensure_connection():
+            logging(message="ERROR: Cannot update user salt - no database connection")
+            return
+
+        sql_query = "UPDATE users SET encryption_salt = ? WHERE user = ?"
+        sqlCursor.execute(sql_query, (encryption_salt, user))
+        sqlConnection.commit()
+        logging(message=f"SUCCESS: Updated encryption salt for User {user}")
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to update salt for User {user} - {str(sql_error)}")
+    except Exception:
+        logging()
+
+
+def migrateAddEncryptionSalt() -> None:
+    """
+    Migration: add encryption_salt column to users table if it doesn't exist.
+
+    This is a one-time schema migration. Existing users will have NULL salt
+    until they are migrated (handled separately by the business logic layer,
+    which re-encrypts their secrets with a new per-user salt).
+    """
+    try:
+        if not ensure_connection():
+            logging(message="ERROR: Cannot run salt migration - no database connection")
+            return
+
+        # Check if column already exists by querying table info
+        sqlCursor.execute("PRAGMA table_info(users)")
+        columns = [row[1] for row in sqlCursor.fetchall()]
+
+        if "encryption_salt" not in columns:
+            sqlCursor.execute("ALTER TABLE users ADD COLUMN encryption_salt TEXT")
+            sqlConnection.commit()
+            logging(message="SUCCESS: Added encryption_salt column to users table")
+
+            # Recreate the view to include the new column
+            sqlCursor.execute("DROP VIEW IF EXISTS vw_users")
+            sqlCursor.execute("CREATE VIEW vw_users AS SELECT * FROM users")
+            sqlConnection.commit()
+            logging(message="SUCCESS: Recreated vw_users view with encryption_salt")
+        else:
+            logging(message="Salt migration: encryption_salt column already exists")
+    except sqlite3.OperationalError as op_error:
+        logging(message=f"ERROR: Salt migration failed - {str(op_error)}")
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: Salt migration failed - {str(sql_error)}")
+    except Exception:
+        logging()
+
+
+# ---------------------------------------------------------------------------
 # Service Token functions (for token-based CLI authentication)
 # ---------------------------------------------------------------------------
 
@@ -454,10 +549,14 @@ def createServiceTokensTable() -> None:
         logging()
 
 
-# Run migration on module load (creates table if it doesn't exist)
+# Run migrations on module load
 if sqlConnection is not None:
     try:
         createServiceTokensTable()
+    except Exception:
+        pass  # Logged internally; don't crash on import
+    try:
+        migrateAddEncryptionSalt()
     except Exception:
         pass  # Logged internally; don't crash on import
 

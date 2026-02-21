@@ -451,3 +451,236 @@
 [2026-02-21 12:17:04] AUTH: Session invalidated for user 'testuser'
 [2026-02-21 12:17:05] AUTH: Session token created for user 'testuser' (TTL: 60min)
 [2026-02-21 12:17:05] AUTH: Session token validated for user 'testuser'
+[2026-02-21 13:02:24] DATABASE: SUCCESS: service_tokens table ready
+[2026-02-21 13:02:24] DATABASE: SUCCESS: Added encryption_salt column to users table
+[2026-02-21 13:02:24] DATABASE: SUCCESS: Recreated vw_users view with encryption_salt
+[2026-02-21 13:02:25] AUTH: Session ended for 'None'
+[2026-02-21 13:02:25] AUTH: Session ended for 'None'
+[2026-02-21 13:02:25] AUTH: Session ended for 'None'
+[2026-02-21 13:02:25] AUTH: Session ended for 'None'
+[2026-02-21 13:08:25] DATABASE: SUCCESS: service_tokens table ready
+[2026-02-21 13:08:25] DATABASE: Salt migration: encryption_salt column already exists
+[2026-02-21 13:08:25] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:25] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:25] AUTH: Session ended for 'None'
+[2026-02-21 13:08:25] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:25] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:25] AUTH: Session ended for 'None'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session ended for 'None'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session ended for 'None'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session ended for 'None'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Password encrypted successfully
+[2026-02-21 13:08:26] AUTH: Password decrypted successfully
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Password encrypted successfully
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Password encrypted successfully
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] ERROR: Decryption attempted with no active session
+[2026-02-21 13:08:26] AUTH: Session ended for 'None'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Password encrypted successfully
+[2026-02-21 13:08:26] AUTH: Password decrypted successfully
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Password encrypted successfully
+[2026-02-21 13:08:26] AUTH: Password decrypted successfully
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Password encrypted successfully
+[2026-02-21 13:08:26] AUTH: Password decrypted successfully
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Password encrypted successfully
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:26] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:26] ERROR: Encryption attempted with no active session
+[2026-02-21 13:08:26] AUTH: Session ended for 'None'
+[2026-02-21 13:08:28] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:28] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:28] AUTH: Session ended for 'None'
+[2026-02-21 13:08:28] AUTH: Session started for 'user1'
+[2026-02-21 13:08:28] AUTH: Session ended for 'user1'
+[2026-02-21 13:08:28] AUTH: Session started for 'user2'
+[2026-02-21 13:08:28] AUTH: Session ended for 'user2'
+[2026-02-21 13:08:28] AUTH: Session ended for 'None'
+[2026-02-21 13:08:28] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:28] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:28] AUTH: Session ended for 'None'
+[2026-02-21 13:08:28] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:28] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:28] AUTH: Session ended for 'None'
+[2026-02-21 13:08:28] AUTH: Session started from pre-derived key for 'test_user'
+[2026-02-21 13:08:28] AUTH: Password encrypted successfully
+[2026-02-21 13:08:28] AUTH: Password decrypted successfully
+[2026-02-21 13:08:28] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:28] AUTH: Session ended for 'None'
+[2026-02-21 13:08:28] AUTH: Session started for 'test_user'
+[2026-02-21 13:08:28] AUTH: Password encrypted successfully
+[2026-02-21 13:08:28] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:28] AUTH: Session started from pre-derived key for 'test_user'
+[2026-02-21 13:08:28] AUTH: Password decrypted successfully
+[2026-02-21 13:08:28] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:28] AUTH: Session started from pre-derived key for 'test_user'
+[2026-02-21 13:08:28] AUTH: Session ended for 'test_user'
+[2026-02-21 13:08:29] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_4bc39cd94324)
+[2026-02-21 13:08:29] AUTH: Service token 'ci' validated for user 'testuser'
+[2026-02-21 13:08:30] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_3afc811641d1)
+[2026-02-21 13:08:30] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_e666b9725307)
+[2026-02-21 13:08:30] AUTH: Rejected expired service token 'ci' for user 'testuser'
+[2026-02-21 13:08:30] AUTH: Service token 'ci-pipeline' created for user 'testuser' (id: cg_svc_756543b58a06)
+[2026-02-21 13:08:31] AUTH: Service token 'deploy-bot' created for user 'testuser' (id: cg_svc_5db415a1d8d9)
+[2026-02-21 13:08:31] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_e462be5fef5e)
+[2026-02-21 13:08:31] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_e817fe9f1156)
+[2026-02-21 13:08:32] AUTH: Service token 'ci' validated for user 'testuser'
+[2026-02-21 13:08:32] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_9f132de70201)
+[2026-02-21 13:08:32] AUTH: Service token 'ci' (id: cg_svc_9f132de70201) revoked by user 'testuser'
+[2026-02-21 13:08:32] AUTH: Rejected revoked service token 'ci' for user 'testuser'
+[2026-02-21 13:08:32] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_194d41aa811f)
+[2026-02-21 13:08:33] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_d9e89e813a65)
+[2026-02-21 13:08:33] AUTH: Service token 'ci' validated for user 'testuser'
+[2026-02-21 13:08:33] AUTH: Session token created for user 'testuser' (TTL: 1min)
+[2026-02-21 13:08:33] AUTH: Cleaned up 1 expired session(s)
+[2026-02-21 13:08:33] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-02-21 13:08:33] AUTH: Session token validated for user 'testuser'
+[2026-02-21 13:08:33] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-02-21 13:08:33] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-02-21 13:08:33] AUTH: Session token created for user 'testuser' (TTL: 1min)
+[2026-02-21 13:08:33] AUTH: Session expired for user 'testuser'
+[2026-02-21 13:08:33] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-02-21 13:08:33] AUTH: Session invalidated for user 'testuser'
+[2026-02-21 13:08:34] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-02-21 13:08:34] AUTH: Session token validated for user 'testuser'
+[2026-02-21 13:10:16] DATABASE: SUCCESS: service_tokens table ready
+[2026-02-21 13:10:16] DATABASE: Salt migration: encryption_salt column already exists
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'None'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'None'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'None'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'None'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'None'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Password encrypted successfully
+[2026-02-21 13:10:16] AUTH: Password decrypted successfully
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Password encrypted successfully
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Password encrypted successfully
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] ERROR: Decryption attempted with no active session
+[2026-02-21 13:10:16] AUTH: Session ended for 'None'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Password encrypted successfully
+[2026-02-21 13:10:16] AUTH: Password decrypted successfully
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Password encrypted successfully
+[2026-02-21 13:10:16] AUTH: Password decrypted successfully
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Password encrypted successfully
+[2026-02-21 13:10:16] AUTH: Password decrypted successfully
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Password encrypted successfully
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:16] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:16] ERROR: Encryption attempted with no active session
+[2026-02-21 13:10:16] AUTH: Session ended for 'None'
+[2026-02-21 13:10:18] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:18] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:18] AUTH: Session ended for 'None'
+[2026-02-21 13:10:18] AUTH: Session started for 'user1'
+[2026-02-21 13:10:18] AUTH: Session ended for 'user1'
+[2026-02-21 13:10:18] AUTH: Session started for 'user2'
+[2026-02-21 13:10:18] AUTH: Session ended for 'user2'
+[2026-02-21 13:10:18] AUTH: Session ended for 'None'
+[2026-02-21 13:10:18] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:18] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:18] AUTH: Session ended for 'None'
+[2026-02-21 13:10:18] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:18] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:18] AUTH: Session ended for 'None'
+[2026-02-21 13:10:18] AUTH: Session started from pre-derived key for 'test_user'
+[2026-02-21 13:10:18] AUTH: Password encrypted successfully
+[2026-02-21 13:10:18] AUTH: Password decrypted successfully
+[2026-02-21 13:10:18] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:18] AUTH: Session ended for 'None'
+[2026-02-21 13:10:18] AUTH: Session started for 'test_user'
+[2026-02-21 13:10:18] AUTH: Password encrypted successfully
+[2026-02-21 13:10:18] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:18] AUTH: Session started from pre-derived key for 'test_user'
+[2026-02-21 13:10:18] AUTH: Password decrypted successfully
+[2026-02-21 13:10:18] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:18] AUTH: Session started from pre-derived key for 'test_user'
+[2026-02-21 13:10:18] AUTH: Session ended for 'test_user'
+[2026-02-21 13:10:19] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_d346903bb71a)
+[2026-02-21 13:10:20] AUTH: Service token 'ci' validated for user 'testuser'
+[2026-02-21 13:10:20] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_2df503f1c38e)
+[2026-02-21 13:10:20] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_9d60181079c6)
+[2026-02-21 13:10:20] AUTH: Rejected expired service token 'ci' for user 'testuser'
+[2026-02-21 13:10:21] AUTH: Service token 'ci-pipeline' created for user 'testuser' (id: cg_svc_55217c1c7187)
+[2026-02-21 13:10:21] AUTH: Service token 'deploy-bot' created for user 'testuser' (id: cg_svc_a31254ed6ee5)
+[2026-02-21 13:10:21] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_f7d266d17aec)
+[2026-02-21 13:10:22] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_8f3190f25794)
+[2026-02-21 13:10:22] AUTH: Service token 'ci' validated for user 'testuser'
+[2026-02-21 13:10:22] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_00f23aa8c7d5)
+[2026-02-21 13:10:22] AUTH: Service token 'ci' (id: cg_svc_00f23aa8c7d5) revoked by user 'testuser'
+[2026-02-21 13:10:22] AUTH: Rejected revoked service token 'ci' for user 'testuser'
+[2026-02-21 13:10:23] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_2fda2b3f0b53)
+[2026-02-21 13:10:23] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_d7afda30d13a)
+[2026-02-21 13:10:23] AUTH: Service token 'ci' validated for user 'testuser'
+[2026-02-21 13:10:23] AUTH: Session token created for user 'testuser' (TTL: 1min)
+[2026-02-21 13:10:23] AUTH: Cleaned up 1 expired session(s)
+[2026-02-21 13:10:24] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-02-21 13:10:24] AUTH: Session token validated for user 'testuser'
+[2026-02-21 13:10:24] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-02-21 13:10:24] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-02-21 13:10:24] AUTH: Session token created for user 'testuser' (TTL: 1min)
+[2026-02-21 13:10:24] AUTH: Session expired for user 'testuser'
+[2026-02-21 13:10:24] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-02-21 13:10:24] AUTH: Session invalidated for user 'testuser'
+[2026-02-21 13:10:24] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-02-21 13:10:24] AUTH: Session token validated for user 'testuser'

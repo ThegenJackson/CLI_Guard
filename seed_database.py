@@ -126,7 +126,8 @@ def seed() -> int:
     # Step 1: Create user if they don't exist
     if not user_exists(TEST_USER):
         hashed = CLI_Guard.hashPassword(TEST_PASSWORD)
-        sqlite.insertUser(user=TEST_USER, password=hashed)
+        salt = CLI_Guard.generateSalt()
+        sqlite.insertUser(user=TEST_USER, password=hashed, encryption_salt=salt.hex())
         print(f"  Created user '{TEST_USER}'")
     else:
         print(f"  User '{TEST_USER}' already exists — skipping creation")

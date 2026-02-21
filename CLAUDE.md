@@ -70,7 +70,7 @@ CLI_Guard/
 - **Always** validate user input before passing to database or encryption functions
 - Encryption: Fernet (AES-128-CBC + HMAC-SHA256) via `cryptography` library
 - Auth hashing: bcrypt via `bcrypt` library
-- Key derivation: PBKDF2-HMAC-SHA256 with 100,000 iterations
+- Key derivation: PBKDF2-HMAC-SHA256 with 100,000 iterations and per-user salt (stored in DB)
 - Token key wrapping: encryption key wrapped with Fernet using a PBKDF2-derived wrapping key (separate salt)
 - Session files: `~/.cli-guard/sessions/` with 0o600 permissions, 0o700 on directories
 

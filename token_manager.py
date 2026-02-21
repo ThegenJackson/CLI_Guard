@@ -209,8 +209,11 @@ def create_session(user: str, password: str,
     if not CLI_Guard.authUser(user, password):
         raise CLI_Guard.AuthenticationError(f"Authentication failed for user '{user}'")
 
-    # Derive the real encryption key
-    encryption_key = CLI_Guard.deriveEncryptionKey(password)
+    # Look up the user's per-user salt and derive the encryption key
+    salt_hex = sqlite.queryUserSalt(user)
+    if salt_hex is None:
+        raise ValueError(f"No encryption salt found for user '{user}'")
+    encryption_key = CLI_Guard.deriveEncryptionKey(password, bytes.fromhex(salt_hex))
 
     # Generate random token
     raw_token = secrets.token_urlsafe(32)
@@ -416,8 +419,11 @@ def create_service_token(user: str, password: str, name: str,
     if not CLI_Guard.authUser(user, password):
         raise CLI_Guard.AuthenticationError(f"Authentication failed for user '{user}'")
 
-    # Derive the real encryption key
-    encryption_key = CLI_Guard.deriveEncryptionKey(password)
+    # Look up the user's per-user salt and derive the encryption key
+    salt_hex = sqlite.queryUserSalt(user)
+    if salt_hex is None:
+        raise ValueError(f"No encryption salt found for user '{user}'")
+    encryption_key = CLI_Guard.deriveEncryptionKey(password, bytes.fromhex(salt_hex))
 
     # Generate random token
     raw_token = secrets.token_urlsafe(32)

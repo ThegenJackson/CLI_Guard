@@ -164,7 +164,7 @@ CLI Guard uses a sophisticated dual-key system that separates authentication fro
 2. **PBKDF2-Derived Fernet Key** (Encryption)
    - Derived from user's plaintext password using PBKDF2-HMAC-SHA256
    - 100,000 iterations for computational hardness
-   - Fixed salt ensures consistent key derivation across sessions
+   - Per-user salt (stored in database) ensures unique keys even if passwords match
    - Generates a 32-byte key, base64-encoded for Fernet compatibility
    - **Never stored on disk** - regenerated each session from password
 
@@ -488,12 +488,12 @@ pip install windows-curses
 
 **PBKDF2 Configuration** (`CLI_Guard.py`):
 ```python
-salt = b'CLI_Guard_Salt_v1_2025'  # Fixed salt for key derivation
+salt = os.urandom(32)              # Per-user salt (generated at user creation, stored in DB)
 iterations = 100000                # PBKDF2 iterations
 key_length = 32                    # Fernet key size (bytes)
 ```
 
-**Security Note**: The fixed salt ensures consistent key derivation across sessions. For enhanced security in production deployments, consider implementing per-user salts stored in the database.
+**Security Note**: Each user gets a unique cryptographically random 32-byte salt, generated at account creation and stored in the `encryption_salt` column of the users table. This ensures that even if two users choose the same master password, their derived encryption keys will be different. Existing users created before per-user salts are automatically migrated on first login — their secrets are re-encrypted under a new random salt.
 
 ### Performance Considerations
 

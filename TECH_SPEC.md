@@ -126,7 +126,7 @@ bcrypt.checkpw(attempt, stored_hash)  →  True/False
 User's master password
         │
         ▼
-PBKDF2-HMAC-SHA256 (100,000 iterations, fixed salt)
+PBKDF2-HMAC-SHA256 (100,000 iterations, per-user salt from DB)
         │
         ▼
 32-byte derived key  →  base64 encoded  →  Fernet key
@@ -139,7 +139,7 @@ Fernet(key).encrypt(plaintext)    Fernet(key).decrypt(ciphertext)
 Stored in DB as TEXT              Displayed in TUI popup
 ```
 
-**Key design decision:** The encryption key is derived deterministically from the master password using PBKDF2. This means the same password always produces the same key, allowing decryption across sessions without ever storing the key. The key only exists in the `_session_encryption_key` global variable while the user is logged in.
+**Key design decision:** The encryption key is derived deterministically from the master password and a per-user salt using PBKDF2. The same password + salt always produces the same key, allowing decryption across sessions without ever storing the key. Each user's salt is a cryptographically random 32-byte value generated at account creation and stored in the `encryption_salt` column. This ensures different users with the same password derive different keys. The key only exists in the `_session_encryption_key` global variable while the user is logged in.
 
 ### Token-Based Authentication (Key Wrapping)
 ```
@@ -169,7 +169,7 @@ SUBSEQUENT COMMAND (use session/service token):
 No `--password` flag on data commands. Passwords are only used during `signin` and `token` commands.
 
 ### Security Note on Salt
-The current PBKDF2 salt is fixed (`CLI_Guard_Salt_v1_2025`). This is acceptable for a single-user local application, but if multi-device sync is ever added, per-user salts stored in the database would be required.
+PBKDF2 key derivation uses a per-user random salt (32 bytes from `os.urandom()`, stored as hex in the `encryption_salt` column of the users table). This ensures unique encryption keys per user even if master passwords happen to match. A legacy constant `LEGACY_SALT` is retained in `CLI_Guard.py` solely for the one-time migration of users created before per-user salts were introduced — their secrets are re-encrypted under a new random salt on first login via `migrateUserSalt()`. The wrapping salt used by `token_manager.py` for token key wrapping is separate and unrelated to the PBKDF2 user salt.
 
 ### Security Model and Threat Assumptions
 
@@ -189,7 +189,8 @@ CREATE TABLE users (
     user            TEXT PRIMARY KEY,
     user_pw         BLOB NOT NULL,        -- bcrypt hash
     user_last_modified DATE,
-    last_locked     DATE                   -- NULL if not locked
+    last_locked     DATE,                  -- NULL if not locked
+    encryption_salt TEXT                   -- per-user PBKDF2 salt (hex-encoded 32 bytes)
 );
 
 CREATE TABLE passwords (
