@@ -1,5 +1,5 @@
 """
-Unit tests for CLI Guard CLI (argument parser and password resolution)
+Unit tests for CLI Guard CLI (argument parser, auth resolution, exit codes)
 
 These tests verify the non-interactive CLI interface works correctly
 without touching the database or encryption layer.
@@ -82,12 +82,12 @@ class TestBuildParser(unittest.TestCase):
         ])
         self.assertEqual(args.username, "dbadmin")
 
-    def test_get_password_flag(self):
-        """get --password passes the master password explicitly"""
-        args = self.parser.parse_args([
-            "get", "--user", "admin", "--account", "prod-db", "--password", "secret123"
-        ])
-        self.assertEqual(args.password, "secret123")
+    def test_get_rejects_password_flag(self):
+        """get should NOT accept --password (removed in auth redesign)"""
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args([
+                "get", "--user", "admin", "--account", "prod-db", "--password", "secret"
+            ])
 
     # --- list subcommand ---
 
@@ -106,6 +106,11 @@ class TestBuildParser(unittest.TestCase):
         """list --json sets the json attribute to True"""
         args = self.parser.parse_args(["list", "--user", "admin", "--json"])
         self.assertTrue(args.json)
+
+    def test_list_rejects_password_flag(self):
+        """list should NOT accept --password"""
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args(["list", "--user", "admin", "--password", "secret"])
 
     # --- add subcommand ---
 
@@ -189,6 +194,83 @@ class TestBuildParser(unittest.TestCase):
         ])
         self.assertFalse(args.force)
 
+    # --- signin subcommand ---
+
+    def test_signin_requires_user(self):
+        """signin subcommand requires --user"""
+        args = self.parser.parse_args(["signin", "--user", "admin"])
+        self.assertEqual(args.command, "signin")
+        self.assertEqual(args.user, "admin")
+
+    def test_signin_ttl_default(self):
+        """signin --ttl defaults to 60 minutes"""
+        args = self.parser.parse_args(["signin", "--user", "admin"])
+        self.assertEqual(args.ttl, 60)
+
+    def test_signin_custom_ttl(self):
+        """signin --ttl accepts custom value"""
+        args = self.parser.parse_args(["signin", "--user", "admin", "--ttl", "120"])
+        self.assertEqual(args.ttl, 120)
+
+    # --- signout subcommand ---
+
+    def test_signout_command(self):
+        """signout should be a valid subcommand"""
+        args = self.parser.parse_args(["signout"])
+        self.assertEqual(args.command, "signout")
+
+    # --- token create subcommand ---
+
+    def test_token_create_requires_user_and_name(self):
+        """token create requires --user and --name"""
+        args = self.parser.parse_args([
+            "token", "create", "--user", "admin", "--name", "ci-pipeline"
+        ])
+        self.assertEqual(args.command, "token")
+        self.assertEqual(args.token_command, "create")
+        self.assertEqual(args.user, "admin")
+        self.assertEqual(args.name, "ci-pipeline")
+
+    def test_token_create_expires_days_default(self):
+        """token create --expires-days defaults to None (no expiry)"""
+        args = self.parser.parse_args([
+            "token", "create", "--user", "admin", "--name", "ci"
+        ])
+        self.assertIsNone(args.expires_days)
+
+    def test_token_create_custom_expires(self):
+        """token create --expires-days accepts a custom value"""
+        args = self.parser.parse_args([
+            "token", "create", "--user", "admin", "--name", "ci",
+            "--expires-days", "90"
+        ])
+        self.assertEqual(args.expires_days, 90)
+
+    # --- token list subcommand ---
+
+    def test_token_list_requires_user(self):
+        """token list requires --user"""
+        args = self.parser.parse_args(["token", "list", "--user", "admin"])
+        self.assertEqual(args.command, "token")
+        self.assertEqual(args.token_command, "list")
+        self.assertEqual(args.user, "admin")
+
+    def test_token_list_json_flag(self):
+        """token list --json sets the json attribute"""
+        args = self.parser.parse_args(["token", "list", "--user", "admin", "--json"])
+        self.assertTrue(args.json)
+
+    # --- token revoke subcommand ---
+
+    def test_token_revoke_requires_user_and_id(self):
+        """token revoke requires --user and --token-id"""
+        args = self.parser.parse_args([
+            "token", "revoke", "--user", "admin", "--token-id", "cg_svc_abc123"
+        ])
+        self.assertEqual(args.command, "token")
+        self.assertEqual(args.token_command, "revoke")
+        self.assertEqual(args.token_id, "cg_svc_abc123")
+
     # --- no subcommand ---
 
     def test_no_command_sets_none(self):
@@ -197,52 +279,68 @@ class TestBuildParser(unittest.TestCase):
         self.assertIsNone(args.command)
 
 
-class TestResolvePassword(unittest.TestCase):
-    """Test the 3-tier password resolution: flag → env var → stdin"""
+class TestResolvePasswordForAuth(unittest.TestCase):
+    """Test password resolution for auth commands (signin, token create/list/revoke)"""
 
-    def test_flag_takes_priority(self):
-        """--password flag should be returned first, even if env var is set"""
+    def test_env_var_takes_priority(self):
+        """CLIGUARD_PASSWORD env var should be used when set"""
         with patch.dict(os.environ, {"CLIGUARD_PASSWORD": "env_pass"}):
-            result = CLI_Guard_CLI._resolve_password("flag_pass")
-            self.assertEqual(result, "flag_pass")
-
-    def test_env_var_used_when_no_flag(self):
-        """CLIGUARD_PASSWORD env var should be used when flag is None"""
-        with patch.dict(os.environ, {"CLIGUARD_PASSWORD": "env_pass"}):
-            result = CLI_Guard_CLI._resolve_password(None)
+            result = CLI_Guard_CLI._resolve_password_for_auth()
             self.assertEqual(result, "env_pass")
 
-    def test_stdin_used_when_no_flag_or_env(self):
-        """stdin should be read when no flag and no env var"""
-        with patch.dict(os.environ, {}, clear=True):
-            # Remove CLIGUARD_PASSWORD if it exists
-            os.environ.pop("CLIGUARD_PASSWORD", None)
+    def test_getpass_used_when_tty_and_no_env(self):
+        """Interactive prompt should be used at a TTY when env var not set"""
+        env = {k: v for k, v in os.environ.items() if k != "CLIGUARD_PASSWORD"}
+        with patch.dict(os.environ, env, clear=True):
+            with patch("sys.stdin.isatty", return_value=True):
+                with patch("CLI_Guard_CLI.getpass.getpass", return_value="prompted_pass"):
+                    result = CLI_Guard_CLI._resolve_password_for_auth()
+                    self.assertEqual(result, "prompted_pass")
+
+    def test_stdin_used_when_not_tty_and_no_env(self):
+        """Stdin pipe should be used when not a TTY and env var not set"""
+        env = {k: v for k, v in os.environ.items() if k != "CLIGUARD_PASSWORD"}
+        with patch.dict(os.environ, env, clear=True):
             with patch("sys.stdin", StringIO("piped_pass\n")):
-                with patch("sys.stdin.isatty", return_value=False):
-                    # StringIO doesn't have isatty, so we need to patch it
-                    result = CLI_Guard_CLI._resolve_password(None)
-                    self.assertEqual(result, "piped_pass")
+                result = CLI_Guard_CLI._resolve_password_for_auth()
+                self.assertEqual(result, "piped_pass")
 
-    def test_returns_none_when_nothing_available(self):
-        """Should return None when no flag, no env var, and stdin is a TTY"""
-        with patch.dict(os.environ, {}, clear=True):
-            os.environ.pop("CLIGUARD_PASSWORD", None)
+    def test_exits_when_nothing_available(self):
+        """Should exit with error when no password source is available"""
+        env = {k: v for k, v in os.environ.items() if k != "CLIGUARD_PASSWORD"}
+        with patch.dict(os.environ, env, clear=True):
             with patch("sys.stdin.isatty", return_value=True):
-                result = CLI_Guard_CLI._resolve_password(None)
-                self.assertIsNone(result)
+                with patch("CLI_Guard_CLI.getpass.getpass", return_value=""):
+                    with self.assertRaises(SystemExit) as ctx:
+                        CLI_Guard_CLI._resolve_password_for_auth()
+                    self.assertEqual(ctx.exception.code, CLI_Guard_CLI.EXIT_ERROR)
 
-    def test_empty_flag_falls_through(self):
-        """Empty string flag should fall through to env var"""
+    def test_env_var_overrides_tty(self):
+        """If CLIGUARD_PASSWORD is set, getpass should not be called"""
         with patch.dict(os.environ, {"CLIGUARD_PASSWORD": "env_pass"}):
-            result = CLI_Guard_CLI._resolve_password("")
-            self.assertEqual(result, "env_pass")
+            with patch("CLI_Guard_CLI.getpass.getpass") as mock_getpass:
+                result = CLI_Guard_CLI._resolve_password_for_auth()
+                mock_getpass.assert_not_called()
+                self.assertEqual(result, "env_pass")
 
-    def test_empty_env_var_falls_through(self):
-        """Empty env var should fall through to stdin"""
-        with patch.dict(os.environ, {"CLIGUARD_PASSWORD": ""}):
-            with patch("sys.stdin.isatty", return_value=True):
-                result = CLI_Guard_CLI._resolve_password(None)
-                self.assertIsNone(result)
+
+class TestResolveAuth(unittest.TestCase):
+    """Test token-based auth resolution for data commands"""
+
+    def test_no_tokens_exits_with_auth_failure(self):
+        """Should exit with EXIT_AUTH_FAILURE when no tokens are set"""
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("CLIGUARD_SERVICE_TOKEN", "CLIGUARD_SESSION")}
+        with patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(SystemExit) as ctx:
+                CLI_Guard_CLI._resolve_auth("admin")
+            self.assertEqual(ctx.exception.code, CLI_Guard_CLI.EXIT_AUTH_FAILURE)
+
+    def test_invalid_username_exits(self):
+        """Should exit with EXIT_ERROR for invalid username format"""
+        with self.assertRaises(SystemExit) as ctx:
+            CLI_Guard_CLI._resolve_auth("a")  # too short
+        self.assertEqual(ctx.exception.code, CLI_Guard_CLI.EXIT_ERROR)
 
 
 class TestExitCodes(unittest.TestCase):
@@ -256,6 +354,7 @@ class TestExitCodes(unittest.TestCase):
             CLI_Guard_CLI.EXIT_AUTH_FAILURE,
             CLI_Guard_CLI.EXIT_NOT_FOUND,
             CLI_Guard_CLI.EXIT_DB_ERROR,
+            CLI_Guard_CLI.EXIT_TOKEN_EXPIRED,
         ]
         self.assertEqual(len(codes), len(set(codes)), "Exit codes must be unique")
 
@@ -269,6 +368,11 @@ class TestExitCodes(unittest.TestCase):
         self.assertGreater(CLI_Guard_CLI.EXIT_AUTH_FAILURE, 0)
         self.assertGreater(CLI_Guard_CLI.EXIT_NOT_FOUND, 0)
         self.assertGreater(CLI_Guard_CLI.EXIT_DB_ERROR, 0)
+        self.assertGreater(CLI_Guard_CLI.EXIT_TOKEN_EXPIRED, 0)
+
+    def test_token_expired_code_exists(self):
+        """EXIT_TOKEN_EXPIRED should be defined and equal to 5"""
+        self.assertEqual(CLI_Guard_CLI.EXIT_TOKEN_EXPIRED, 5)
 
 
 if __name__ == '__main__':

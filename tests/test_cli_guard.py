@@ -187,6 +187,68 @@ class TestSessionManagement(unittest.TestCase):
         CLI_Guard.endSession()
 
 
+class TestStartSessionFromKey(unittest.TestCase):
+    """Test startSessionFromKey() for token-based auth"""
+
+    def tearDown(self):
+        """Ensure session is ended"""
+        CLI_Guard.endSession()
+
+    def test_valid_key_starts_session(self):
+        """startSessionFromKey should set user and key when given a valid Fernet key"""
+        key = CLI_Guard.deriveEncryptionKey("TestPassword123!")
+        CLI_Guard.startSessionFromKey("test_user", key)
+        self.assertEqual(CLI_Guard.getSessionUser(), "test_user")
+        self.assertEqual(CLI_Guard.getSessionEncryptionKey(), key)
+
+    def test_invalid_key_raises_value_error(self):
+        """startSessionFromKey should raise ValueError for invalid keys"""
+        with self.assertRaises(ValueError):
+            CLI_Guard.startSessionFromKey("test_user", b"not_a_valid_key")
+
+    def test_encrypt_decrypt_with_key_session(self):
+        """Encryption/decryption should work after startSessionFromKey"""
+        key = CLI_Guard.deriveEncryptionKey("TestPassword123!")
+        CLI_Guard.startSessionFromKey("test_user", key)
+
+        plaintext = "MySecret123!"
+        encrypted = CLI_Guard.encryptPassword(plaintext)
+        decrypted = CLI_Guard.decryptPassword(encrypted)
+        self.assertEqual(decrypted, plaintext)
+
+    def test_key_session_matches_password_session(self):
+        """startSessionFromKey and startSession with same password should produce same key"""
+        password = "TestPassword123!"
+        key = CLI_Guard.deriveEncryptionKey(password)
+
+        # Encrypt with password-based session
+        CLI_Guard.startSession("test_user", password)
+        encrypted = CLI_Guard.encryptPassword("test_secret")
+        CLI_Guard.endSession()
+
+        # Decrypt with key-based session
+        CLI_Guard.startSessionFromKey("test_user", key)
+        decrypted = CLI_Guard.decryptPassword(encrypted)
+        self.assertEqual(decrypted, "test_secret")
+
+
+class TestAuthenticationError(unittest.TestCase):
+    """Test AuthenticationError exception"""
+
+    def test_exception_exists(self):
+        """AuthenticationError should be defined on CLI_Guard module"""
+        self.assertTrue(hasattr(CLI_Guard, 'AuthenticationError'))
+
+    def test_exception_is_exception_subclass(self):
+        """AuthenticationError should be a subclass of Exception"""
+        self.assertTrue(issubclass(CLI_Guard.AuthenticationError, Exception))
+
+    def test_exception_can_be_raised_and_caught(self):
+        """AuthenticationError should be raisable and catchable"""
+        with self.assertRaises(CLI_Guard.AuthenticationError):
+            raise CLI_Guard.AuthenticationError("test message")
+
+
 class TestConvenienceFunctions(unittest.TestCase):
     """Test convenience functions used by CLI/scripting interface"""
 

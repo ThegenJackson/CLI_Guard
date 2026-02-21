@@ -10,6 +10,14 @@ from typing import Optional
 from logger import log
 
 
+# ---------------------------------------------------------------------------
+# Custom exceptions
+# ---------------------------------------------------------------------------
+
+class AuthenticationError(Exception):
+    """Raised when password authentication fails (wrong credentials or locked account)"""
+
+
 # Session management - stores the current user's encryption key and username
 _session_encryption_key: Optional[bytes] = None
 _session_user: Optional[str] = None
@@ -139,6 +147,35 @@ def startSession(user: str, password: str) -> None:
     _session_user = user
     _session_encryption_key = deriveEncryptionKey(password)
     log("AUTH", f"Session started for '{user}'")
+
+
+def startSessionFromKey(user: str, encryption_key: bytes) -> None:
+    """
+    Initialize a session with a pre-derived encryption key (for token-based auth)
+
+    Unlike startSession(), this skips password-based key derivation because the
+    key has already been derived and unwrapped from a stored token. Used by
+    token_manager.py when authenticating via session or service tokens.
+
+    Args:
+        user: Username for the session
+        encryption_key: Pre-derived Fernet-compatible key (44 bytes, base64-encoded)
+
+    Raises:
+        ValueError: If the key is not a valid Fernet key
+    """
+    global _session_encryption_key, _session_user
+
+    # Validate the key by trying to instantiate Fernet — this catches
+    # truncated, corrupted, or wrong-length keys before we store them
+    try:
+        Fernet(encryption_key)
+    except (ValueError, Exception) as e:
+        raise ValueError(f"Invalid encryption key: {e}")
+
+    _session_user = user
+    _session_encryption_key = encryption_key
+    log("AUTH", f"Session started from pre-derived key for '{user}'")
 
 
 def endSession() -> None:

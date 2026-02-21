@@ -414,6 +414,153 @@ def exportDatabase(export_path) -> bool:
         logging()
 
 
+# ---------------------------------------------------------------------------
+# Service Token functions (for token-based CLI authentication)
+# ---------------------------------------------------------------------------
+
+def createServiceTokensTable() -> None:
+    """Create the service_tokens table and view if they don't exist (migration)"""
+    try:
+        if not ensure_connection():
+            logging(message="ERROR: Cannot create service_tokens table - no database connection")
+            return
+
+        sqlCursor.execute("""
+            CREATE TABLE IF NOT EXISTS service_tokens (
+                token_id        TEXT PRIMARY KEY,
+                user            TEXT NOT NULL,
+                name            TEXT NOT NULL,
+                token_hash      BLOB NOT NULL,
+                wrapped_key     TEXT NOT NULL,
+                created_at      TEXT NOT NULL,
+                expires_at      TEXT,
+                last_used       TEXT,
+                revoked         INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (user) REFERENCES users(user)
+            );
+        """)
+        sqlCursor.execute("""
+            CREATE VIEW IF NOT EXISTS vw_service_tokens AS SELECT * FROM service_tokens;
+        """)
+        sqlConnection.commit()
+        logging(message="SUCCESS: service_tokens table ready")
+    except sqlite3.OperationalError as op_error:
+        # Table may already exist — that's fine
+        if "already exists" not in str(op_error):
+            logging(message=f"ERROR: SQLite3 operational failure - {str(op_error)}")
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to create service_tokens table - {str(sql_error)}")
+    except Exception:
+        logging()
+
+
+# Run migration on module load (creates table if it doesn't exist)
+if sqlConnection is not None:
+    try:
+        createServiceTokensTable()
+    except Exception:
+        pass  # Logged internally; don't crash on import
+
+
+def insertServiceToken(token_id, user, name, token_hash, wrapped_key,
+                        created_at, expires_at=None) -> None:
+    """Insert a new service token row"""
+    try:
+        if not ensure_connection():
+            logging(message="ERROR: Cannot insert service token - no database connection")
+            return
+
+        sql_query = """
+            INSERT INTO service_tokens
+            (token_id, user, name, token_hash, wrapped_key, created_at, expires_at)
+            VALUES(?, ?, ?, ?, ?, ?, ?);
+        """
+        sqlCursor.execute(sql_query, (token_id, user, name, token_hash,
+                                       wrapped_key, created_at, expires_at))
+        sqlConnection.commit()
+        logging(message=f"SUCCESS: Created service token '{name}' for user '{user}'")
+    except sqlite3.IntegrityError as integrity_error:
+        logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
+    except sqlite3.OperationalError as op_error:
+        logging(message=f"ERROR: SQLite3 operational failure - {str(op_error)}")
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to insert service token - {str(sql_error)}")
+    except Exception:
+        logging()
+
+
+def queryServiceToken(token_id) -> tuple | None:
+    """Query a single service token by token_id"""
+    try:
+        if not ensure_connection():
+            logging(message="ERROR: No database connection available")
+            return None
+
+        sql_query = "SELECT * FROM vw_service_tokens WHERE token_id = ?"
+        sqlCursor.execute(sql_query, (token_id,))
+        return sqlCursor.fetchone()
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to query service token - {str(sql_error)}")
+        return None
+    except Exception:
+        logging()
+        return None
+
+
+def queryServiceTokensByUser(user) -> list:
+    """Query all service tokens for a user (for listing)"""
+    try:
+        if not ensure_connection():
+            logging(message="ERROR: No database connection available")
+            return []
+
+        sql_query = "SELECT * FROM vw_service_tokens WHERE user = ?"
+        sqlCursor.execute(sql_query, (user,))
+        return sqlCursor.fetchall()
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to query service tokens for user '{user}' - {str(sql_error)}")
+        return []
+    except Exception:
+        logging()
+        return []
+
+
+def revokeServiceToken(token_id) -> None:
+    """Mark a service token as revoked"""
+    try:
+        if not ensure_connection():
+            logging(message="ERROR: Cannot revoke service token - no database connection")
+            return
+
+        sql_query = "UPDATE service_tokens SET revoked = 1 WHERE token_id = ?"
+        sqlCursor.execute(sql_query, (token_id,))
+        sqlConnection.commit()
+        logging(message=f"SUCCESS: Revoked service token '{token_id}'")
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to revoke service token - {str(sql_error)}")
+    except Exception:
+        logging()
+
+
+def updateServiceTokenLastUsed(token_id, timestamp) -> None:
+    """Update the last_used timestamp for a service token"""
+    try:
+        if not ensure_connection():
+            return
+
+        sql_query = "UPDATE service_tokens SET last_used = ? WHERE token_id = ?"
+        sqlCursor.execute(sql_query, (timestamp, token_id))
+        sqlConnection.commit()
+    except sqlite3.Error:
+        pass  # Non-critical — don't fail the operation if we can't update last_used
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Database Import/Export
+# ---------------------------------------------------------------------------
+
 # Query Imported Database and return contents of Users or Passwords table
 def importDatabase(import_path, table) -> list:
     try:

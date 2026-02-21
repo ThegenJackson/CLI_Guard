@@ -124,6 +124,33 @@ def validate_text_field(text: str, field_name: str, min_len: int = 1, max_len: i
     return (True, "")
 
 
+def validate_token_name(name: str) -> Tuple[bool, str]:
+    """
+    Validate a service token name meets format requirements
+
+    Rules:
+    - Length: 1-50 characters
+    - Allowed: letters, numbers, hyphens, underscores
+    - Must start with a letter or number
+
+    Args:
+        name: Token name to validate
+
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    if not name:
+        return (False, "Token name cannot be empty")
+
+    if len(name) > 50:
+        return (False, "Token name must be 50 characters or less")
+
+    if not re.match(r'^[a-zA-Z0-9][a-zA-Z0-9_-]*$', name):
+        return (False, "Token name must start with letter/number and contain only letters, numbers, hyphens, underscores")
+
+    return (True, "")
+
+
 def calculate_password_strength(password: str) -> Tuple[str, int]:
     """
     Calculate password strength score
