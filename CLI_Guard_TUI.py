@@ -1977,7 +1977,9 @@ def createUser(windows: dict[str, any], on_cancel, user=None) -> None:
 
                 # All validations passed - create user
                 new_hashed_password: bytes = hashUser(password=new_user_password)
-                sqlite.insertUser(user=new_user_username, password=new_hashed_password)
+                new_salt: bytes = CLI_Guard.generateSalt()
+                sqlite.insertUser(user=new_user_username, password=new_hashed_password,
+                                  encryption_salt=new_salt.hex())
 
                 stdscr: curses.window = windows["stdscr"]
                 launch(stdscr)

@@ -20,6 +20,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import token_manager
 import CLI_Guard
 
+# Fixed 32-byte salt for testing — avoids database dependency in unit tests
+TEST_SALT = b'\x01' * 32
+
 
 class TestKeyWrapping(unittest.TestCase):
     """Test the key wrapping/unwrapping cycle — the core security mechanism"""
@@ -48,7 +51,7 @@ class TestKeyWrapping(unittest.TestCase):
 
     def test_wrap_unwrap_roundtrip(self):
         """Wrapping then unwrapping should return the original key"""
-        original_key = CLI_Guard.deriveEncryptionKey("TestPassword123!")
+        original_key = CLI_Guard.deriveEncryptionKey("TestPassword123!", TEST_SALT)
         token = "cg_ses_test_token_12345"
 
         wrapped = token_manager._wrap_key(original_key, token)
@@ -58,7 +61,7 @@ class TestKeyWrapping(unittest.TestCase):
 
     def test_unwrap_with_wrong_token_raises(self):
         """Unwrapping with wrong token should raise TokenInvalidError"""
-        original_key = CLI_Guard.deriveEncryptionKey("TestPassword123!")
+        original_key = CLI_Guard.deriveEncryptionKey("TestPassword123!", TEST_SALT)
         wrapped = token_manager._wrap_key(original_key, "correct_token")
 
         with self.assertRaises(token_manager.TokenInvalidError):
@@ -66,7 +69,7 @@ class TestKeyWrapping(unittest.TestCase):
 
     def test_wrapped_key_differs_from_original(self):
         """Wrapped blob should not be the same as the original key"""
-        original_key = CLI_Guard.deriveEncryptionKey("TestPassword123!")
+        original_key = CLI_Guard.deriveEncryptionKey("TestPassword123!", TEST_SALT)
         wrapped = token_manager._wrap_key(original_key, "test_token")
         self.assertNotEqual(wrapped.encode('utf-8'), original_key)
 
@@ -75,15 +78,18 @@ class TestSessionTokens(unittest.TestCase):
     """Test session token creation, loading, invalidation, and cleanup"""
 
     def setUp(self):
-        """Create a temporary session directory"""
+        """Create a temporary session directory and mock salt lookup"""
         self.temp_dir = tempfile.mkdtemp()
         self.original_session_dir = token_manager.SESSION_DIR
         token_manager.SESSION_DIR = self.temp_dir
+        self.salt_patcher = patch('token_manager.sqlite.queryUserSalt', return_value=TEST_SALT.hex())
+        self.salt_patcher.start()
 
     def tearDown(self):
         """Clean up temp directory and restore original"""
         shutil.rmtree(self.temp_dir, ignore_errors=True)
         token_manager.SESSION_DIR = self.original_session_dir
+        self.salt_patcher.stop()
 
     @patch('CLI_Guard.isAccountLocked', return_value=False)
     @patch('CLI_Guard.authUser', return_value=True)
@@ -114,7 +120,7 @@ class TestSessionTokens(unittest.TestCase):
     def test_loaded_key_matches_derived_key(self, mock_auth, mock_locked):
         """Key unwrapped from session should match the original derived key"""
         password = "TestPass123!"
-        expected_key = CLI_Guard.deriveEncryptionKey(password)
+        expected_key = CLI_Guard.deriveEncryptionKey(password, TEST_SALT)
 
         token = token_manager.create_session("testuser", password)
         _, loaded_key = token_manager.load_session(token)
@@ -236,6 +242,7 @@ class TestServiceTokens(unittest.TestCase):
             patch('token_manager.sqlite.queryServiceTokensByUser', side_effect=mock_query_by_user),
             patch('token_manager.sqlite.revokeServiceToken', side_effect=mock_revoke),
             patch('token_manager.sqlite.updateServiceTokenLastUsed', side_effect=mock_update_last_used),
+            patch('token_manager.sqlite.queryUserSalt', return_value=TEST_SALT.hex()),
             patch('CLI_Guard.isAccountLocked', return_value=False),
             patch('CLI_Guard.authUser', return_value=True),
         ]
@@ -261,7 +268,7 @@ class TestServiceTokens(unittest.TestCase):
     def test_loaded_key_matches_derived_key(self):
         """Key from service token should match the original derived key"""
         password = "TestPass123!"
-        expected_key = CLI_Guard.deriveEncryptionKey(password)
+        expected_key = CLI_Guard.deriveEncryptionKey(password, TEST_SALT)
 
         token = token_manager.create_service_token("testuser", password, "ci")
         _, loaded_key = token_manager.load_service_token(token)

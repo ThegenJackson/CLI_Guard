@@ -12,6 +12,10 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import CLI_Guard
+from unittest.mock import patch
+
+# Fixed 32-byte salt for testing — avoids database dependency in unit tests
+TEST_SALT = b'\x01' * 32
 
 
 class TestPasswordHashing(unittest.TestCase):
@@ -50,28 +54,49 @@ class TestEncryptionKeyDerivation(unittest.TestCase):
     def test_derive_encryption_key_returns_bytes(self):
         """deriveEncryptionKey should return bytes"""
         password = "TestPassword123!"
-        key = CLI_Guard.deriveEncryptionKey(password)
+        key = CLI_Guard.deriveEncryptionKey(password, TEST_SALT)
         self.assertIsInstance(key, bytes)
 
     def test_derive_encryption_key_correct_length(self):
         """Derived key should be 44 bytes (32 bytes base64-encoded)"""
         password = "TestPassword123!"
-        key = CLI_Guard.deriveEncryptionKey(password)
+        key = CLI_Guard.deriveEncryptionKey(password, TEST_SALT)
         # Base64-encoded 32 bytes = 44 characters
         self.assertEqual(len(key), 44)
 
     def test_derive_encryption_key_is_deterministic(self):
-        """Same password should always produce same key (for decryption)"""
+        """Same password + salt should always produce same key (for decryption)"""
         password = "TestPassword123!"
-        key1 = CLI_Guard.deriveEncryptionKey(password)
-        key2 = CLI_Guard.deriveEncryptionKey(password)
+        key1 = CLI_Guard.deriveEncryptionKey(password, TEST_SALT)
+        key2 = CLI_Guard.deriveEncryptionKey(password, TEST_SALT)
         self.assertEqual(key1, key2, "Key derivation must be deterministic")
 
     def test_derive_encryption_key_different_passwords(self):
         """Different passwords should produce different keys"""
-        key1 = CLI_Guard.deriveEncryptionKey("Password1")
-        key2 = CLI_Guard.deriveEncryptionKey("Password2")
+        key1 = CLI_Guard.deriveEncryptionKey("Password1", TEST_SALT)
+        key2 = CLI_Guard.deriveEncryptionKey("Password2", TEST_SALT)
         self.assertNotEqual(key1, key2)
+
+    def test_derive_encryption_key_different_salts(self):
+        """Same password with different salts should produce different keys"""
+        password = "TestPassword123!"
+        salt_a = b'\x01' * 32
+        salt_b = b'\x02' * 32
+        key_a = CLI_Guard.deriveEncryptionKey(password, salt_a)
+        key_b = CLI_Guard.deriveEncryptionKey(password, salt_b)
+        self.assertNotEqual(key_a, key_b)
+
+    def test_generate_salt_returns_32_bytes(self):
+        """generateSalt should return 32 random bytes"""
+        salt = CLI_Guard.generateSalt()
+        self.assertIsInstance(salt, bytes)
+        self.assertEqual(len(salt), 32)
+
+    def test_generate_salt_is_random(self):
+        """generateSalt should produce different values each time"""
+        salt1 = CLI_Guard.generateSalt()
+        salt2 = CLI_Guard.generateSalt()
+        self.assertNotEqual(salt1, salt2)
 
 
 class TestEncryptionDecryption(unittest.TestCase):
@@ -79,6 +104,8 @@ class TestEncryptionDecryption(unittest.TestCase):
 
     def setUp(self):
         """Start a test session before each test"""
+        self.salt_patcher = patch('CLI_Guard.sqlite.queryUserSalt', return_value=TEST_SALT.hex())
+        self.salt_patcher.start()
         test_user = "test_user"
         test_password = "TestPassword123!"
         CLI_Guard.startSession(test_user, test_password)
@@ -86,6 +113,7 @@ class TestEncryptionDecryption(unittest.TestCase):
     def tearDown(self):
         """End session after each test"""
         CLI_Guard.endSession()
+        self.salt_patcher.stop()
 
     def test_encrypt_password(self):
         """encryptPassword should return an encrypted string"""
@@ -153,6 +181,14 @@ class TestEncryptionDecryption(unittest.TestCase):
 class TestSessionManagement(unittest.TestCase):
     """Test session lifecycle management"""
 
+    def setUp(self):
+        self.salt_patcher = patch('CLI_Guard.sqlite.queryUserSalt', return_value=TEST_SALT.hex())
+        self.salt_patcher.start()
+
+    def tearDown(self):
+        CLI_Guard.endSession()
+        self.salt_patcher.stop()
+
     def test_start_session_sets_user(self):
         """startSession should set session user"""
         CLI_Guard.startSession("test_user", "TestPassword123!")
@@ -190,13 +226,18 @@ class TestSessionManagement(unittest.TestCase):
 class TestStartSessionFromKey(unittest.TestCase):
     """Test startSessionFromKey() for token-based auth"""
 
+    def setUp(self):
+        self.salt_patcher = patch('CLI_Guard.sqlite.queryUserSalt', return_value=TEST_SALT.hex())
+        self.salt_patcher.start()
+
     def tearDown(self):
         """Ensure session is ended"""
         CLI_Guard.endSession()
+        self.salt_patcher.stop()
 
     def test_valid_key_starts_session(self):
         """startSessionFromKey should set user and key when given a valid Fernet key"""
-        key = CLI_Guard.deriveEncryptionKey("TestPassword123!")
+        key = CLI_Guard.deriveEncryptionKey("TestPassword123!", TEST_SALT)
         CLI_Guard.startSessionFromKey("test_user", key)
         self.assertEqual(CLI_Guard.getSessionUser(), "test_user")
         self.assertEqual(CLI_Guard.getSessionEncryptionKey(), key)
@@ -208,7 +249,7 @@ class TestStartSessionFromKey(unittest.TestCase):
 
     def test_encrypt_decrypt_with_key_session(self):
         """Encryption/decryption should work after startSessionFromKey"""
-        key = CLI_Guard.deriveEncryptionKey("TestPassword123!")
+        key = CLI_Guard.deriveEncryptionKey("TestPassword123!", TEST_SALT)
         CLI_Guard.startSessionFromKey("test_user", key)
 
         plaintext = "MySecret123!"
@@ -219,7 +260,7 @@ class TestStartSessionFromKey(unittest.TestCase):
     def test_key_session_matches_password_session(self):
         """startSessionFromKey and startSession with same password should produce same key"""
         password = "TestPassword123!"
-        key = CLI_Guard.deriveEncryptionKey(password)
+        key = CLI_Guard.deriveEncryptionKey(password, TEST_SALT)
 
         # Encrypt with password-based session
         CLI_Guard.startSession("test_user", password)
@@ -254,11 +295,14 @@ class TestConvenienceFunctions(unittest.TestCase):
 
     def setUp(self):
         """Start a test session"""
+        self.salt_patcher = patch('CLI_Guard.sqlite.queryUserSalt', return_value=TEST_SALT.hex())
+        self.salt_patcher.start()
         CLI_Guard.startSession("test_user", "TestPassword123!")
 
     def tearDown(self):
         """End session"""
         CLI_Guard.endSession()
+        self.salt_patcher.stop()
 
     def test_get_secrets_no_session_raises(self):
         """getSecrets should raise RuntimeError if no session"""

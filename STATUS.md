@@ -21,7 +21,7 @@ CLI Guard is a locally-hosted secret manager for scripting and automation workfl
 - [x] SQLite database with users and passwords tables + views
 - [x] Bcrypt password hashing for authentication
 - [x] Fernet encryption (AES-128-CBC) for stored secrets
-- [x] PBKDF2-HMAC-SHA256 key derivation (100k iterations)
+- [x] PBKDF2-HMAC-SHA256 key derivation (100k iterations, per-user salts)
 - [x] Session management (encryption key in memory only)
 - [x] Database connection management with auto-reconnect
 - [x] Input validation module (username, password, text fields, token names)
