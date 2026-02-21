@@ -81,7 +81,7 @@ CLI Guard fills the gap for environments that need:
 |----|------------|--------|
 | **Scripting Interface** | | |
 | FR-1 | CLI mode: retrieve secret by account/username (non-interactive) | Done |
-| FR-2 | CLI mode: authenticate with master password (via argument, env var, or stdin) | Done |
+| FR-2 | CLI mode: authenticate via session tokens or service account tokens | Done |
 | FR-3 | CLI mode: output secret to stdout for script consumption | Done |
 | FR-4 | CLI mode: list available secrets (non-interactive) | Done |
 | FR-5 | Python module: importable interface for Python scripts | Done |
@@ -95,6 +95,10 @@ CLI Guard fills the gap for environments that need:
 | FR-12 | Sort by any column in ascending/descending order | Done |
 | FR-13 | Input validation on all user-provided data | Done |
 | FR-14 | SQL injection prevention via column whitelists | Done |
+| FR-20a | Session tokens for interactive CLI use (signin/signout, 1-hour TTL) | Done |
+| FR-20b | Service account tokens for automation (long-lived, revocable) | Done |
+| FR-20c | Key wrapping — encryption key encrypted by token-derived key | Done |
+| FR-20d | `--password` flag removed from data commands (passwords only on auth commands) | Done |
 | **Remaining Features** | | |
 | FR-15 | Secret generation (scramble, random, passphrase) | Planned |
 | FR-16 | User management (change password, delete account) | Planned |
@@ -109,7 +113,7 @@ CLI Guard fills the gap for environments that need:
 | NFR-2 | All encryption/decryption happens in memory only | Done |
 | NFR-3 | Zero network calls — fully offline application | Done |
 | NFR-4 | Python 3.12+ with minimal dependencies (bcrypt, cryptography) | Done |
-| NFR-5 | Unit test coverage for business logic and validation | Done (96 tests) |
+| NFR-5 | Unit test coverage for business logic, validation, CLI, and tokens | Done (163 tests) |
 | NFR-6 | Works on airgapped systems with no internet access | Done |
 | NFR-7 | Scriptable: can be invoked non-interactively from bash/Python | Done |
 
@@ -118,7 +122,8 @@ The project is being built foundation-up:
 
 1. **Phase A (Done):** Database layer, business logic, encryption/hashing — the functions that actually do the work
 2. **Phase B (Done):** TUI for manual secret management — lets us visually verify everything works, test without ambiguity
-3. **Phase C (Next):** CLI/scripting interface — expose the existing business logic functions for non-interactive use
-4. **Phase D:** Polish — password generation, clipboard management, session timeout
+3. **Phase C (Done):** CLI/scripting interface — expose the existing business logic functions for non-interactive use
+4. **Phase C.1 (Done):** Token-based authentication — session tokens for humans, service tokens for automation, key wrapping for secure key persistence
+5. **Phase D (Next):** Polish — password generation, clipboard management, session timeout
 
 This approach means the TUI was built first not because it's more important, but because it provides an unambiguous way to test the underlying functions before building the "headless" scripting interface on top of them. All the hard work (encryption, auth, CRUD) is already done in `CLI_Guard.py` — the scripting interface just needs to call those same functions.

@@ -10,6 +10,14 @@ from typing import Optional
 from logger import log
 
 
+# ---------------------------------------------------------------------------
+# Custom exceptions
+# ---------------------------------------------------------------------------
+
+class AuthenticationError(Exception):
+    """Raised when password authentication fails (wrong credentials or locked account)"""
+
+
 # Session management - stores the current user's encryption key and username
 _session_encryption_key: Optional[bytes] = None
 _session_user: Optional[str] = None
@@ -141,6 +149,35 @@ def startSession(user: str, password: str) -> None:
     log("AUTH", f"Session started for '{user}'")
 
 
+def startSessionFromKey(user: str, encryption_key: bytes) -> None:
+    """
+    Initialize a session with a pre-derived encryption key (for token-based auth)
+
+    Unlike startSession(), this skips password-based key derivation because the
+    key has already been derived and unwrapped from a stored token. Used by
+    token_manager.py when authenticating via session or service tokens.
+
+    Args:
+        user: Username for the session
+        encryption_key: Pre-derived Fernet-compatible key (44 bytes, base64-encoded)
+
+    Raises:
+        ValueError: If the key is not a valid Fernet key
+    """
+    global _session_encryption_key, _session_user
+
+    # Validate the key by trying to instantiate Fernet — this catches
+    # truncated, corrupted, or wrong-length keys before we store them
+    try:
+        Fernet(encryption_key)
+    except (ValueError, Exception) as e:
+        raise ValueError(f"Invalid encryption key: {e}")
+
+    _session_user = user
+    _session_encryption_key = encryption_key
+    log("AUTH", f"Session started from pre-derived key for '{user}'")
+
+
 def endSession() -> None:
     """
     Clear the session by removing stored encryption key and user
@@ -240,7 +277,7 @@ def isAccountLocked(user: str) -> bool:
 
 
 def getSecrets(user: str, category: str = None, text: str = None,
-               sort_by: str = None) -> list[dict]:
+               sort_by: str = None, sort_column: str = None) -> list[dict]:
     """
     Query all secrets for a user, returning structured dicts
 
@@ -249,9 +286,10 @@ def getSecrets(user: str, category: str = None, text: str = None,
 
     Args:
         user: Username to query secrets for
-        category: Column to filter/sort by (must be in ALLOWED_COLUMNS)
+        category: Column to filter on (must be in ALLOWED_COLUMNS)
         text: Search text for LIKE filtering
         sort_by: Sort order ('ascending' or 'descending')
+        sort_column: Column to sort by (must be in ALLOWED_COLUMNS, defaults to category if None)
 
     Returns:
         List of dicts with keys: category, account, username, password (encrypted), last_modified
@@ -263,7 +301,7 @@ def getSecrets(user: str, category: str = None, text: str = None,
         raise RuntimeError("No active session - cannot query secrets")
 
     data = sqlite.queryData(user=user, table="passwords", category=category,
-                            text=text, sort_by=sort_by)
+                            text=text, sort_by=sort_by, sort_column=sort_column)
     results = []
     for row in (data or []):
         # row tuple: (user, category, account, username, encrypted_password, last_modified)

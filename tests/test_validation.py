@@ -168,6 +168,59 @@ class TestTextFieldValidation(unittest.TestCase):
         self.assertIn("control", error.lower())
 
 
+class TestTokenNameValidation(unittest.TestCase):
+    """Test service token name validation rules"""
+
+    def test_valid_token_name(self):
+        """Valid alphanumeric token name should pass"""
+        valid, error = validation.validate_token_name("ci-pipeline")
+        self.assertTrue(valid)
+        self.assertEqual(error, "")
+
+    def test_valid_name_with_underscores(self):
+        """Token name with underscores should pass"""
+        valid, error = validation.validate_token_name("deploy_bot_v2")
+        self.assertTrue(valid)
+
+    def test_valid_name_with_hyphens(self):
+        """Token name with hyphens should pass"""
+        valid, error = validation.validate_token_name("github-actions-ci")
+        self.assertTrue(valid)
+
+    def test_valid_single_char_name(self):
+        """Single character token name should pass"""
+        valid, error = validation.validate_token_name("x")
+        self.assertTrue(valid)
+
+    def test_invalid_empty_name(self):
+        """Empty token name should fail"""
+        valid, error = validation.validate_token_name("")
+        self.assertFalse(valid)
+        self.assertIn("empty", error.lower())
+
+    def test_invalid_name_too_long(self):
+        """Token name over 50 characters should fail"""
+        valid, error = validation.validate_token_name("a" * 51)
+        self.assertFalse(valid)
+        self.assertIn("50", error)
+
+    def test_invalid_name_starts_with_hyphen(self):
+        """Token name starting with hyphen should fail"""
+        valid, error = validation.validate_token_name("-bad-name")
+        self.assertFalse(valid)
+
+    def test_invalid_name_with_spaces(self):
+        """Token name with spaces should fail"""
+        valid, error = validation.validate_token_name("bad name")
+        self.assertFalse(valid)
+
+    def test_invalid_name_with_special_chars(self):
+        """Token name with special characters should fail"""
+        for name in ["bad@name", "bad.name", "bad/name", "bad!name"]:
+            valid, error = validation.validate_token_name(name)
+            self.assertFalse(valid, f"'{name}' should be invalid")
+
+
 class TestPasswordStrength(unittest.TestCase):
     """Test password strength calculation"""
 

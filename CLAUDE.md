@@ -34,14 +34,17 @@ CLI_Guard/
 ├── CLI_Guard_TUI.py          # TUI interface (curses) - for human operators
 ├── CLI_Guard_CLI.py           # CLI interface (argparse) - for scripts/automation
 ├── CLI_Guard.py               # Business logic (encryption, auth, sessions)
+├── token_manager.py           # Token lifecycle (session tokens, service tokens, key wrapping)
 ├── validation.py              # Input validation utilities
+├── seed_database.py           # Database seeder (Faker) for test data
 ├── logger.py                  # Shared logging (AUTH, DATABASE, TUI, CLI, ERROR)
 ├── CLI_SQL/
-│   ├── CLI_Guard_SQL.py       # Database access layer
+│   ├── CLI_Guard_SQL.py       # Database access layer (users, passwords, service_tokens)
 │   └── CLI_Guard_DB.db        # SQLite database (DO NOT commit test data)
 ├── tests/
 │   ├── test_cli_guard.py      # Tests for business logic + convenience functions
-│   ├── test_cli_guard_cli.py  # Tests for CLI parser + password resolution
+│   ├── test_cli_guard_cli.py  # Tests for CLI parser + auth resolution
+│   ├── test_token_manager.py  # Tests for token manager (wrapping, sessions, service tokens)
 │   └── test_validation.py     # Tests for validation
 ├── Deprecated/                # Old code kept for reference only
 ├── Logs.txt                   # Runtime debug log
@@ -60,14 +63,16 @@ CLI_Guard/
 - Do not add features, refactor code, or make improvements beyond what was asked
 
 ## Security Rules (Critical)
-- **Never** store encryption keys on disk — keys exist only in memory during a session
-- **Never** log plaintext passwords or encryption keys
+- **Never** store raw encryption keys on disk — keys are either in memory only or wrapped (encrypted by a token-derived key)
+- **Never** log plaintext passwords, encryption keys, or tokens
 - **Always** use parameterized queries (?) for SQL — never f-strings for user data
 - **Always** validate column names against `ALLOWED_COLUMNS` whitelist before use in SQL
 - **Always** validate user input before passing to database or encryption functions
 - Encryption: Fernet (AES-128-CBC + HMAC-SHA256) via `cryptography` library
 - Auth hashing: bcrypt via `bcrypt` library
 - Key derivation: PBKDF2-HMAC-SHA256 with 100,000 iterations
+- Token key wrapping: encryption key wrapped with Fernet using a PBKDF2-derived wrapping key (separate salt)
+- Session files: `~/.cli-guard/sessions/` with 0o600 permissions, 0o700 on directories
 
 ## Curses/TUI Patterns
 - All popup panels must call this pattern when hiding to prevent rendering artifacts:
@@ -85,7 +90,7 @@ CLI_Guard/
 
 ## Testing
 - Run tests: `python3 -m pytest tests/ -v` or `python3 -m unittest discover tests/`
-- 55 tests currently passing (20 business logic, 35 validation)
+- 163 tests currently passing (business logic, validation, CLI parser, token manager)
 - Write tests for any new business logic or validation functions
 - TUI functions are not unit-tested (curses is hard to mock) — test manually
 

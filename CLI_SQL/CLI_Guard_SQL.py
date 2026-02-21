@@ -138,17 +138,22 @@ def ensure_connection() -> bool:
 # The trailing comma when passing Placeholder Bindings avoids the "Incorrect number of bindings supplied" error
 # by ensuring the argument is treated as a tuple, which is what execute() expects
 # https://docs.python.org/3/library/sqlite3.html#sqlite3-placeholders
-def queryData(user, table, category=None, text=None, sort_by=None) -> list:
+def queryData(user, table, category=None, text=None, sort_by=None, sort_column=None) -> list:
     try:
         # Ensure database connection is active
         if not ensure_connection():
             logging(message="ERROR: No database connection available")
             return []
 
-        # Validate column name against whitelist to prevent SQL injection
+        # Validate search column name against whitelist to prevent SQL injection
         if category is not None and category.lower() not in ALLOWED_COLUMNS:
             logging(message=f"ERROR: Invalid column name attempted: {category}")
             raise ValueError(f"Invalid column name: {category}")
+
+        # Validate sort column name against whitelist to prevent SQL injection
+        if sort_column is not None and sort_column.lower() not in ALLOWED_COLUMNS:
+            logging(message=f"ERROR: Invalid sort column attempted: {sort_column}")
+            raise ValueError(f"Invalid sort column: {sort_column}")
 
         # Validate sort order against whitelist
         if sort_by is not None and sort_by.lower() not in ALLOWED_SORT_ORDERS:
@@ -156,47 +161,28 @@ def queryData(user, table, category=None, text=None, sort_by=None) -> list:
             raise ValueError(f"Invalid sort order: {sort_by}")
 
         if user is not None:
-            # Convert Category to category using .lower()
-            if text is not None:
-                sql_query = f"""
-                    SELECT * 
-                    FROM vw_{table}
-                    WHERE user = ?
-                    AND {category.lower()} LIKE ?;
-                """
-                sqlCursor.execute(sql_query, (user, f"%{text}%",))
-            # Convert sort_by from "ascending" to "ASC" or "descending" to "DESC"
-            # Convert Category to category using .lower()
-            elif sort_by is not None:
-                # Map validated sort order to SQL keywords
+            # Build query incrementally — search and sort can combine
+            sql_query = f"SELECT * FROM vw_{table} WHERE user = ?"
+            params: list = [user]
+
+            # Apply search filter (WHERE ... LIKE)
+            if text is not None and category is not None:
+                sql_query += f" AND {category.lower()} LIKE ?"
+                params.append(f"%{text}%")
+
+            # Apply sort order (ORDER BY)
+            # sort_column is the column to sort by; sort_by is the direction
+            # For backward compatibility: if sort_column is None, fall back to category
+            effective_sort_col = sort_column if sort_column is not None else category
+            if sort_by is not None and effective_sort_col is not None:
                 sort_sql = "ASC" if sort_by.lower() == "ascending" else "DESC"
-                sql_query = (f"""
-                    SELECT *
-                    FROM vw_{table}
-                    WHERE user = ?
-                    ORDER BY {category.lower()} {sort_sql};
-                """)
-                sqlCursor.execute(sql_query, (user,))
-            else:
-                sql_query = (f"""
-                    SELECT * 
-                    FROM vw_{table}
-                    WHERE user = ?;
-                """)
-                sqlCursor.execute(sql_query, (user,))
-            # Insert query data to a list
-            list_table = sqlCursor.fetchall()
-            # Return the list of values
-            return list_table
+                sql_query += f" ORDER BY {effective_sort_col.lower()} {sort_sql}"
+
+            sqlCursor.execute(sql_query, tuple(params))
+            return sqlCursor.fetchall()
         else:
-            sqlCursor.execute(f"""
-                SELECT * 
-                FROM vw_{table};
-            """)
-            # Insert query data to a list
-            list_table = sqlCursor.fetchall()
-            # Return the list of values
-            return list_table
+            sqlCursor.execute(f"SELECT * FROM vw_{table}")
+            return sqlCursor.fetchall()
     except ValueError:
         # Return empty list for validation errors (already logged above)
         return []
@@ -427,6 +413,153 @@ def exportDatabase(export_path) -> bool:
     except Exception:
         logging()
 
+
+# ---------------------------------------------------------------------------
+# Service Token functions (for token-based CLI authentication)
+# ---------------------------------------------------------------------------
+
+def createServiceTokensTable() -> None:
+    """Create the service_tokens table and view if they don't exist (migration)"""
+    try:
+        if not ensure_connection():
+            logging(message="ERROR: Cannot create service_tokens table - no database connection")
+            return
+
+        sqlCursor.execute("""
+            CREATE TABLE IF NOT EXISTS service_tokens (
+                token_id        TEXT PRIMARY KEY,
+                user            TEXT NOT NULL,
+                name            TEXT NOT NULL,
+                token_hash      BLOB NOT NULL,
+                wrapped_key     TEXT NOT NULL,
+                created_at      TEXT NOT NULL,
+                expires_at      TEXT,
+                last_used       TEXT,
+                revoked         INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (user) REFERENCES users(user)
+            );
+        """)
+        sqlCursor.execute("""
+            CREATE VIEW IF NOT EXISTS vw_service_tokens AS SELECT * FROM service_tokens;
+        """)
+        sqlConnection.commit()
+        logging(message="SUCCESS: service_tokens table ready")
+    except sqlite3.OperationalError as op_error:
+        # Table may already exist — that's fine
+        if "already exists" not in str(op_error):
+            logging(message=f"ERROR: SQLite3 operational failure - {str(op_error)}")
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to create service_tokens table - {str(sql_error)}")
+    except Exception:
+        logging()
+
+
+# Run migration on module load (creates table if it doesn't exist)
+if sqlConnection is not None:
+    try:
+        createServiceTokensTable()
+    except Exception:
+        pass  # Logged internally; don't crash on import
+
+
+def insertServiceToken(token_id, user, name, token_hash, wrapped_key,
+                        created_at, expires_at=None) -> None:
+    """Insert a new service token row"""
+    try:
+        if not ensure_connection():
+            logging(message="ERROR: Cannot insert service token - no database connection")
+            return
+
+        sql_query = """
+            INSERT INTO service_tokens
+            (token_id, user, name, token_hash, wrapped_key, created_at, expires_at)
+            VALUES(?, ?, ?, ?, ?, ?, ?);
+        """
+        sqlCursor.execute(sql_query, (token_id, user, name, token_hash,
+                                       wrapped_key, created_at, expires_at))
+        sqlConnection.commit()
+        logging(message=f"SUCCESS: Created service token '{name}' for user '{user}'")
+    except sqlite3.IntegrityError as integrity_error:
+        logging(message=f"ERROR: SQLite3 data integrity issue - {str(integrity_error)}")
+    except sqlite3.OperationalError as op_error:
+        logging(message=f"ERROR: SQLite3 operational failure - {str(op_error)}")
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to insert service token - {str(sql_error)}")
+    except Exception:
+        logging()
+
+
+def queryServiceToken(token_id) -> tuple | None:
+    """Query a single service token by token_id"""
+    try:
+        if not ensure_connection():
+            logging(message="ERROR: No database connection available")
+            return None
+
+        sql_query = "SELECT * FROM vw_service_tokens WHERE token_id = ?"
+        sqlCursor.execute(sql_query, (token_id,))
+        return sqlCursor.fetchone()
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to query service token - {str(sql_error)}")
+        return None
+    except Exception:
+        logging()
+        return None
+
+
+def queryServiceTokensByUser(user) -> list:
+    """Query all service tokens for a user (for listing)"""
+    try:
+        if not ensure_connection():
+            logging(message="ERROR: No database connection available")
+            return []
+
+        sql_query = "SELECT * FROM vw_service_tokens WHERE user = ?"
+        sqlCursor.execute(sql_query, (user,))
+        return sqlCursor.fetchall()
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to query service tokens for user '{user}' - {str(sql_error)}")
+        return []
+    except Exception:
+        logging()
+        return []
+
+
+def revokeServiceToken(token_id) -> None:
+    """Mark a service token as revoked"""
+    try:
+        if not ensure_connection():
+            logging(message="ERROR: Cannot revoke service token - no database connection")
+            return
+
+        sql_query = "UPDATE service_tokens SET revoked = 1 WHERE token_id = ?"
+        sqlCursor.execute(sql_query, (token_id,))
+        sqlConnection.commit()
+        logging(message=f"SUCCESS: Revoked service token '{token_id}'")
+    except sqlite3.Error as sql_error:
+        logging(message=f"ERROR: SQLite3 failed to revoke service token - {str(sql_error)}")
+    except Exception:
+        logging()
+
+
+def updateServiceTokenLastUsed(token_id, timestamp) -> None:
+    """Update the last_used timestamp for a service token"""
+    try:
+        if not ensure_connection():
+            return
+
+        sql_query = "UPDATE service_tokens SET last_used = ? WHERE token_id = ?"
+        sqlCursor.execute(sql_query, (timestamp, token_id))
+        sqlConnection.commit()
+    except sqlite3.Error:
+        pass  # Non-critical — don't fail the operation if we can't update last_used
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Database Import/Export
+# ---------------------------------------------------------------------------
 
 # Query Imported Database and return contents of Users or Passwords table
 def importDatabase(import_path, table) -> list:
