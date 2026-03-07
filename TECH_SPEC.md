@@ -230,7 +230,7 @@ The data access layer queries views (`vw_passwords`, `vw_users`) rather than tab
 
 ```
 ┌─────────────────────────────────────────────┐
-│              answer_window (h=5)             │
+│              answer_window (h=5)            │
 ├────────────┬────────────────────────────────┤
 │            │                                │
 │ menu_window│      content_window            │

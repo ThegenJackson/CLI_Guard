@@ -6,6 +6,7 @@ import CLI_Guard
 
 # Input validation
 import validation
+import password_generator
 
 # Import curses for Terminal User Interface and navigation
 # https://docs.python.org/3/library/curses.html
@@ -539,6 +540,7 @@ def createPassword(windows: dict[str, Any]) -> Optional[list[str]]:
     popup_panel: curses.panel.Panel = windows["popup_panel"]
     menu_window: curses.window = windows["menu_window"]
     content_window: curses.window = windows["content_window"]
+    answer_window: curses.window = windows["answer_window"]
 
     # Show popup
     popup_panel.show()
@@ -548,7 +550,12 @@ def createPassword(windows: dict[str, Any]) -> Optional[list[str]]:
     inputs: list[str] = ["" for _ in fields]
 
     # Password generation options (placeholders)
-    options: list[str] = ["Scramble Password", "Generate Random", "Generate Passphrase"]
+    options: list[str] = ["Scramble", "Gen Random", "Gen Phrase"]
+    option_descriptions: list[str] = [
+        "Scramble current Password",
+        "Generate a Random Password",
+        "Generate a Random Passphrase",
+    ]
 
     # Buttons
     buttons: list[str] = ["Create", "Cancel"]
@@ -590,6 +597,13 @@ def createPassword(windows: dict[str, Any]) -> Optional[list[str]]:
 
             if in_options and current_option == i:
                 popup_window.addstr(8, x_pos, f"{option[:16]:^16}", curses.A_REVERSE)
+
+        # Show full option description in the answer window when hovering
+        answer_window.erase()
+        answer_window.box()
+        if in_options:
+            answer_window.addstr(2, 2, option_descriptions[current_option])
+        answer_window.noutrefresh()
 
         # Draw buttons
         for i, button in enumerate(buttons):
@@ -712,13 +726,14 @@ def createPassword(windows: dict[str, Any]) -> Optional[list[str]]:
                     content_window.refresh()
                     return inputs
             elif in_options:
-                # Password generation options (placeholders for now)
-                if current_option == 0:
-                    inputs[3] = "ScrambledPass123!"
-                elif current_option == 1:
-                    inputs[3] = "RandomPass789$"
-                elif current_option == 2:
-                    inputs[3] = "correct-horse-battery-staple"
+                # Password generation options
+                if current_option == 0:  # Scramble
+                    if inputs[3]:
+                        inputs[3] = password_generator.scramble_password(inputs[3])
+                elif current_option == 1:  # Gen Random
+                    inputs[3] = password_generator.generate_random()
+                elif current_option == 2:  # Gen Phrase
+                    inputs[3] = password_generator.generate_passphrase()
             else:
                 # ENTER pressed on a form field - move to next field (like DOWN arrow)
                 if not in_buttons and not in_options:
@@ -758,6 +773,7 @@ def updatePassword(windows: dict[str, Any], existing_data: list) -> Optional[lis
     popup_panel: curses.panel.Panel = windows["popup_panel"]
     menu_window: curses.window = windows["menu_window"]
     content_window: curses.window = windows["content_window"]
+    answer_window: curses.window = windows["answer_window"]
 
     # Show popup
     popup_panel.show()
@@ -776,7 +792,12 @@ def updatePassword(windows: dict[str, Any], existing_data: list) -> Optional[lis
     inputs: list[str] = [existing_data[0], existing_data[1], existing_data[2], decrypted_password]
 
     # Password generation options (placeholders)
-    options: list[str] = ["Scramble Password", "Generate Random", "Generate Passphrase"]
+    options: list[str] = ["Scramble", "Gen Random", "Gen Phrase"]
+    option_descriptions: list[str] = [
+        "Scramble current Password",
+        "Generate a Random Password",
+        "Generate a Random Passphrase",
+    ]
 
     # Buttons
     buttons: list[str] = ["Update", "Cancel"]
@@ -818,6 +839,13 @@ def updatePassword(windows: dict[str, Any], existing_data: list) -> Optional[lis
 
             if in_options and current_option == i:
                 popup_window.addstr(8, x_pos, f"{option[:16]:^16}", curses.A_REVERSE)
+
+        # Show full option description in the answer window when hovering
+        answer_window.erase()
+        answer_window.box()
+        if in_options:
+            answer_window.addstr(2, 2, option_descriptions[current_option])
+        answer_window.noutrefresh()
 
         # Draw buttons
         for i, button in enumerate(buttons):
@@ -940,13 +968,14 @@ def updatePassword(windows: dict[str, Any], existing_data: list) -> Optional[lis
                     content_window.refresh()
                     return inputs
             elif in_options:
-                # Password generation options (placeholders for now)
-                if current_option == 0:
-                    inputs[3] = "ScrambledPass123!"
-                elif current_option == 1:
-                    inputs[3] = "RandomPass789$"
-                elif current_option == 2:
-                    inputs[3] = "correct-horse-battery-staple"
+                # Password generation options
+                if current_option == 0:  # Scramble
+                    if inputs[3]:
+                        inputs[3] = password_generator.scramble_password(inputs[3])
+                elif current_option == 1:  # Gen Random
+                    inputs[3] = password_generator.generate_random()
+                elif current_option == 2:  # Gen Phrase
+                    inputs[3] = password_generator.generate_passphrase()
             else:
                 # ENTER pressed on a form field - move to next field
                 if not in_buttons and not in_options:
@@ -1859,10 +1888,10 @@ def createUser(windows: dict[str, any], on_cancel, user=None) -> None:
     form_inputs: list[str] = ["" for _ in create_user_fields]
 
     # Top row options
-    create_user_options: dict[str, Any] = {     # FIX THIS / CHANGE THIS TO ACTUAL FUNCTIONS   
-        "Scramble Password":         goBack,
-        "Generate Random":           goBack,
-        "Generate Passphrase":       goBack
+    create_user_options: dict[str, Any] = {     # FIX THIS / CHANGE THIS TO ACTUAL FUNCTIONS
+        "Scramble":                  goBack,
+        "Gen Random":                goBack,
+        "Gen Phrase":                goBack
     }
     
     # Bottom row options
