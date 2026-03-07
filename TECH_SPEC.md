@@ -169,7 +169,7 @@ SUBSEQUENT COMMAND (use session/service token):
 No `--password` flag on data commands. Passwords are only used during `signin` and `token` commands.
 
 ### Security Note on Salt
-PBKDF2 key derivation uses a per-user random salt (32 bytes from `os.urandom()`, stored as hex in the `encryption_salt` column of the users table). This ensures unique encryption keys per user even if master passwords happen to match. A legacy constant `LEGACY_SALT` is retained in `CLI_Guard.py` solely for the one-time migration of users created before per-user salts were introduced — their secrets are re-encrypted under a new random salt on first login via `migrateUserSalt()`. The wrapping salt used by `token_manager.py` for token key wrapping is separate and unrelated to the PBKDF2 user salt.
+PBKDF2 key derivation uses a per-user random salt (32 bytes from `os.urandom()`, stored as hex in the `encryption_salt` column of the users table). This ensures unique encryption keys per user even if master passwords happen to match. A fresh salt is generated at user creation time via `generateSalt()` and stored alongside the user record. The wrapping salt used by `token_manager.py` for token key wrapping is separate and unrelated to the PBKDF2 user salt.
 
 ### Security Model and Threat Assumptions
 

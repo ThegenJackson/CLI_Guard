@@ -684,3 +684,314 @@
 [2026-02-21 13:10:24] AUTH: Session invalidated for user 'testuser'
 [2026-02-21 13:10:24] AUTH: Session token created for user 'testuser' (TTL: 60min)
 [2026-02-21 13:10:24] AUTH: Session token validated for user 'testuser'
+[2026-03-07 09:59:29] DATABASE: SUCCESS: service_tokens table ready
+[2026-03-07 09:59:29] DATABASE: Salt migration: encryption_salt column already exists
+[2026-03-07 09:59:33] AUTH: Authentication successful for 'test'
+[2026-03-07 09:59:52] DATABASE: SUCCESS: service_tokens table ready
+[2026-03-07 09:59:52] DATABASE: Salt migration: encryption_salt column already exists
+[2026-03-07 09:59:56] AUTH: Authentication failed for 'testuser' - incorrect password
+[2026-03-07 10:03:30] AUTH: Authentication successful for 'testuser'
+[2026-03-07 10:11:19] DATABASE: SUCCESS: service_tokens table ready
+[2026-03-07 10:11:19] DATABASE: Salt migration: encryption_salt column already exists
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Created User testuser
+[2026-03-07 10:11:20] AUTH: Session started for 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for production-mysql in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'production-mysql' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for staging-postgres in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'staging-postgres' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for dev-mongodb in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'dev-mongodb' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for analytics-redshift in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'analytics-redshift' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for cache-redis-prod in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'cache-redis-prod' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for reporting-mariadb in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'reporting-mariadb' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for warehouse-snowflake in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'warehouse-snowflake' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for search-elasticsearch in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'search-elasticsearch' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for queue-rabbitmq-prod in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'queue-rabbitmq-prod' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for timeseries-influxdb in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'timeseries-influxdb' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for graph-neo4j-prod in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'graph-neo4j-prod' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for session-store-memcached in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'session-store-memcached' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for aws-prod-iam in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'aws-prod-iam' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for stripe-live in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'stripe-live' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for github-actions-ci in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'github-actions-ci' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for sendgrid-transactional in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'sendgrid-transactional' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for twilio-sms-prod in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'twilio-sms-prod' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for datadog-monitoring in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'datadog-monitoring' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for slack-webhook-alerts in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'slack-webhook-alerts' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for pagerduty-incidents in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'pagerduty-incidents' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for openai-prod in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'openai-prod' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for sentry-error-tracking in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'sentry-error-tracking' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for mapbox-geocoding in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'mapbox-geocoding' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for auth0-management in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'auth0-management' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for azure-portal in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'azure-portal' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for gcp-console in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'gcp-console' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for heroku-staging in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'heroku-staging' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for digitalocean-prod in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'digitalocean-prod' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for cloudflare-dns in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'cloudflare-dns' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for aws-console-root in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'aws-console-root' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for linode-backups in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'linode-backups' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for vultr-compute in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'vultr-compute' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for oracle-cloud-free in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'oracle-cloud-free' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for vercel-deployments in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'vercel-deployments' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for gmail-work in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'gmail-work' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for outlook-corporate in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'outlook-corporate' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for protonmail-secure in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'protonmail-secure' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for fastmail-personal in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'fastmail-personal' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for zoho-team in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'zoho-team' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for icloud-personal in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'icloud-personal' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for yahoo-legacy in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'yahoo-legacy' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for tutanota-encrypted in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'tutanota-encrypted' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for mailgun-transactional in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'mailgun-transactional' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for postmark-notifications in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'postmark-notifications' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for prod-server-01 in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'prod-server-01' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for prod-server-02 in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'prod-server-02' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for vpn-office-gateway in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'vpn-office-gateway' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for bastion-host in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'bastion-host' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for staging-web-01 in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'staging-web-01' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for db-replica-east in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'db-replica-east' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for wireguard-home in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'wireguard-home' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for tailscale-mesh in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'tailscale-mesh' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for jira-corp in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'jira-corp' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for confluence-wiki in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'confluence-wiki' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for grafana-dashboards in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'grafana-dashboards' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for jenkins-ci in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'jenkins-ci' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for vault-transit in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'vault-transit' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for sonarqube-quality in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'sonarqube-quality' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for artifactory-registry in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'artifactory-registry' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for bitbucket-server in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'bitbucket-server' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for harbor-container-reg in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'harbor-container-reg' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Password encrypted successfully
+[2026-03-07 10:11:20] DATABASE: SUCCESS: Inserted password for pgadmin-management in User account testuser
+[2026-03-07 10:11:20] AUTH: Secret added for account 'pgadmin-management' by user 'testuser'
+[2026-03-07 10:11:20] AUTH: Session ended for 'testuser'
+[2026-03-07 10:12:33] DATABASE: SUCCESS: service_tokens table ready
+[2026-03-07 10:12:33] DATABASE: Salt migration: encryption_salt column already exists
+[2026-03-07 10:12:33] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:33] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:33] AUTH: Session ended for 'None'
+[2026-03-07 10:12:33] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:33] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:33] AUTH: Session ended for 'None'
+[2026-03-07 10:12:33] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:33] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:33] AUTH: Session ended for 'None'
+[2026-03-07 10:12:33] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:33] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:33] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:33] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session ended for 'None'
+[2026-03-07 10:12:34] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session ended for 'None'
+[2026-03-07 10:12:34] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:34] AUTH: Password encrypted successfully
+[2026-03-07 10:12:34] AUTH: Password decrypted successfully
+[2026-03-07 10:12:34] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:34] AUTH: Password encrypted successfully
+[2026-03-07 10:12:34] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:34] AUTH: Password encrypted successfully
+[2026-03-07 10:12:34] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:34] ERROR: Decryption attempted with no active session
+[2026-03-07 10:12:34] AUTH: Session ended for 'None'
+[2026-03-07 10:12:34] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:34] AUTH: Password encrypted successfully
+[2026-03-07 10:12:34] AUTH: Password decrypted successfully
+[2026-03-07 10:12:34] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:34] AUTH: Password encrypted successfully
+[2026-03-07 10:12:34] AUTH: Password decrypted successfully
+[2026-03-07 10:12:34] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:34] AUTH: Password encrypted successfully
+[2026-03-07 10:12:34] AUTH: Password decrypted successfully
+[2026-03-07 10:12:34] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:34] AUTH: Password encrypted successfully
+[2026-03-07 10:12:34] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:34] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:34] ERROR: Encryption attempted with no active session
+[2026-03-07 10:12:34] AUTH: Session ended for 'None'
+[2026-03-07 10:12:36] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:36] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:36] AUTH: Session ended for 'None'
+[2026-03-07 10:12:36] AUTH: Session started for 'user1'
+[2026-03-07 10:12:36] AUTH: Session ended for 'user1'
+[2026-03-07 10:12:36] AUTH: Session started for 'user2'
+[2026-03-07 10:12:36] AUTH: Session ended for 'user2'
+[2026-03-07 10:12:36] AUTH: Session ended for 'None'
+[2026-03-07 10:12:36] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:36] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:36] AUTH: Session ended for 'None'
+[2026-03-07 10:12:36] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:36] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:36] AUTH: Session ended for 'None'
+[2026-03-07 10:12:36] AUTH: Session started from pre-derived key for 'test_user'
+[2026-03-07 10:12:36] AUTH: Password encrypted successfully
+[2026-03-07 10:12:36] AUTH: Password decrypted successfully
+[2026-03-07 10:12:36] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:36] AUTH: Session ended for 'None'
+[2026-03-07 10:12:36] AUTH: Session started for 'test_user'
+[2026-03-07 10:12:36] AUTH: Password encrypted successfully
+[2026-03-07 10:12:36] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:36] AUTH: Session started from pre-derived key for 'test_user'
+[2026-03-07 10:12:36] AUTH: Password decrypted successfully
+[2026-03-07 10:12:36] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:36] AUTH: Session started from pre-derived key for 'test_user'
+[2026-03-07 10:12:36] AUTH: Session ended for 'test_user'
+[2026-03-07 10:12:37] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_3ad759017c87)
+[2026-03-07 10:12:37] AUTH: Service token 'ci' validated for user 'testuser'
+[2026-03-07 10:12:38] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_e0d85188f74f)
+[2026-03-07 10:12:38] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_39d63bbec4da)
+[2026-03-07 10:12:38] AUTH: Rejected expired service token 'ci' for user 'testuser'
+[2026-03-07 10:12:38] AUTH: Service token 'ci-pipeline' created for user 'testuser' (id: cg_svc_dd6022e51c4f)
+[2026-03-07 10:12:39] AUTH: Service token 'deploy-bot' created for user 'testuser' (id: cg_svc_65ddd1ed6f4b)
+[2026-03-07 10:12:39] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_4f527c921f75)
+[2026-03-07 10:12:39] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_ff3656417fe0)
+[2026-03-07 10:12:40] AUTH: Service token 'ci' validated for user 'testuser'
+[2026-03-07 10:12:40] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_80783fab05f7)
+[2026-03-07 10:12:40] AUTH: Service token 'ci' (id: cg_svc_80783fab05f7) revoked by user 'testuser'
+[2026-03-07 10:12:40] AUTH: Rejected revoked service token 'ci' for user 'testuser'
+[2026-03-07 10:12:40] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_080adb64f37b)
+[2026-03-07 10:12:41] AUTH: Service token 'ci' created for user 'testuser' (id: cg_svc_70c5174f2a49)
+[2026-03-07 10:12:41] AUTH: Service token 'ci' validated for user 'testuser'
+[2026-03-07 10:12:41] AUTH: Session token created for user 'testuser' (TTL: 1min)
+[2026-03-07 10:12:41] AUTH: Cleaned up 1 expired session(s)
+[2026-03-07 10:12:41] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-03-07 10:12:41] AUTH: Session token validated for user 'testuser'
+[2026-03-07 10:12:41] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-03-07 10:12:41] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-03-07 10:12:41] AUTH: Session token created for user 'testuser' (TTL: 1min)
+[2026-03-07 10:12:41] AUTH: Session expired for user 'testuser'
+[2026-03-07 10:12:42] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-03-07 10:12:42] AUTH: Session invalidated for user 'testuser'
+[2026-03-07 10:12:42] AUTH: Session token created for user 'testuser' (TTL: 60min)
+[2026-03-07 10:12:42] AUTH: Session token validated for user 'testuser'

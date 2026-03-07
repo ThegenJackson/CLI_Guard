@@ -23,10 +23,6 @@ class AuthenticationError(Exception):
 # Constants
 # ---------------------------------------------------------------------------
 
-# Legacy salt — kept for migration of existing users from the old global salt
-# to per-user salts. Do NOT use for new key derivation.
-LEGACY_SALT = b'CLI_Guard_Salt_v1_2025'
-
 # Session management - stores the current user's encryption key and username
 _session_encryption_key: Optional[bytes] = None
 _session_user: Optional[str] = None
@@ -286,71 +282,6 @@ def decryptPassword(encrypted_password: str) -> str:
     decrypted = fernet.decrypt(encrypted_password.encode('utf-8'))
     log("AUTH", "Password decrypted successfully")
     return decrypted.decode('utf-8')
-
-
-# ---------------------------------------------------------------------------
-# Migration: legacy salt → per-user salt
-# ---------------------------------------------------------------------------
-
-def migrateUserSalt(user: str, password: str) -> bool:
-    """
-    Migrate a user from the legacy global salt to a per-user random salt.
-
-    This re-derives the encryption key with a new salt and re-encrypts all
-    of the user's stored secrets. The operation is atomic — if any step
-    fails, no changes are committed.
-
-    Args:
-        user: Username to migrate
-        password: The user's master password (needed to derive both old and new keys)
-
-    Returns:
-        True if migration was performed, False if user already has a salt
-
-    Raises:
-        RuntimeError: If re-encryption of any secret fails
-    """
-    # Check if user already has a per-user salt
-    existing_salt = sqlite.queryUserSalt(user)
-    if existing_salt is not None:
-        return False  # Already migrated
-
-    # Derive the old key using the legacy global salt
-    old_key = deriveEncryptionKey(password, LEGACY_SALT)
-    old_fernet = Fernet(old_key)
-
-    # Generate a new per-user salt and derive the new key
-    new_salt = generateSalt()
-    new_key = deriveEncryptionKey(password, new_salt)
-    new_fernet = Fernet(new_key)
-
-    # Fetch all encrypted secrets for this user
-    data = sqlite.queryData(user=user, table="passwords")
-    if not data:
-        data = []
-
-    # Re-encrypt each secret: decrypt with old key, re-encrypt with new key
-    re_encrypted = []
-    for row in data:
-        # row: (user, category, account, username, encrypted_password, last_modified)
-        old_encrypted = row[4]
-        try:
-            plaintext = old_fernet.decrypt(old_encrypted.encode('utf-8')).decode('utf-8')
-        except Exception as e:
-            raise RuntimeError(
-                f"Failed to decrypt secret for account '{row[2]}' during migration: {e}"
-            )
-        new_encrypted = new_fernet.encrypt(plaintext.encode('utf-8')).decode('utf-8')
-        re_encrypted.append((row, new_encrypted))
-
-    # Apply all changes: update each secret row and set the new salt
-    for (row, new_enc) in re_encrypted:
-        sqlite.updateData(user, new_enc, row[2], row[3], row[4])
-
-    sqlite.updateUserSalt(user, new_salt.hex())
-    log("AUTH", f"Migrated user '{user}' from legacy salt to per-user salt "
-        f"({len(re_encrypted)} secrets re-encrypted)")
-    return True
 
 
 # ---------------------------------------------------------------------------
