@@ -493,7 +493,7 @@ iterations = 100000                # PBKDF2 iterations
 key_length = 32                    # Fernet key size (bytes)
 ```
 
-**Security Note**: Each user gets a unique cryptographically random 32-byte salt, generated at account creation and stored in the `encryption_salt` column of the users table. This ensures that even if two users choose the same master password, their derived encryption keys will be different. Existing users created before per-user salts are automatically migrated on first login — their secrets are re-encrypted under a new random salt.
+**Security Note**: Each user gets a unique cryptographically random 32-byte salt, generated at account creation and stored in the `encryption_salt` column of the users table. This ensures that even if two users choose the same master password, their derived encryption keys will be different.
 
 ### Performance Considerations
 

@@ -35,6 +35,7 @@ CLI_Guard/
 ├── CLI_Guard_CLI.py           # CLI interface (argparse) - for scripts/automation
 ├── CLI_Guard.py               # Business logic (encryption, auth, sessions)
 ├── token_manager.py           # Token lifecycle (session tokens, service tokens, key wrapping)
+├── password_generator.py       # Password generation (scramble, random, passphrase)
 ├── validation.py              # Input validation utilities
 ├── seed_database.py           # Database seeder (Faker) for test data
 ├── logger.py                  # Shared logging (AUTH, DATABASE, TUI, CLI, ERROR)
@@ -45,6 +46,7 @@ CLI_Guard/
 │   ├── test_cli_guard.py      # Tests for business logic + convenience functions
 │   ├── test_cli_guard_cli.py  # Tests for CLI parser + auth resolution
 │   ├── test_token_manager.py  # Tests for token manager (wrapping, sessions, service tokens)
+│   ├── test_password_generator.py  # Tests for password generation
 │   └── test_validation.py     # Tests for validation
 ├── Deprecated/                # Old code kept for reference only
 ├── Logs.txt                   # Runtime debug log

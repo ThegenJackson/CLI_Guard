@@ -1,9 +1,9 @@
 # CLI Guard - Project Status
 
-> Last updated: 2026-02-21
+> Last updated: 2026-03-07
 
 ## Quick Summary
-CLI Guard is a locally-hosted secret manager for scripting and automation workflows (like a lightweight Azure Key Vault). The foundation is complete: database layer, business logic (encryption/auth), TUI for manual management, CLI for scripting, and token-based authentication. Next milestone is polish features (password generation, clipboard, session timeout).
+CLI Guard is a locally-hosted secret manager for scripting and automation workflows (like a lightweight Azure Key Vault). The foundation is complete: database layer, business logic (encryption/auth), TUI for manual management, CLI for scripting, and token-based authentication. Password generation is implemented. However, **major feature blades are not yet built** — User Management, Database Migration/Export, and Settings are all still needed before the application is production-ready.
 
 ## Development Phases
 
@@ -13,7 +13,8 @@ CLI Guard is a locally-hosted secret manager for scripting and automation workfl
 | B | TUI for manual secret management + visual testing | Done |
 | C | CLI/scripting interface (non-interactive secret retrieval) | Done |
 | C.1 | Token-based CLI authentication (session + service tokens) | Done |
-| D | Polish (password generation, clipboard, session timeout) | **Next** |
+| D | Polish (password generation, clipboard, session timeout) | **In Progress** |
+| E | Feature blades (user management, database tools, settings) | Not Started |
 
 ## What's Done
 
@@ -69,8 +70,17 @@ CLI Guard is a locally-hosted secret manager for scripting and automation workfl
 - [x] Token expiry and revocation checks
 - [x] `startSessionFromKey()` for token-based session initialization
 
+### Phase D: Polish (In Progress)
+- [x] Password scramble — leet-speak substitution + case randomization (`password_generator.scramble_password`)
+- [x] Random password generation — cryptographically random from shell-safe pool (`password_generator.generate_random`)
+- [x] Passphrase generation — 4 random words from 4,096-word dictionary, random capitalization (~27%), random separators (~61.8 bits entropy)
+- [x] TUI integration — all three generators wired into Create Password and Update Password popups
+- [ ] Clipboard auto-clear after timeout
+- [ ] Session timeout for security
+- [ ] Password strength indicator in create/update forms
+
 ### Infrastructure
-- [x] 163 unit tests passing (business logic + validation + CLI parser + token manager)
+- [x] 213 unit tests passing (business logic + validation + CLI parser + token manager + password generator)
 - [x] Project documentation (CLAUDE.md, PRD.md, TECH_SPEC.md, STATUS.md)
 - [x] Claude Code hooks (branch protection, dangerous command blocking, pre-commit tests)
 - [x] Dynamic timestamp generation (no stale dates)
@@ -78,18 +88,43 @@ CLI Guard is a locally-hosted secret manager for scripting and automation workfl
 
 ## What's Not Done
 
-### Phase D: Polish
-- [ ] Secret generation (scramble, random, passphrase) — buttons exist but are placeholders
-- [ ] User management — change master password, delete account
-- [ ] Database export/import — backup and restore
+### Phase D: Polish (Remaining)
 - [ ] Clipboard auto-clear after timeout
 - [ ] Session timeout for security
 - [ ] Password strength indicator in create/update forms
 
+### Phase E: Feature Blades (Full Development Needed)
+These are entire feature areas that have **not been started**. Each requires UI, business logic, and potentially database changes.
+
+#### User Management (Not Started)
+- [ ] Change master password — re-encrypt all secrets with new derived key
+- [ ] Delete account — cascade delete all secrets, tokens, and user record
+- [ ] View/edit user profile (username display, creation date, etc.)
+- [ ] TUI menu integration for user management options
+
+#### Database Tools (Not Started)
+- [ ] Database export — backup secrets to encrypted file
+- [ ] Database import — restore from backup file
+- [ ] Database migration tooling — schema versioning for upgrades
+- [ ] Data integrity checks
+
+#### Settings (Not Started)
+- [ ] Configurable session timeout duration
+- [ ] Configurable clipboard clear timeout
+- [ ] Default password generation preferences (length, type)
+- [ ] TUI settings screen
+- [ ] Settings persistence (config file or database)
+
+#### Logging (Not Started)
+Currently logs to a plaintext file on disk (`Logs.txt`). Planned enhancements:
+- [ ] Configurable log destination — plaintext file (current default) or remote Syslog server
+- [ ] Syslog support — forward logs to a specified Syslog server via UDP (514/udp) or TCP (514/tcp)
+- [ ] Log level configuration (e.g., AUTH only vs. all categories)
+- [ ] Log rotation / size management for disk-based logging
+
 ## Known Bugs
 - Keyboard shortcuts for U/D in viewPasswordDetails still use old noutrefresh pattern (lines 1069-1084)
 - `createUser()` does not refresh menu_window when hiding popup (uses older code pattern)
-- Secret generation buttons in create/update forms are hardcoded placeholders
 
 ## File Sizes (for context)
 | File | Lines | Role |
@@ -97,6 +132,7 @@ CLI Guard is a locally-hosted secret manager for scripting and automation workfl
 | CLI_Guard_TUI.py | ~2100 | TUI interface |
 | CLI_Guard_CLI.py | ~470 | CLI interface |
 | CLI_Guard.py | ~440 | Business logic |
+| password_generator.py | ~600 | Password generation (scramble, random, passphrase) |
 | token_manager.py | ~570 | Token lifecycle (session + service tokens) |
 | CLI_Guard_SQL.py | ~530 | Data access |
 | validation.py | ~240 | Input validation |
@@ -104,6 +140,7 @@ CLI Guard is a locally-hosted secret manager for scripting and automation workfl
 | logger.py | ~48 | Shared logging |
 | test_cli_guard.py | ~290 | Business logic tests |
 | test_cli_guard_cli.py | ~270 | CLI parser + auth tests |
+| test_password_generator.py | ~200 | Password generator tests |
 | test_token_manager.py | ~340 | Token manager tests |
 | test_validation.py | ~280 | Validation tests |
 

@@ -1,7 +1,7 @@
 """
 Database seeder for CLI Guard — generates realistic test data using Faker
 
-Creates a test user and populates ~30-35 encrypted secret entries across
+Creates a test user and populates ~60 encrypted secret entries across
 6 categories. All data flows through the business logic layer (startSession →
 encryptPassword → insertData) so secrets are properly encrypted and decryptable
 by both the TUI and CLI.
@@ -38,48 +38,79 @@ Faker.seed(42)
 # Secret definitions — each tuple is (category, account, username_generator)
 # We define templates, then Faker fills in realistic values
 SECRET_TEMPLATES = [
-    # Database secrets (6)
+    # Database secrets (12)
     ("Database", "production-mysql", "db_admin"),
     ("Database", "staging-postgres", "readonly_user"),
     ("Database", "dev-mongodb", "app_service"),
     ("Database", "analytics-redshift", "etl_pipeline"),
     ("Database", "cache-redis-prod", "cache_manager"),
     ("Database", "reporting-mariadb", "report_viewer"),
+    ("Database", "warehouse-snowflake", "loader_svc"),
+    ("Database", "search-elasticsearch", "indexer"),
+    ("Database", "queue-rabbitmq-prod", "msg_broker"),
+    ("Database", "timeseries-influxdb", "metrics_writer"),
+    ("Database", "graph-neo4j-prod", "graph_admin"),
+    ("Database", "session-store-memcached", "session_mgr"),
 
-    # API Keys (6)
+    # API Keys (12)
     ("API Keys", "aws-prod-iam", "service-account"),
     ("API Keys", "stripe-live", "payment-api"),
     ("API Keys", "github-actions-ci", "ci-bot"),
     ("API Keys", "sendgrid-transactional", "mailer-service"),
     ("API Keys", "twilio-sms-prod", "notification-svc"),
     ("API Keys", "datadog-monitoring", "observability"),
+    ("API Keys", "slack-webhook-alerts", "alert-bot"),
+    ("API Keys", "pagerduty-incidents", "oncall-svc"),
+    ("API Keys", "openai-prod", "ai-gateway"),
+    ("API Keys", "sentry-error-tracking", "error-reporter"),
+    ("API Keys", "mapbox-geocoding", "location-svc"),
+    ("API Keys", "auth0-management", "identity-admin"),
 
-    # Cloud Services (5)
+    # Cloud Services (10)
     ("Cloud Services", "azure-portal", None),  # None = generate email
     ("Cloud Services", "gcp-console", None),
     ("Cloud Services", "heroku-staging", None),
     ("Cloud Services", "digitalocean-prod", None),
     ("Cloud Services", "cloudflare-dns", None),
+    ("Cloud Services", "aws-console-root", None),
+    ("Cloud Services", "linode-backups", None),
+    ("Cloud Services", "vultr-compute", None),
+    ("Cloud Services", "oracle-cloud-free", None),
+    ("Cloud Services", "vercel-deployments", None),
 
-    # Email (5)
+    # Email (10)
     ("Email", "gmail-work", None),
     ("Email", "outlook-corporate", None),
     ("Email", "protonmail-secure", None),
     ("Email", "fastmail-personal", None),
     ("Email", "zoho-team", None),
+    ("Email", "icloud-personal", None),
+    ("Email", "yahoo-legacy", None),
+    ("Email", "tutanota-encrypted", None),
+    ("Email", "mailgun-transactional", None),
+    ("Email", "postmark-notifications", None),
 
-    # SSH / VPN (4)
+    # SSH / VPN (8)
     ("SSH / VPN", "prod-server-01", "root"),
     ("SSH / VPN", "prod-server-02", "deploy"),
     ("SSH / VPN", "vpn-office-gateway", "vpn_user"),
     ("SSH / VPN", "bastion-host", "jump_admin"),
+    ("SSH / VPN", "staging-web-01", "deployer"),
+    ("SSH / VPN", "db-replica-east", "repl_user"),
+    ("SSH / VPN", "wireguard-home", "wg_peer"),
+    ("SSH / VPN", "tailscale-mesh", "ts_admin"),
 
-    # Internal Tools (5)
+    # Internal Tools (10)
     ("Internal Tools", "jira-corp", None),
     ("Internal Tools", "confluence-wiki", None),
     ("Internal Tools", "grafana-dashboards", "admin"),
     ("Internal Tools", "jenkins-ci", "build_agent"),
     ("Internal Tools", "vault-transit", "operator"),
+    ("Internal Tools", "sonarqube-quality", "scanner"),
+    ("Internal Tools", "artifactory-registry", "publisher"),
+    ("Internal Tools", "bitbucket-server", None),
+    ("Internal Tools", "harbor-container-reg", "push_svc"),
+    ("Internal Tools", "pgadmin-management", "dba_user"),
 ]
 
 
